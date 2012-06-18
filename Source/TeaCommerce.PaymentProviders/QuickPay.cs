@@ -1,13 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
+using System.Linq;
 using System.Web;
 using System.Xml.Linq;
 using System.Xml.XPath;
-using TeaCommerce.Data.Payment;
-using umbraco.BusinessLogic;
 using TeaCommerce.Data;
-using System.Linq;
+using TeaCommerce.Data.Payment;
+using TeaCommerce.PaymentProviders.Extensions;
+using umbraco.BusinessLogic;
 
 namespace TeaCommerce.PaymentProviders {
 
@@ -119,10 +119,10 @@ namespace TeaCommerce.PaymentProviders {
 
         if ( qpstat.Equals( "000" ) ) {
           string orderName = request.Form[ "ordernumber" ];
-          decimal amount = request.Form[ "amount" ].ParseToDecimal( CultureInfo.InvariantCulture, 0 ) / 100M;
+          decimal amount = decimal.Parse( request.Form[ "amount" ], CultureInfo.InvariantCulture ) / 100M;
           string state = request.Form[ "state" ];
           string transaction = request.Form[ "transaction" ];
-          decimal fee = request.Form[ "fee" ].ParseToDecimal( CultureInfo.InvariantCulture, 0 ) / 100M;
+          decimal fee = decimal.Parse( request.Form[ "fee" ], CultureInfo.InvariantCulture ) / 100M;
 
           return new CallbackInfo( orderName, amount, transaction, state.Equals( "1" ) ? PaymentStatus.Authorized : PaymentStatus.Captured, request.Form[ "cardtype" ], request.Form[ "cardnumber" ] );
         } else {

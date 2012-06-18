@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using TeaCommerce.Data.Payment;
-using umbraco.BusinessLogic;
-using System.Web;
-using System.IO;
 using System.Globalization;
+using System.Linq;
+using System.Web;
 using TeaCommerce.Data;
-using TeaCommerce.PaymentProviders.wannafindService;
-using System.Net;
+using TeaCommerce.Data.Payment;
+using TeaCommerce.PaymentProviders.Extensions;
+using umbraco.BusinessLogic;
 
 namespace TeaCommerce.PaymentProviders {
   public class TwoCheckOut : APaymentProvider {
@@ -185,7 +182,7 @@ namespace TeaCommerce.PaymentProviders {
 
       if ( calculatedMD5 == key ) {
         string orderName = request.QueryString[ "cart_order_id" ];
-        decimal totalAmount = ( strAmount.ParseToDecimal( CultureInfo.InvariantCulture, 0 ) );
+        decimal totalAmount = decimal.Parse( strAmount, CultureInfo.InvariantCulture );
         PaymentStatus paymentStatus = PaymentStatus.Authorized;
 
         return new CallbackInfo( orderName, totalAmount, transaction, paymentStatus, string.Empty, string.Empty );

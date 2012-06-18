@@ -1,19 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-using System.Xml.Linq;
-using System.Xml.XPath;
-using TeaCommerce.Data.Payment;
-using TeaCommerce.PaymentProviders.AuthorizeNetService;
-using TeaCommerce.Data;
-using umbraco.BusinessLogic;
 using System.Globalization;
-using System.IO;
-using TeaCommerce.Data.Tools;
-using System.Text.RegularExpressions;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Web;
+using TeaCommerce.Data;
+using TeaCommerce.Data.Payment;
+using TeaCommerce.PaymentProviders.AuthorizeNetService;
+using umbraco.BusinessLogic;
 
 
 namespace TeaCommerce.PaymentProviders {
@@ -49,8 +45,7 @@ namespace TeaCommerce.PaymentProviders {
       List<string> settingsToExclude = new string[] { "transactionKey", "md5HashKey", "testing" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
-      isTesting = false;
-      bool.TryParse( settings[ "testing" ], out isTesting);
+      isTesting = bool.Parse( settings[ "testing" ] );
 
       //Future: Would be cool to support item lines for this one - you have to return a List<Tuple<string, string>> for it to work with this provider
       inputFields[ "x_version" ] = "3.1";
@@ -111,7 +106,7 @@ namespace TeaCommerce.PaymentProviders {
         if ( gatewayMd5Hash.Equals( calculatedMd5Hash ) ) {
           string orderName = request.Form[ "x_invoice_num" ];
 
-          return long.Parse( orderName.Remove( 0, TeaCommerceSettings.OrderNamePrefix.Length ));
+          return long.Parse( orderName.Remove( 0, TeaCommerceSettings.OrderNamePrefix.Length ) );
         } else
           errorMessage = "Tea Commerce - Authorize.net - MD5Sum security check failed - " + gatewayMd5Hash + " - " + calculatedMd5Hash + " - " + settings[ "md5HashKey" ];
       } else
@@ -209,8 +204,7 @@ namespace TeaCommerce.PaymentProviders {
 
     protected Service GetAuthorizeNetServiceClient( Dictionary<string, string> settings ) {
       Service service = new Service();
-      bool isTesting = false;
-      bool.TryParse(settings[ "testing" ],out isTesting);
+      bool isTesting = bool.Parse( settings[ "testing" ] );
       service.Url = !isTesting ? "https://api.authorize.net/soap/v1/Service.asmx" : "https://apitest.authorize.net/soap/v1/Service.asmx";
       return service;
     }

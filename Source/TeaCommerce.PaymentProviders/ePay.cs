@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.ServiceModel;
 using System.Web;
+using TeaCommerce.Data;
 using TeaCommerce.Data.Payment;
 using TeaCommerce.PaymentProviders.ePayService;
 using umbraco.BusinessLogic;
-using TeaCommerce.Data;
-using System.Linq;
 
 namespace TeaCommerce.PaymentProviders {
 
@@ -134,7 +134,7 @@ namespace TeaCommerce.PaymentProviders {
       TransactionInformationType tit = new TransactionInformationType();
       int ePayResponse = 0;
 
-      if ( GetEPayServiceClient().gettransaction( int.Parse(settings[ "merchantnumber" ]), long.Parse(order.TransactionPaymentTransactionId ), settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref tit, ref ePayResponse ) )
+      if ( GetEPayServiceClient().gettransaction( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionPaymentTransactionId ), settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref tit, ref ePayResponse ) )
         return new APIInfo( tit.transactionid.ToString(), GetPaymentStatus( tit.status, tit.creditedamount ) );
       else
         errorMessage = "Tea Commerce - ePay - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_ePay_error" ), ePayResponse );
@@ -149,7 +149,7 @@ namespace TeaCommerce.PaymentProviders {
       int pbsResponse = 0;
       int ePayResponse = 0;
 
-      if ( GetEPayServiceClient().capture( int.Parse(settings[ "merchantnumber" ] ), long.Parse(order.TransactionPaymentTransactionId ), (int)( order.TotalPrice * 100M ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref pbsResponse, ref ePayResponse ) )
+      if ( GetEPayServiceClient().capture( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionPaymentTransactionId ), (int)( order.TotalPrice * 100M ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref pbsResponse, ref ePayResponse ) )
         return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Captured );
       else
         errorMessage = "Tea Commerce - ePay - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_ePay_errorAdvanced" ), ePayResponse, pbsResponse );
@@ -164,7 +164,7 @@ namespace TeaCommerce.PaymentProviders {
       int pbsResponse = 0;
       int ePayResponse = 0;
 
-      if ( GetEPayServiceClient().credit( int.Parse(settings[ "merchantnumber" ]), long.Parse(order.TransactionPaymentTransactionId), (int)( order.TotalPrice * 100M ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref pbsResponse, ref ePayResponse ) )
+      if ( GetEPayServiceClient().credit( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionPaymentTransactionId ), (int)( order.TotalPrice * 100M ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref pbsResponse, ref ePayResponse ) )
         return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Refunded );
       else
         errorMessage = "Tea Commerce - ePay - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_ePay_errorAdvanced" ), ePayResponse, pbsResponse );
@@ -178,7 +178,7 @@ namespace TeaCommerce.PaymentProviders {
 
       int ePayResponse = 0;
 
-      if ( GetEPayServiceClient().delete( int.Parse( settings[ "merchantnumber" ]), long.Parse( order.TransactionPaymentTransactionId ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref ePayResponse ) )
+      if ( GetEPayServiceClient().delete( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionPaymentTransactionId ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref ePayResponse ) )
         return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Cancelled );
       else
         errorMessage = "Tea Commerce - ePay - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_ePay_error" ), ePayResponse );

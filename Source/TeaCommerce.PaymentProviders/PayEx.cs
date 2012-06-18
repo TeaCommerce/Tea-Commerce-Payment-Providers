@@ -1,16 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Web;
 using System.Xml.Linq;
 using System.Xml.XPath;
-using TeaCommerce.Data.Payment;
-using TeaCommerce.PaymentProviders.PayExService;
 using TeaCommerce.Data;
+using TeaCommerce.Data.Payment;
+using TeaCommerce.PaymentProviders.Extensions;
+using TeaCommerce.PaymentProviders.PayExService;
 using umbraco.BusinessLogic;
-using System.Globalization;
-using System.IO;
-
 
 namespace TeaCommerce.PaymentProviders {
   public class PayEx : APaymentProvider {
@@ -41,7 +40,7 @@ namespace TeaCommerce.PaymentProviders {
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-payex-with-tea-commerce/"; } }
 
     public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
-      long accountNumber = settings[ "accountNumber" ].ParseToLong( 0 );
+      long accountNumber = long.Parse( settings[ "accountNumber" ] );
       string purchaseOperation = settings[ "purchaseOperation" ];
       int price = (int)Math.Round( order.TotalPrice * 100M, 0 );
       string priceArgList = string.Empty;
@@ -95,7 +94,7 @@ namespace TeaCommerce.PaymentProviders {
     public override CallbackInfo ProcessCallback( Order order, HttpRequest request, Dictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
-      long accountNumber = settings[ "accountNumber" ].ParseToLong( 0 );
+      long accountNumber = long.Parse( settings[ "accountNumber" ] );
       string orderRef = order.Properties.First( p => p.Alias.Equals( "orderRef" ) ).Value;
       string md5Hash = GetMD5Hash( accountNumber + orderRef + settings[ "encryptionKey" ] );
 
@@ -112,9 +111,9 @@ namespace TeaCommerce.PaymentProviders {
       string errorCode = xmlDoc.XPathSelectElement( "//status/errorCode" ).Value;
 
       //0 = Sale | 3 = Authorize
-      if ( errorCode.Equals( "OK" ) && ( transactionStatus.Equals( "0" ) || transactionStatus.Equals( "3" ) ) && !xmlDoc.XPathSelectElement( "//alreadyCompleted" ).Value.ParseToBool( true ) ) {
+      if ( errorCode.Equals( "OK" ) && ( transactionStatus.Equals( "0" ) || transactionStatus.Equals( "3" ) ) && !bool.Parse( xmlDoc.XPathSelectElement( "//alreadyCompleted" ).Value ) ) {
         string orderName = xmlDoc.XPathSelectElement( "//orderId" ).Value;
-        decimal amount = xmlDoc.XPathSelectElement( "//amount" ).Value.ParseToDecimal( CultureInfo.InvariantCulture, 0 );
+        decimal amount = decimal.Parse( xmlDoc.XPathSelectElement( "//amount" ).Value, CultureInfo.InvariantCulture );
         string transactionNumber = xmlDoc.XPathSelectElement( "//transactionNumber" ).Value;
         PaymentStatus paymentStatus = transactionStatus.Equals( "3" ) ? PaymentStatus.Authorized : PaymentStatus.Captured;
         string paymentMethod = xmlDoc.XPathSelectElement( "//paymentMethod" ).Value;
@@ -133,8 +132,8 @@ namespace TeaCommerce.PaymentProviders {
     public override APIInfo GetStatus( Order order, Dictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
-      long accountNumber = settings[ "accountNumber" ].ParseToLong( 0 );
-      int transactionNumber = order.TransactionPaymentTransactionId.ParseToInt( 0 );
+      long accountNumber = long.Parse( settings[ "accountNumber" ] );
+      int transactionNumber = int.Parse( order.TransactionPaymentTransactionId );
 
       string md5Hash = GetMD5Hash( accountNumber.ToString() + transactionNumber.ToString() + settings[ "encryptionKey" ] );
 
@@ -171,8 +170,8 @@ namespace TeaCommerce.PaymentProviders {
     public override APIInfo CapturePayment( Order order, Dictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
-      long accountNumber = settings[ "accountNumber" ].ParseToLong( 0 );
-      int transactionNumber = order.TransactionPaymentTransactionId.ParseToInt( 0 );
+      long accountNumber = long.Parse( settings[ "accountNumber" ] );
+      int transactionNumber = int.Parse( order.TransactionPaymentTransactionId );
       int amount = (int)Math.Round( order.TotalPrice * 100M, 0 );
       string orderId = order.Name;
       int vatAmount = (int)Math.Round( order.VAT * 100M * 100M, 0 );
@@ -197,8 +196,8 @@ namespace TeaCommerce.PaymentProviders {
     public override APIInfo RefundPayment( Order order, Dictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
-      long accountNumber = settings[ "accountNumber" ].ParseToLong( 0 );
-      int transactionNumber = order.TransactionPaymentTransactionId.ParseToInt( 0 );
+      long accountNumber = long.Parse( settings[ "accountNumber" ] );
+      int transactionNumber = int.Parse( order.TransactionPaymentTransactionId );
       int amount = (int)Math.Round( order.TotalPrice * 100M, 0 );
       string orderId = order.Name;
       int vatAmount = (int)Math.Round( order.VAT * 100M, 0 );
@@ -223,8 +222,8 @@ namespace TeaCommerce.PaymentProviders {
     public override APIInfo CancelPayment( Order order, Dictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
-      long accountNumber = settings[ "accountNumber" ].ParseToLong( 0 );
-      int transactionNumber = order.TransactionPaymentTransactionId.ParseToInt( 0 );
+      long accountNumber = long.Parse( settings[ "accountNumber" ] );
+      int transactionNumber = int.Parse( order.TransactionPaymentTransactionId );
 
       string md5Hash = GetMD5Hash( accountNumber.ToString() + transactionNumber.ToString() + settings[ "encryptionKey" ] );
 
@@ -244,7 +243,7 @@ namespace TeaCommerce.PaymentProviders {
 
     protected PxOrder GetPayExServiceClient( Dictionary<string, string> settings ) {
       PxOrder pxOrder = new PxOrder();
-      pxOrder.Url = !settings[ "testing" ].ParseToBool( false ) ? "https://external.payex.com/pxorder/pxorder.asmx" : "https://test-external.payex.com/pxorder/pxorder.asmx";
+      pxOrder.Url = !bool.Parse( settings[ "testing" ] ) ? "https://external.payex.com/pxorder/pxorder.asmx" : "https://test-external.payex.com/pxorder/pxorder.asmx";
       return pxOrder;
     }
 

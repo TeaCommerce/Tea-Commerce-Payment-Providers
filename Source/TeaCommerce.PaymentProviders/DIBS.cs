@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Web;
+using TeaCommerce.Data;
 using TeaCommerce.Data.Payment;
 using umbraco.BusinessLogic;
-using TeaCommerce.Data;
-using System.Linq;
 
 namespace TeaCommerce.PaymentProviders {
 
@@ -108,8 +108,7 @@ namespace TeaCommerce.PaymentProviders {
       string cardnomask = request.Form[ "cardnomask" ];
 
       decimal totalAmount = ( decimal.Parse( strAmount, CultureInfo.InvariantCulture ) + decimal.Parse( fee, CultureInfo.InvariantCulture ) );
-      bool autoCaptured = false;
-      bool.TryParse(capturenow, out autoCaptured);
+      bool autoCaptured = bool.Parse( capturenow );
 
       string md5CheckValue = string.Empty;
       md5CheckValue += settings[ "md5k1" ];

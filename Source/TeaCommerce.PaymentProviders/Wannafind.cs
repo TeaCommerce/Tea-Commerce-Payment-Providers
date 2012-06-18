@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using TeaCommerce.Data.Payment;
-using umbraco.BusinessLogic;
-using System.Web;
-using System.IO;
+﻿using System.Collections.Generic;
 using System.Globalization;
-using TeaCommerce.Data;
-using TeaCommerce.PaymentProviders.wannafindService;
+using System.Linq;
 using System.Net;
+using System.Web;
+using TeaCommerce.Data;
+using TeaCommerce.Data.Payment;
+using TeaCommerce.PaymentProviders.wannafindService;
+using umbraco.BusinessLogic;
 
 namespace TeaCommerce.PaymentProviders {
   public class Wannafind : APaymentProvider {

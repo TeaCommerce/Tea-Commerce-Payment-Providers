@@ -3,10 +3,9 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Web;
+using TeaCommerce.Data;
 using TeaCommerce.Data.Payment;
 using umbraco.BusinessLogic;
-using TeaCommerce.Data;
-using System.IO;
 
 namespace TeaCommerce.PaymentProviders {
 
@@ -41,7 +40,7 @@ namespace TeaCommerce.PaymentProviders {
 
     public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
       isSandbox = false;
-      bool.TryParse(settings[ "isSandbox" ], out isSandbox);
+      bool.TryParse( settings[ "isSandbox" ], out isSandbox );
       List<string> settingsToExclude = new string[] { "USER", "PWD", "SIGNATURE", "isSandbox", "productNumberPropertyAlias", "productNamePropertyAlias", "shippingMethodFormatString", "paymentMethodFormatString" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
@@ -118,7 +117,7 @@ namespace TeaCommerce.PaymentProviders {
       //}
 
       string errorMessage = string.Empty;
-      isSandbox = settings[ "isSandbox" ].ParseToBool( false );
+      isSandbox = bool.Parse( settings[ "isSandbox" ] );
 
       //Verify callback
       string response = MakePostRequest( FormPostUrl, Encoding.ASCII.GetString( request.BinaryRead( request.ContentLength ) ) + "&cmd=_notify-validate" );
@@ -134,7 +133,7 @@ namespace TeaCommerce.PaymentProviders {
         string receiverEmail = request.Form[ "receiver_email" ];
         string transaction = request.Form[ "txn_id" ];
         string transactionEntity = request.Form[ "transaction_entity" ];
-        decimal amount = request.Form[ "mc_gross" ].ParseToDecimal( CultureInfo.InvariantCulture, 0 );
+        decimal amount = decimal.Parse( request.Form[ "mc_gross" ], CultureInfo.InvariantCulture );
         string state = request.Form[ "payment_status" ];
         string orderName = request.Form[ "invoice" ];
 
@@ -172,7 +171,7 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override APIInfo CapturePayment( Order order, Dictionary<string, string> settings ) {
-      isSandbox = settings[ "isSandbox" ].ParseToBool( false );
+      isSandbox = bool.Parse( settings[ "isSandbox" ]);
 
       string errorMessage = string.Empty;
       Dictionary<string, string> inputFields = PrepareAPIPostRequest( "DoCapture", settings );
@@ -193,7 +192,7 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override APIInfo RefundPayment( Order order, Dictionary<string, string> settings ) {
-      isSandbox = settings[ "isSandbox" ].ParseToBool( false );
+      isSandbox = bool.Parse( settings[ "isSandbox" ] );
 
       string errorMessage = string.Empty;
       Dictionary<string, string> inputFields = PrepareAPIPostRequest( "RefundTransaction", settings );
@@ -211,7 +210,7 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override APIInfo CancelPayment( Order order, Dictionary<string, string> settings ) {
-      isSandbox = settings[ "isSandbox" ].ParseToBool( false );
+      isSandbox = bool.Parse( settings[ "isSandbox" ] );
 
       string errorMessage = string.Empty;
       Dictionary<string, string> inputFields = PrepareAPIPostRequest( "DoVoid", settings );
@@ -229,7 +228,7 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     protected APIInfo InternalGetStatus( string transactionId, Dictionary<string, string> settings ) {
-      isSandbox = settings[ "isSandbox" ].ParseToBool( false );
+      isSandbox = bool.Parse( settings[ "isSandbox" ] );
 
       string errorMessage = string.Empty;
       Dictionary<string, string> inputFields = PrepareAPIPostRequest( "GetTransactionDetails", settings );

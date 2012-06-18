@@ -1,17 +1,16 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Web;
-using System.Xml.Linq;
-using System.Xml.XPath;
-using TeaCommerce.Data.Payment;
-using umbraco.BusinessLogic;
-using TeaCommerce.Data;
-using System;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Web;
+using System.Xml.Linq;
+using System.Xml.XPath;
+using TeaCommerce.Data;
+using TeaCommerce.Data.Payment;
 using TeaCommerce.Data.Tools;
+using TeaCommerce.PaymentProviders.Extensions;
+using umbraco.BusinessLogic;
 
 namespace TeaCommerce.PaymentProviders {
 
@@ -104,7 +103,7 @@ namespace TeaCommerce.PaymentProviders {
       string digest = CryptoProvider.ConvertToHexString( new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ) );
 
       if ( digest.Equals( SHASign ) ) {
-        return new CallbackInfo( orderName, strAmount.ParseToDecimal( CultureInfo.InvariantCulture, 0 ), transaction, status.Equals( "5" ) || status.Equals( "51" ) ? PaymentStatus.Authorized : PaymentStatus.Captured, cardType, cardNo );
+        return new CallbackInfo( orderName, decimal.Parse( strAmount, CultureInfo.InvariantCulture ), transaction, status.Equals( "5" ) || status.Equals( "51" ) ? PaymentStatus.Authorized : PaymentStatus.Captured, cardType, cardNo );
       } else
         errorMessage = string.Format( "Tea Commerce - Ogone - SHASIGN check isn't valid - Calculated digest: {0} - Ogone SHASIGN: {1}", digest, SHASign );
 

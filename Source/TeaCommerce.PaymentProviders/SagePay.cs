@@ -1,16 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Net;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Web;
-using TeaCommerce.Data.Payment;
-using umbraco.BusinessLogic;
 using TeaCommerce.Data;
+using TeaCommerce.Data.Payment;
+using TeaCommerce.PaymentProviders.Extensions;
+using umbraco.BusinessLogic;
 
 namespace TeaCommerce.PaymentProviders {
 

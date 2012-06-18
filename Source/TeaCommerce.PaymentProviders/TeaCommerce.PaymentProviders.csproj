@@ -54,6 +54,8 @@
     <Compile Include="AuthorizeNet.cs" />
     <Compile Include="DIBS.cs" />
     <Compile Include="ePay.cs" />
+    <Compile Include="Extensions\EnumerableExtensions.cs" />
+    <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Ogone.cs" />
     <Compile Include="PayEx.cs" />
     <Compile Include="PayPal.cs" />

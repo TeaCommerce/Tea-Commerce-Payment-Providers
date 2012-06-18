@@ -1,15 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
-using System.Text;
+using System.Web;
+using TeaCommerce.Data;
 using TeaCommerce.Data.Payment;
 using umbraco.BusinessLogic;
-using System.Web;
-using System.IO;
-using System.Globalization;
-using TeaCommerce.Data;
-using TeaCommerce.PaymentProviders.wannafindService;
-using System.Net;
 
 namespace TeaCommerce.PaymentProviders {
   public class WorldPay : APaymentProvider {
