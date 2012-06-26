@@ -25,8 +25,8 @@ namespace TeaCommerce.PaymentProviders {
           defaultSettings = new Dictionary<string, string>();
           defaultSettings[ "instId" ] = string.Empty;
           defaultSettings[ "lang" ] = "en";
-          defaultSettings[ "C_continueUrl" ] = string.Empty;
-          defaultSettings[ "C_cancelUrl" ] = string.Empty;
+          defaultSettings[ "successURL" ] = string.Empty;
+          defaultSettings[ "cancelURL" ] = string.Empty;
           defaultSettings[ "authMode" ] = "A";
           defaultSettings[ "md5Secret" ] = string.Empty;
           defaultSettings[ "paymentResponsePassword" ] = string.Empty;
@@ -59,8 +59,8 @@ namespace TeaCommerce.PaymentProviders {
       string amount = order.TotalPrice.ToString( "0.00", CultureInfo.InvariantCulture );
       inputFields[ "amount" ] = amount;
 
-      inputFields[ "C_continueUrl" ] = teaCommerceContinueUrl;
-      inputFields[ "C_cancelUrl" ] = teaCommerceCancelUrl;
+      inputFields[ "successURL" ] = teaCommerceContinueUrl;
+      inputFields[ "cancelURL" ] = teaCommerceCancelUrl;
 
       //name
       inputFields[ "name" ] = order.FirstName + " " + order.LastName;
@@ -105,11 +105,11 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override string GetContinueUrl( Dictionary<string, string> settings ) {
-      return settings[ "C_continueUrl" ];
+      return settings[ "successURL" ];
     }
 
     public override string GetCancelUrl( Dictionary<string, string> settings ) {
-      return settings[ "C_cancelUrl" ];
+      return settings[ "cancelURL" ];
     }
 
     public override long? GetOrderId( HttpRequest request, Dictionary<string, string> settings ) {
