@@ -133,9 +133,8 @@ namespace TeaCommerce.PaymentProviders {
 
       for ( int i = orderLines.Count - 1; i >= 0; i-- ) {
         orderLine = orderLines[ i ];
-        var orderLineProperties = orderLine.Properties.Where( p => p.UmbracoLanguageId == order.UmbracoLanguageId || p.UmbracoLanguageId == 0 );
-        OrderLineProperty productNameProp = orderLineProperties.SingleOrDefault( op => op.Alias.Equals( settings[ "productNamePropertyAlias" ] ) );
-        OrderLineProperty productNumberProp = orderLineProperties.SingleOrDefault( op => op.Alias.Equals( settings[ "productNumberPropertyAlias" ] ) );
+        OrderLineProperty productNameProp = orderLine.Properties.SingleOrDefault( op => op.Alias.Equals( settings[ "productNamePropertyAlias" ] ) );
+        OrderLineProperty productNumberProp = orderLine.Properties.SingleOrDefault( op => op.Alias.Equals( settings[ "productNumberPropertyAlias" ] ) );
 
         inputFields[ "c_prod_" + itemIndex ] = productNumberProp.Value + "," + orderLine.Quantity.ToString();
         inputFields[ "c_name_" + itemIndex ] = productNameProp.Value.Truncate( 128 );

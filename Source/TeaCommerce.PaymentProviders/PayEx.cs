@@ -47,8 +47,8 @@ namespace TeaCommerce.PaymentProviders {
       string currency = order.CurrencyISOCode;
       int vat = (int)Math.Round( order.VAT * 100M * 100M, 0 );
       string orderId = order.Name;
-      string productNumber = order.OrderLines.Select( ol => ol.Properties.First( p => p.Alias.Equals( settings[ "productNumberPropertyAlias" ] ) && ( p.UmbracoLanguageId == order.UmbracoLanguageId || p.UmbracoLanguageId == 0 ) ).Value ).Join( ", " );
-      string description = order.OrderLines.Select( ol => ol.Properties.First( p => p.Alias.Equals( settings[ "productNamePropertyAlias" ] ) && ( p.UmbracoLanguageId == order.UmbracoLanguageId || p.UmbracoLanguageId == 0 ) ).Value ).Join( ", " );
+      string productNumber = order.OrderLines.Select( ol => ol.Properties.First( p => p.Alias.Equals( settings[ "productNumberPropertyAlias" ] ) ).Value ).Join( ", " );
+      string description = order.OrderLines.Select( ol => ol.Properties.First( p => p.Alias.Equals( settings[ "productNamePropertyAlias" ] ) ).Value ).Join( ", " );
       string clientIPAddress = HttpContext.Current.Request.UserHostAddress;
       string clientIdentifier = string.Empty;
       string additionalValues = string.Empty;
