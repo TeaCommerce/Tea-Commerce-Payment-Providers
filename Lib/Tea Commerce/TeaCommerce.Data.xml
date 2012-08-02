@@ -1268,6 +1268,14 @@
             <param name="settings">Settings for the payment provider</param>
             <returns>Collection of key/value pairs</returns>
         </member>
+        <member name="M:TeaCommerce.Data.Payment.APaymentProvider.SubmitJavascriptFunction(System.Collections.Generic.Dictionary{System.String,System.String},System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Generates the JavaScript code to run instead of posting the html form if JavaScript is enabled
+            </summary>
+            <param name="inputFields">Collection of key/value pairs representing the input fields the html form would post</param>
+            /// <param name="settings">Settings for the payment provider</param>
+            <returns>JavaScript code string</returns>
+        </member>
         <member name="M:TeaCommerce.Data.Payment.APaymentProvider.GetContinueUrl(System.Collections.Generic.Dictionary{System.String,System.String})">
             <summary>
             Gets the continue URL

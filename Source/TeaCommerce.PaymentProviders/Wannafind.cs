@@ -31,7 +31,6 @@ namespace TeaCommerce.PaymentProviders {
 
     public override string FormPostUrl { get { return "https://betaling.wannafind.dk/paymentwindow.php"; } }
     public override string FormAttributes { get { return @" id=""wannafind"" name=""wannafind"" target=""wannafind_paymentwindow"""; } }
-    public override string SubmitJavascriptFunction { get { return @"openPaymenWindow();"; } }
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-wannafind-with-tea-commerce/"; } }
 
     public override Dictionary<string, string> GenerateForm( Data.Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
@@ -80,6 +79,10 @@ namespace TeaCommerce.PaymentProviders {
       //wannafind dont support to show order line information to the shopper
 
       return inputFields;
+    }
+
+    public override string SubmitJavascriptFunction( Dictionary<string, string> inputFields, Dictionary<string, string> settings ) {
+      return @"openPaymenWindow();";
     }
 
     public override string GetContinueUrl( Dictionary<string, string> settings ) {

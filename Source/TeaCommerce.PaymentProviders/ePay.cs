@@ -7,6 +7,8 @@ using TeaCommerce.Data;
 using TeaCommerce.Data.Payment;
 using TeaCommerce.PaymentProviders.ePayService;
 using umbraco.BusinessLogic;
+using TeaCommerce.PaymentProviders.Extensions;
+using System.IO;
 
 namespace TeaCommerce.PaymentProviders {
 
@@ -19,10 +21,11 @@ namespace TeaCommerce.PaymentProviders {
           defaultSettings[ "merchantnumber" ] = string.Empty;
           defaultSettings[ "language" ] = "2";
           defaultSettings[ "accepturl" ] = string.Empty;
-          defaultSettings[ "declineurl" ] = string.Empty;
+          defaultSettings[ "cancelurl" ] = string.Empty;
           defaultSettings[ "instantcapture" ] = "0";
-          defaultSettings[ "cardtype" ] = "0";
+          defaultSettings[ "paymenttype" ] = "";
           defaultSettings[ "windowstate" ] = "1";
+          defaultSettings[ "iframeelement" ] = "";
           defaultSettings[ "md5securitykey" ] = string.Empty;
           defaultSettings[ "webservicepassword" ] = string.Empty;
         }
@@ -30,13 +33,11 @@ namespace TeaCommerce.PaymentProviders {
       }
     }
 
-    public override string FormPostUrl { get { return "https://ssl.ditonlinebetalingssystem.dk/popup/default.asp"; } }
-    public override string FormAttributes { get { return @"id=""ePay"" name=""ePay"" target=""ePay_window"""; } }
-    public override string SubmitJavascriptFunction { get { return @"open_ePay_window();"; } }
+    public override string FormPostUrl { get { return "https://ssl.ditonlinebetalingssystem.dk/integration/ewindow/Default.aspx"; } }
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-epay-with-tea-commerce/"; } }
 
     public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
-      List<string> settingsToExclude = new string[] { "md5securitykey", "webservicepassword" }.ToList();
+      List<string> settingsToExclude = new string[] { "md5securitykey", "webservicepassword", "iframeelement" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
       //orderid
@@ -51,7 +52,7 @@ namespace TeaCommerce.PaymentProviders {
       inputFields[ "amount" ] = strAmount;
 
       inputFields[ "accepturl" ] = teaCommerceContinueUrl;
-      inputFields[ "declineurl" ] = teaCommerceCancelUrl;
+      inputFields[ "cancelurl" ] = teaCommerceCancelUrl;
       inputFields[ "callbackurl" ] = teaCommerceCallBackUrl;
 
       //instantcallback
@@ -61,13 +62,9 @@ namespace TeaCommerce.PaymentProviders {
       if ( inputFields.ContainsKey( "instantcapture" ) && string.IsNullOrEmpty( inputFields[ "instantcapture" ] ) )
         inputFields.Remove( "instantcapture" );
 
-      //md5securitykey
-      if ( settings.ContainsKey( "md5securitykey" ) && !string.IsNullOrEmpty( settings[ "md5securitykey" ] ) )
-        inputFields[ "md5key" ] = GetMD5Hash( currency + strAmount + order.Name + settings[ "md5securitykey" ] );
-
       //cardtype
-      if ( inputFields.ContainsKey( "cardtype" ) && string.IsNullOrEmpty( inputFields[ "cardtype" ] ) )
-        inputFields.Remove( "cardtype" );
+      if ( inputFields.ContainsKey( "paymenttype" ) && string.IsNullOrEmpty( inputFields[ "paymenttype" ] ) )
+        inputFields.Remove( "paymenttype" );
 
       //windowstate
       if ( inputFields.ContainsKey( "windowstate" ) && string.IsNullOrEmpty( inputFields[ "windowstate" ] ) )
@@ -77,7 +74,40 @@ namespace TeaCommerce.PaymentProviders {
 
       //ePay dont support to show order line information to the shopper
 
+      //md5securitykey
+      if ( !string.IsNullOrEmpty( settings[ "md5securitykey" ] ) )
+        inputFields[ "hash" ] = GetMD5Hash( inputFields.Values.Join( "" ) + settings[ "md5securitykey" ] );
+
       return inputFields;
+    }
+
+    public override string SubmitJavascriptFunction( Dictionary<string, string> inputFields, Dictionary<string, string> settings ) {
+      string rtnString = string.Empty;
+
+      //If its state 3 (fullscreen) we return empty string because it's not supported by the JavaScript
+      if ( !inputFields.ContainsKey( "windowstate" ) || inputFields[ "windowstate" ] != "3" ) {
+
+        //Check if its iFrame mode (2) and check if an html element is specified - else fallback to overlay (1)
+        if ( inputFields.ContainsKey( "windowstate" ) && inputFields[ "windowstate" ] == "2" && !settings.ContainsKey( "iframeelement" ) ) {
+          inputFields[ "windowstate" ] = "1";
+        }
+
+        rtnString += "var paymentwindow = new PaymentWindow({";
+        foreach ( var kvp in inputFields ) {
+          rtnString += "'" + kvp.Key + "': '" + kvp.Value + "',";
+        }
+        rtnString = rtnString.Remove( rtnString.Length - 1, 1 );
+        rtnString += "});";
+
+        //Check if it's iFrame mode
+        if ( inputFields.ContainsKey( "windowstate" ) && inputFields[ "windowstate" ] == "2" ) {
+          rtnString += "paymentwindow.append('" + settings[ "iframeelement" ] + "');";
+        }
+
+        rtnString += "paymentwindow.open();";
+      }
+
+      return rtnString;
     }
 
     public override string GetContinueUrl( Dictionary<string, string> settings ) {
@@ -85,7 +115,7 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override string GetCancelUrl( Dictionary<string, string> settings ) {
-      return settings[ "declineurl" ];
+      return settings[ "cancelurl" ];
     }
 
     public override CallbackInfo ProcessCallback( Order order, HttpRequest request, Dictionary<string, string> settings ) {
@@ -99,22 +129,25 @@ namespace TeaCommerce.PaymentProviders {
 
       string errorMessage = string.Empty;
 
-      string transaction = request.QueryString[ "tid" ];
+      string transaction = request.QueryString[ "txnid" ];
       string orderName = request.QueryString[ "orderid" ];
       string strAmount = request.QueryString[ "amount" ];
-      string eKey = request.QueryString[ "eKey" ];
+      string hash = request.QueryString[ "hash" ];
 
       string md5CheckValue = string.Empty;
-      md5CheckValue += strAmount;
-      md5CheckValue += orderName;
-      md5CheckValue += transaction;
+
+      foreach ( string k in request.QueryString.Keys ) {
+        if ( k != "hash" ) {
+          md5CheckValue += request.QueryString[ k ];
+        }
+      }
       md5CheckValue += settings[ "md5securitykey" ];
 
-      if ( string.IsNullOrEmpty( eKey ) || GetMD5Hash( md5CheckValue ).Equals( eKey ) ) {
+      if ( GetMD5Hash( md5CheckValue ) == hash ) {
 
-        string fee = request.QueryString[ "transfee" ];
-        string cardid = request.QueryString[ "cardid" ];
-        string cardnopostfix = request.QueryString[ "cardnopostfix" ];
+        string fee = request.QueryString[ "txnfee" ];
+        string cardid = request.QueryString[ "paymenttype" ];
+        string cardnopostfix = request.QueryString[ "cardno" ];
 
         decimal totalAmount = ( decimal.Parse( strAmount, CultureInfo.InvariantCulture ) + decimal.Parse( fee, CultureInfo.InvariantCulture ) );
 
