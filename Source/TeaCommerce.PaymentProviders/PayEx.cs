@@ -243,7 +243,7 @@ namespace TeaCommerce.PaymentProviders {
 
     protected PxOrder GetPayExServiceClient( Dictionary<string, string> settings ) {
       PxOrder pxOrder = new PxOrder();
-      pxOrder.Url = !bool.Parse( settings[ "testing" ] ) ? "https://external.payex.com/pxorder/pxorder.asmx" : "https://test-external.payex.com/pxorder/pxorder.asmx";
+      pxOrder.Url = settings[ "testing" ] != "1" ? "https://external.payex.com/pxorder/pxorder.asmx" : "https://test-external.payex.com/pxorder/pxorder.asmx";
       return pxOrder;
     }
 

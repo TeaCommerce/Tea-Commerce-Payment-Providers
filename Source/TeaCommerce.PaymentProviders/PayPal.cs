@@ -116,7 +116,7 @@ namespace TeaCommerce.PaymentProviders {
       //}
 
       string errorMessage = string.Empty;
-      isSandbox = bool.Parse( settings[ "isSandbox" ] );
+      isSandbox = settings[ "isSandbox" ] == "1";
 
       //Verify callback
       string response = MakePostRequest( FormPostUrl, Encoding.ASCII.GetString( request.BinaryRead( request.ContentLength ) ) + "&cmd=_notify-validate" );
@@ -170,7 +170,7 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override APIInfo CapturePayment( Order order, Dictionary<string, string> settings ) {
-      isSandbox = bool.Parse( settings[ "isSandbox" ]);
+      isSandbox = settings[ "isSandbox" ] == "1";
 
       string errorMessage = string.Empty;
       Dictionary<string, string> inputFields = PrepareAPIPostRequest( "DoCapture", settings );
@@ -209,7 +209,7 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override APIInfo CancelPayment( Order order, Dictionary<string, string> settings ) {
-      isSandbox = bool.Parse( settings[ "isSandbox" ] );
+      isSandbox = settings[ "isSandbox" ] == "1";
 
       string errorMessage = string.Empty;
       Dictionary<string, string> inputFields = PrepareAPIPostRequest( "DoVoid", settings );

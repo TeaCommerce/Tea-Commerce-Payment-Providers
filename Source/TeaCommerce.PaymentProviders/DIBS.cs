@@ -108,7 +108,7 @@ namespace TeaCommerce.PaymentProviders {
       string cardnomask = request.Form[ "cardnomask" ];
 
       decimal totalAmount = ( decimal.Parse( strAmount, CultureInfo.InvariantCulture ) + decimal.Parse( fee, CultureInfo.InvariantCulture ) );
-      bool autoCaptured = bool.Parse( capturenow );
+      bool autoCaptured = capturenow == "1";
 
       string md5CheckValue = string.Empty;
       md5CheckValue += settings[ "md5k1" ];

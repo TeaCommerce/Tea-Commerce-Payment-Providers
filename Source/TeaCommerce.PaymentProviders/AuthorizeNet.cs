@@ -45,7 +45,7 @@ namespace TeaCommerce.PaymentProviders {
       List<string> settingsToExclude = new string[] { "transactionKey", "md5HashKey", "testing" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
-      isTesting = bool.Parse( settings[ "testing" ] );
+      isTesting = settings[ "testing" ] == "1";
 
       //Future: Would be cool to support item lines for this one - you have to return a List<Tuple<string, string>> for it to work with this provider
       inputFields[ "x_version" ] = "3.1";
@@ -204,7 +204,7 @@ namespace TeaCommerce.PaymentProviders {
 
     protected Service GetAuthorizeNetServiceClient( Dictionary<string, string> settings ) {
       Service service = new Service();
-      bool isTesting = bool.Parse( settings[ "testing" ] );
+      bool isTesting = settings[ "testing" ] == "1";
       service.Url = !isTesting ? "https://api.authorize.net/soap/v1/Service.asmx" : "https://apitest.authorize.net/soap/v1/Service.asmx";
       return service;
     }
