@@ -23,9 +23,9 @@ namespace TeaCommerce.PaymentProviders {
           defaultSettings[ "accepturl" ] = string.Empty;
           defaultSettings[ "cancelurl" ] = string.Empty;
           defaultSettings[ "instantcapture" ] = "0";
-          defaultSettings[ "paymenttype" ] = "";
+          defaultSettings[ "paymenttype" ] = string.Empty;
           defaultSettings[ "windowstate" ] = "1";
-          defaultSettings[ "iframeelement" ] = "";
+          defaultSettings[ "iframeelement" ] = string.Empty;
           defaultSettings[ "md5securitykey" ] = string.Empty;
           defaultSettings[ "webservicepassword" ] = string.Empty;
         }
