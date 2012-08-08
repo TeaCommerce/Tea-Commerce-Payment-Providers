@@ -12,6 +12,7 @@ using System;
 using System.IO;
 using System.Xml.Linq;
 using TeaCommerce.PaymentProviders.Extensions;
+using System.Web.Services.Protocols;
 
 namespace TeaCommerce.PaymentProviders {
   public class Payer : APaymentProvider {
@@ -27,6 +28,7 @@ namespace TeaCommerce.PaymentProviders {
           defaultSettings[ "payment_methods" ] = "auto";
           defaultSettings[ "md5Key1" ] = string.Empty;
           defaultSettings[ "md5Key2" ] = string.Empty;
+          defaultSettings[ "webservicepassword" ] = string.Empty;
           defaultSettings[ "test_mode" ] = "false";
           defaultSettings[ "productNumberPropertyAlias" ] = "productNumber";
           defaultSettings[ "productNamePropertyAlias" ] = "productName";
@@ -65,7 +67,6 @@ namespace TeaCommerce.PaymentProviders {
       ) );
 
       //Buyer details
-      //TODO: anders - sæt alias og hent oplysninger
       payerData.Add( new XElement( "buyer_details",
         new XElement( "first_name", server.HtmlEncode( order.FirstName ) ),
         new XElement( "last_name", server.HtmlEncode( order.LastName ) ),
@@ -177,67 +178,109 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override CallbackInfo ProcessCallback( Order order, HttpRequest request, Dictionary<string, string> settings ) {
-      using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/PayerTestCallback.txt" ) ) ) ) {
-        writer.WriteLine( "QueryString:" );
-        foreach ( string k in request.QueryString.Keys ) {
-          writer.WriteLine( k + " : " + request.QueryString[ k ] );
-        }
-        writer.Flush();
-      }
+      //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/PayerTestCallback.txt" ) ) ) ) {
+      //  writer.WriteLine( "QueryString:" );
+      //  foreach ( string k in request.QueryString.Keys ) {
+      //    writer.WriteLine( k + " : " + request.QueryString[ k ] );
+      //  }
+      //  writer.Flush();
+      //}
 
       string errorMessage = string.Empty;
 
-      //string orderId = request.QueryString[ "orderid" ];
-      //string currency = request.QueryString[ "currency" ];
-      //string amount = request.QueryString[ "amount" ];
-      //string cardType = settings.ContainsKey( "cardtype" ) ? settings[ "cardtype" ] : string.Empty;
+      //Check for payer IP addresses
+      string remoteServerIPAddress = request.ServerVariables[ "REMOTE_ADDR" ];
 
-      //string md5CheckValue = GetMD5Hash( orderId + currency + cardType + amount + settings[ "md5CallbackSecret" ] ); ;
+      if ( remoteServerIPAddress == "217.151.207.84" || remoteServerIPAddress == "79.136.103.5" || remoteServerIPAddress == "79.136.103.9" || remoteServerIPAddress == "94.140.57.180" || remoteServerIPAddress == "94.140.57.181" || remoteServerIPAddress == "94.140.57.184" || remoteServerIPAddress == "192.168.100.1" ) {
 
-      //if ( md5CheckValue.Equals( request.QueryString[ "checkmd5callback" ] ) ) {
+        string url = request.Url.Scheme + "://" + request.Url.Host + request.ServerVariables[ "REQUEST_URI" ];
+        string urlExceptMD5Sum = url.Substring( 0, url.IndexOf( "&md5sum" ) );
 
-      //  string transaction = request.QueryString[ "transacknum" ];
-      //  string cardtype = request.QueryString[ "cardtype" ];
-      //  string cardnomask = request.QueryString[ "cardnomask" ];
+        string md5CheckValue = GetMD5Hash( settings[ "md5Key1" ] + urlExceptMD5Sum + settings[ "md5Key2" ] ).ToUpperInvariant();
 
-      //  decimal totalAmount = decimal.Parse( amount, CultureInfo.InvariantCulture );
+        if ( md5CheckValue == request.QueryString[ "md5sum" ] ) {
+          HttpContext.Current.Response.Output.Write( "TRUE" );
 
-      //  //Wannafind cant give us info about auto capturing
-      //  return new CallbackInfo( order.Name, totalAmount / 100M, transaction, PaymentStatus.Authorized, cardtype, cardnomask );
-      //} else
-      //  errorMessage = "Tea Commerce - Wannafind - MD5Sum security check failed";
+          string orderName = request.QueryString[ "payer_merchant_reference_id" ];
+          string transaction = request.QueryString[ "payread_payment_id" ];
+          string paymentType = request.QueryString[ "payer_payment_type" ];
+          string callbackType = request.QueryString[ "payer_callback_type" ];
+          PaymentStatus paymentStatus = callbackType == "auth" ? PaymentStatus.Authorized : PaymentStatus.Captured;
 
+          return new CallbackInfo( orderName, order.TotalPrice, transaction, paymentStatus, paymentType, string.Empty );
+        } else {
+          errorMessage = "Tea Commerce - Payer - MD5Sum security check failed";
+        }
+      } else {
+        errorMessage = "Tea Commerce - Payer - IP security check failed - IP: " + remoteServerIPAddress;
+      }
+
+      HttpContext.Current.Response.Output.Write( "FALSE" );
       Log.Add( LogTypes.Error, -1, errorMessage );
       return new CallbackInfo( errorMessage );
     }
 
     public override APIInfo GetStatus( Order order, Dictionary<string, string> settings ) {
+      return ExecutePayerService( settings, ( PaymentGateway paymentGateway, string sessionId ) => {
+        TransactionStatus info = paymentGateway.GetTransactionStatus( sessionId, order.TransactionPaymentTransactionId );
+
+        //TODO: anders
+        //PaymentStatus paymentStatus = PaymentStatus.Initial;
+
+        //switch ( returnData.returncode ) {
+        //  case 5:
+        //    paymentStatus = PaymentStatus.Authorized;
+        //    break;
+        //  case 6:
+        //    paymentStatus = PaymentStatus.Captured;
+        //    break;
+        //  case 7:
+        //    paymentStatus = PaymentStatus.Cancelled;
+        //    break;
+        //  case 8:
+        //    paymentStatus = PaymentStatus.Refunded;
+        //    break;
+        //}
+
+        
+        //return new APIInfo( order.TransactionPaymentTransactionId, paymentStatus );
+
+        return new APIInfo( info.Cost + " - " + info.Currency + " - " + info.CustomerAccount + " - " + info.Description + " - " + info.IsDebited + " - " + info.IsTest + " - " + info.Name + " - " + info.Paid + " - " + info.TransactionId + " - " + info.Type + " - " + info.UserId + " - " + info.Vat );
+      } );
+
+
       throw new NotImplementedException();
       //string errorMessage = string.Empty;
 
       //try {
-      //  returnArray returnData = GetPayerService( settings ).checkTransaction( int.Parse( order.TransactionPaymentTransactionId ), string.Empty, order.Id.ToString(), string.Empty, string.Empty );
+      //  return ExecutePayerService( settings, ( PaymentGateway paymentGateway, string sessionId ) => {
+      //    paymentGateway.tra
 
-      //  PaymentStatus paymentStatus = PaymentStatus.Initial;
+      //    return new APIInfo( "" );
+      //  } );
 
-      //  switch ( returnData.returncode ) {
-      //    case 5:
-      //      paymentStatus = PaymentStatus.Authorized;
-      //      break;
-      //    case 6:
-      //      paymentStatus = PaymentStatus.Captured;
-      //      break;
-      //    case 7:
-      //      paymentStatus = PaymentStatus.Cancelled;
-      //      break;
-      //    case 8:
-      //      paymentStatus = PaymentStatus.Refunded;
-      //      break;
-      //  }
+      //  //returnArray returnData = GetPayerService( settings ).checkTransaction( int.Parse( order.TransactionPaymentTransactionId ), string.Empty, order.Id.ToString(), string.Empty, string.Empty );
 
-      //  return new APIInfo( order.TransactionPaymentTransactionId, paymentStatus );
+      //  //PaymentStatus paymentStatus = PaymentStatus.Initial;
+
+      //  //switch ( returnData.returncode ) {
+      //  //  case 5:
+      //  //    paymentStatus = PaymentStatus.Authorized;
+      //  //    break;
+      //  //  case 6:
+      //  //    paymentStatus = PaymentStatus.Captured;
+      //  //    break;
+      //  //  case 7:
+      //  //    paymentStatus = PaymentStatus.Cancelled;
+      //  //    break;
+      //  //  case 8:
+      //  //    paymentStatus = PaymentStatus.Refunded;
+      //  //    break;
+      //  //}
+
+      //  //return new APIInfo( order.TransactionPaymentTransactionId, paymentStatus );
       //} catch ( WebException ) {
-      //  errorMessage = "Tea Commerce - Wannafind - " + umbraco.ui.Text( "teaCommerce", "paymentProvider_Wannafind_wrongCredentials" );
+      //  errorMessage = "Tea Commerce - Payer - " + umbraco.ui.Text( "teaCommerce", "paymentProvider_Payer_wrongCredentials" );
       //}
 
       //Log.Add( LogTypes.Error, -1, errorMessage );
@@ -245,65 +288,57 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override APIInfo CapturePayment( Order order, Dictionary<string, string> settings ) {
-      throw new NotImplementedException();
-      //string errorMessage = string.Empty;
+      return ExecutePayerService( settings, ( PaymentGateway paymentGateway, string sessionId ) => {
+        SettleInfo info = paymentGateway.Settle( sessionId, order.TransactionPaymentTransactionId, (double)order.TotalPrice );
 
-      //try {
-      //  //When capturing of the complete amount - send 0 as parameter for amount
-      //  int returnCode = GetPayerService( settings ).captureTransaction( int.Parse( order.TransactionPaymentTransactionId ), 0 );
-      //  if ( returnCode == 0 )
-      //    return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Captured );
-      //  else
-      //    errorMessage = "Tea Commerce - Wannafind - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_Wannafind_error" ), returnCode );
-      //} catch ( WebException ) {
-      //  errorMessage = "Tea Commerce - Wannafind - " + umbraco.ui.Text( "teaCommerce", "paymentProvider_Wannafind_wrongCredentials" );
-      //}
+        //TODO: anders
+        //return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Captured );
 
-      //Log.Add( LogTypes.Error, -1, errorMessage );
-      //return new APIInfo( errorMessage );
+        return new APIInfo( info.ChargeLogId + " - " + info.PaymentId + " - " + info.ResponseCode.ToString() + " - " + info.ResponseText );
+      } );
     }
 
     public override APIInfo RefundPayment( Order order, Dictionary<string, string> settings ) {
-      throw new NotImplementedException();
-      //string errorMessage = string.Empty;
+      return ExecutePayerService( settings, ( PaymentGateway paymentGateway, string sessionId ) => {
+        RefundInfo info = paymentGateway.Refund( sessionId, order.TransactionPaymentTransactionId, string.Empty, (double)order.TotalPrice );
 
-      //try {
-      //  int returnCode = GetPayerService( settings ).creditTransaction( int.Parse( order.TransactionPaymentTransactionId ), (int)( order.TotalPrice * 100M ) );
-      //  if ( returnCode == 0 )
-      //    return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Refunded );
-      //  else
-      //    errorMessage = "Tea Commerce - Wannafind - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_Wannafind_error" ), returnCode );
-      //} catch ( WebException ) {
-      //  errorMessage = "Tea Commerce - Wannafind - " + umbraco.ui.Text( "teaCommerce", "paymentProvider_Wannafind_wrongCredentials" );
-      //}
+        //TODO: anders
+        //return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Refunded );
 
-      //Log.Add( LogTypes.Error, -1, errorMessage );
-      //return new APIInfo( errorMessage );
+        return new APIInfo( info.PaymentId + " - " + info.ResponseCode.ToString() + " - " + info.ResponseText );
+      } );
     }
 
     public override APIInfo CancelPayment( Order order, Dictionary<string, string> settings ) {
-      throw new NotImplementedException();
-      //string errorMessage = string.Empty;
+      return ExecutePayerService( settings, ( PaymentGateway paymentGateway, string sessionId ) => {
+        AuthReverseInfo info = paymentGateway.AuthReverse( sessionId, order.TransactionPaymentTransactionId, (double)order.TotalPrice );
 
-      //try {
-      //  int returnCode = GetPayerService( settings ).cancelTransaction( int.Parse( order.TransactionPaymentTransactionId ) );
-      //  if ( returnCode == 0 )
-      //    return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Cancelled );
-      //  else
-      //    errorMessage = "Tea Commerce - Wannafind - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_Wannafind_error" ), returnCode );
-      //} catch ( WebException ) {
-      //  errorMessage = "Tea Commerce - Wannafind - " + umbraco.ui.Text( "teaCommerce", "paymentProvider_Wannafind_wrongCredentials" );
-      //}
+        //TODO: anders
+        //return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Cancelled );
 
-      //Log.Add( LogTypes.Error, -1, errorMessage );
-      //return new APIInfo( errorMessage );
+        return new APIInfo( info.PaymentId + " - " + info.ResponseCode.ToString() + " - " + info.ResponseText );
+      } );
     }
 
-    //protected PaymentGateway GetPayerService( Dictionary<string, string> settings ) {
-    //  //PaymentGateway paymentGateway = new PaymentGateway();
-    //  //paymentGateway.aut
-    //  //return paymentGateway;
-    //}
+    protected APIInfo ExecutePayerService( Dictionary<string, string> settings, Func<PaymentGateway, string, APIInfo> method ) {
+      string errorMessage = string.Empty;
+
+      try {
+        PaymentGateway paymentGateway = new PaymentGateway();
+        string sessionId = paymentGateway.CreateSession( settings[ "payer_agentid" ], settings[ "webservicepassword" ] );
+
+        APIInfo apiInfo = method( paymentGateway, sessionId );
+
+        paymentGateway.DestroySession( sessionId );
+
+        return apiInfo;
+      } catch ( SoapException ) {
+        errorMessage = "Tea Commerce - Payer - " + umbraco.ui.Text( "teaCommerce", "paymentProvider_Payer_wrongCredentials" );
+      }
+
+      Log.Add( LogTypes.Error, -1, errorMessage );
+      return new APIInfo( errorMessage );
+    }
 
   }
 }
