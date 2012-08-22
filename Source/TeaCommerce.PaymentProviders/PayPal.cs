@@ -39,8 +39,7 @@ namespace TeaCommerce.PaymentProviders {
     protected string APIPostUrl { get { return !isSandbox ? "https://api-3t.paypal.com/nvp" : "https://api-3t.sandbox.paypal.com/nvp"; } }
 
     public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
-      isSandbox = false;
-      bool.TryParse( settings[ "isSandbox" ], out isSandbox );
+      isSandbox = settings[ "isSandbox" ] == "1";
       List<string> settingsToExclude = new string[] { "USER", "PWD", "SIGNATURE", "isSandbox", "productNumberPropertyAlias", "productNamePropertyAlias", "shippingMethodFormatString", "paymentMethodFormatString" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
@@ -191,7 +190,7 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override APIInfo RefundPayment( Order order, Dictionary<string, string> settings ) {
-      isSandbox = bool.Parse( settings[ "isSandbox" ] );
+      isSandbox = settings[ "isSandbox" ] == "1";
 
       string errorMessage = string.Empty;
       Dictionary<string, string> inputFields = PrepareAPIPostRequest( "RefundTransaction", settings );
@@ -227,7 +226,7 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     protected APIInfo InternalGetStatus( string transactionId, Dictionary<string, string> settings ) {
-      isSandbox = bool.Parse( settings[ "isSandbox" ] );
+      isSandbox = settings[ "isSandbox" ] == "1";
 
       string errorMessage = string.Empty;
       Dictionary<string, string> inputFields = PrepareAPIPostRequest( "GetTransactionDetails", settings );
