@@ -1,25 +1,16 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.ServiceModel;
 using System.Web;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using TeaCommerce.Data;
 using TeaCommerce.Data.Payment;
-using TeaCommerce.PaymentProviders.ePayService;
 using umbraco.BusinessLogic;
-using TeaCommerce.PaymentProviders.Extensions;
-using System.IO;
 
 namespace TeaCommerce.PaymentProviders {
 
   public class Netaxept : APaymentProvider {
-
-    public override bool AllowsGetStatus { get { return false; } }
-    public override bool AllowsCancelPayment { get { return false; } }
-    public override bool AllowsCapturePayment { get { return false; } }
-    public override bool AllowsRefundPayment { get { return false; } }
 
     public override Dictionary<string, string> DefaultSettings {
       get {
@@ -50,7 +41,7 @@ namespace TeaCommerce.PaymentProviders {
       inputFields[ "orderNumber" ] = order.Name;
 
       //currencyCode
-      inputFields[ "currencyCode" ] = ISO4217CurrencyCodes[ order.CurrencyISOCode ];
+      inputFields[ "currencyCode" ] = order.CurrencyISOCode;
 
       //amount
       inputFields[ "amount" ] = ( order.TotalPrice * 100M ).ToString( "0", CultureInfo.InvariantCulture );
@@ -65,8 +56,7 @@ namespace TeaCommerce.PaymentProviders {
       if ( inputFields.ContainsKey( "paymentMethodList" ) && string.IsNullOrEmpty( inputFields[ "paymentMethodList" ] ) )
         inputFields.Remove( "paymentMethodList" );
 
-      string response = MakePostRequest( ( settings[ "testMode" ] != "1" ? "https://epayment.bbs.no/Netaxept/Register.aspx" : "https://epayment-test.bbs.no/Netaxept/Register.aspx" ), inputFields );
-      XDocument xmlResponse = XDocument.Parse( response, LoadOptions.PreserveWhitespace );
+      XDocument xmlResponse = XDocument.Parse( MakePostRequest( ( settings[ "testMode" ] != "1" ? "https://epayment.bbs.no/Netaxept/Register.aspx" : "https://epayment-test.bbs.no/Netaxept/Register.aspx" ), inputFields ), LoadOptions.PreserveWhitespace );
       if ( xmlResponse.XPathSelectElement( "//RegisterResponse" ) != null ) {
         //Save the Tea Commerce continue and cancel url so we have access to them in the "Callback"
         order.AddProperty( new OrderProperty( "teaCommerceContinueUrl", teaCommerceContinueUrl, true, true ) );
@@ -90,32 +80,60 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override CallbackInfo ProcessCallback( Order order, HttpRequest request, Dictionary<string, string> settings ) {
-      using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/NetaxceptCallback.txt" ) ) ) ) {
-        writer.WriteLine( "QueryString:" );
-        foreach ( string k in request.QueryString.Keys ) {
-          writer.WriteLine( k + " : " + request.QueryString[ k ] );
-        }
-        writer.Flush();
-      }
+      //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/NetaxceptCallback.txt" ) ) ) ) {
+      //  writer.WriteLine( "QueryString:" );
+      //  foreach ( string k in request.QueryString.Keys ) {
+      //    writer.WriteLine( k + " : " + request.QueryString[ k ] );
+      //  }
+      //  writer.Flush();
+      //}
 
       string errorMessage = string.Empty;
 
-      HttpContext.Current.Response.Redirect( order.GetPropertyValue( "teaCommerceContinueUrl" ) );
-      //HttpContext.Current.Response.Redirect( order.GetPropertyValue( "teaCommerceCancelUrl" ) );
+      string responseCode = request.QueryString[ "responseCode" ];
 
-      //if ( GetMD5Hash( md5CheckValue ) == hash ) {
+      if ( responseCode != null && responseCode == "OK" ) {
+        bool autoCapture = settings[ "instantcapture" ] == "1";
+        string transactionId = request.QueryString[ "transactionId" ];
 
-      //  string fee = request.QueryString[ "txnfee" ];
-      //  string cardid = request.QueryString[ "paymenttype" ];
-      //  string cardnopostfix = request.QueryString[ "cardno" ];
+        Dictionary<string, string> inputFields = new Dictionary<string, string>();
+        inputFields[ "merchantId" ] = settings[ "merchantId" ];
+        inputFields[ "token" ] = settings[ "token" ];
+        inputFields[ "operation" ] = !autoCapture ? "AUTH" : "SALE";
+        inputFields[ "transactionId" ] = transactionId;
 
-      //  decimal totalAmount = ( decimal.Parse( strAmount, CultureInfo.InvariantCulture ) + decimal.Parse( fee, CultureInfo.InvariantCulture ) );
+        XDocument xmlResponse = XDocument.Parse( MakePostRequest( ( settings[ "testMode" ] != "1" ? "https://epayment.bbs.no/Netaxept/Process.aspx" : "https://epayment-test.bbs.no/Netaxept/Process.aspx" ), inputFields ), LoadOptions.PreserveWhitespace );
 
-      //  bool autoCaptured = settings.ContainsKey( "instantcapture" ) && settings[ "instantcapture" ].Equals( "1" );
+        if ( xmlResponse.XPathSelectElement( "//ProcessResponse" ) != null && xmlResponse.XPathSelectElement( "//ProcessResponse/ResponseCode" ).Value == "OK" ) {
 
-      //  return new CallbackInfo( orderName, totalAmount / 100M, transaction, !autoCaptured ? PaymentStatus.Authorized : PaymentStatus.Captured, cardid, cardnopostfix );
-      //} else
-      //  errorMessage = "Tea Commerce - ePay - MD5Sum security check failed";
+          //Get details from the transaction
+          xmlResponse = QueryTransaction( transactionId, settings );
+
+          if ( xmlResponse.XPathSelectElement( "//PaymentInfo" ) != null ) {
+            string orderName = xmlResponse.XPathSelectElement( "//PaymentInfo/OrderInformation/OrderNumber" ).Value;
+            decimal totalAmount = decimal.Parse( xmlResponse.XPathSelectElement( "//PaymentInfo/OrderInformation/Total" ).Value, CultureInfo.InvariantCulture ) / 100M;
+            string cardType = xmlResponse.XPathSelectElement( "//PaymentInfo/CardInformation/PaymentMethod" ).Value;
+            string cardNumber = xmlResponse.XPathSelectElement( "//PaymentInfo/CardInformation/MaskedPAN" ).Value;
+
+            HttpContext.Current.Response.Redirect( order.GetPropertyValue( "teaCommerceContinueUrl" ), false );
+            return new CallbackInfo( order.Name, totalAmount, transactionId, !autoCapture ? PaymentStatus.Authorized : PaymentStatus.Captured, cardType, cardNumber );
+          } else {
+            errorMessage = "Tea Commerce - Netaxept - ProcessCallback error - " + xmlResponse.XPathSelectElement( "//Error/Message" ).Value;
+          }
+        } else {
+          errorMessage = "Tea Commerce - Netaxept - ProcessCallback error - " + xmlResponse.XPathSelectElement( "//Error/Message" ).Value;
+          if ( xmlResponse.XPathSelectElement( "//Error/Result" ) != null ) {
+            errorMessage += " response code: " + xmlResponse.XPathSelectElement( "//Error/Result/ResponseCode" ).Value + " transactionId: " + xmlResponse.XPathSelectElement( "//Error/Result/TransactionId" ).Value;
+          }
+
+        }
+
+      } else {
+        errorMessage = "Tea Commerce - Netaxept - Response code isn't valid - response code: " + responseCode;
+      }
+
+      //If we get here an error occured and we redirect to the cancel url
+      HttpContext.Current.Response.Redirect( order.GetPropertyValue( "teaCommerceCancelUrl" ), false );
 
       Log.Add( LogTypes.Error, -1, errorMessage );
       return new CallbackInfo( errorMessage );
@@ -129,15 +147,29 @@ namespace TeaCommerce.PaymentProviders {
       inputFields[ "token" ] = settings[ "token" ];
       inputFields[ "transactionId" ] = order.TransactionPaymentTransactionId;
 
-      XDocument xmlResponse = XDocument.Parse( MakePostRequest( ( settings[ "testMode" ] != "1" ? "https://epayment.bbs.no/Netaxept/Query.aspx" : "https://epayment-test.bbs.no/Netaxept/Query.aspx" ), inputFields ), LoadOptions.PreserveWhitespace );
+      XDocument xmlResponse = QueryTransaction( order.TransactionPaymentTransactionId, settings );
 
-      //TransactionInformationType tit = new TransactionInformationType();
-      //int ePayResponse = 0;
+      if ( xmlResponse.XPathSelectElement( "//PaymentInfo" ) != null ) {
+        string transactionId = xmlResponse.XPathSelectElement( "//PaymentInfo/TransactionId" ).Value;
+        bool authorized = bool.Parse( xmlResponse.XPathSelectElement( "//PaymentInfo/Summary/Authorized" ).Value );
+        bool cancelled = bool.Parse( xmlResponse.XPathSelectElement( "//PaymentInfo/Summary/Annulled" ).Value );
+        bool captured = decimal.Parse( xmlResponse.XPathSelectElement( "//PaymentInfo/Summary/AmountCaptured" ).Value, CultureInfo.InvariantCulture ) > 0;
+        bool refunded = decimal.Parse( xmlResponse.XPathSelectElement( "//PaymentInfo/Summary/AmountCredited" ).Value, CultureInfo.InvariantCulture ) > 0;
 
-      //if ( GetEPayServiceClient().gettransaction( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionPaymentTransactionId ), settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref tit, ref ePayResponse ) )
-      //  return new APIInfo( tit.transactionid.ToString(), GetPaymentStatus( tit.status, tit.creditedamount ) );
-      //else
-      //  errorMessage = "Tea Commerce - ePay - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_ePay_error" ), ePayResponse );
+        PaymentStatus paymentStatus = PaymentStatus.Initial;
+        if ( refunded )
+          paymentStatus = PaymentStatus.Refunded;
+        else if ( captured )
+          paymentStatus = PaymentStatus.Captured;
+        else if ( cancelled )
+          paymentStatus = PaymentStatus.Cancelled;
+        else if ( authorized )
+          paymentStatus = PaymentStatus.Authorized;
+
+        return new APIInfo( transactionId, paymentStatus );
+      } else {
+        errorMessage = "Tea Commerce - Netaxept - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_netaxept_error" ), xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
+      }
 
       Log.Add( LogTypes.Error, -1, errorMessage );
       return new APIInfo( errorMessage );
@@ -155,13 +187,11 @@ namespace TeaCommerce.PaymentProviders {
 
       XDocument xmlResponse = XDocument.Parse( MakePostRequest( ( settings[ "testMode" ] != "1" ? "https://epayment.bbs.no/Netaxept/Process.aspx" : "https://epayment-test.bbs.no/Netaxept/Process.aspx" ), inputFields ), LoadOptions.PreserveWhitespace );
 
-      //int pbsResponse = 0;
-      //int ePayResponse = 0;
-
-      //if ( GetEPayServiceClient().capture( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionPaymentTransactionId ), (int)( order.TotalPrice * 100M ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref pbsResponse, ref ePayResponse ) )
-      //  return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Captured );
-      //else
-      //  errorMessage = "Tea Commerce - ePay - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_ePay_errorAdvanced" ), ePayResponse, pbsResponse );
+      if ( xmlResponse.XPathSelectElement( "//ProcessResponse" ) != null && xmlResponse.XPathSelectElement( "//ProcessResponse/ResponseCode" ).Value == "OK" ) {
+        return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Captured );
+      } else {
+        errorMessage = "Tea Commerce - Netaxept - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_netaxept_error" ), xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
+      }
 
       Log.Add( LogTypes.Error, -1, errorMessage );
       return new APIInfo( errorMessage );
@@ -179,13 +209,11 @@ namespace TeaCommerce.PaymentProviders {
 
       XDocument xmlResponse = XDocument.Parse( MakePostRequest( ( settings[ "testMode" ] != "1" ? "https://epayment.bbs.no/Netaxept/Process.aspx" : "https://epayment-test.bbs.no/Netaxept/Process.aspx" ), inputFields ), LoadOptions.PreserveWhitespace );
 
-      //int pbsResponse = 0;
-      //int ePayResponse = 0;
-
-      //if ( GetEPayServiceClient().credit( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionPaymentTransactionId ), (int)( order.TotalPrice * 100M ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref pbsResponse, ref ePayResponse ) )
-      //  return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Refunded );
-      //else
-      //  errorMessage = "Tea Commerce - ePay - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_ePay_errorAdvanced" ), ePayResponse, pbsResponse );
+      if ( xmlResponse.XPathSelectElement( "//ProcessResponse" ) != null && xmlResponse.XPathSelectElement( "//ProcessResponse/ResponseCode" ).Value == "OK" ) {
+        return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Refunded );
+      } else {
+        errorMessage = "Tea Commerce - Netaxept - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_netaxept_error" ), xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
+      }
 
       Log.Add( LogTypes.Error, -1, errorMessage );
       return new APIInfo( errorMessage );
@@ -202,18 +230,24 @@ namespace TeaCommerce.PaymentProviders {
 
       XDocument xmlResponse = XDocument.Parse( MakePostRequest( ( settings[ "testMode" ] != "1" ? "https://epayment.bbs.no/Netaxept/Process.aspx" : "https://epayment-test.bbs.no/Netaxept/Process.aspx" ), inputFields ), LoadOptions.PreserveWhitespace );
 
-      //int ePayResponse = 0;
-
-      //if ( GetEPayServiceClient().delete( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionPaymentTransactionId ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref ePayResponse ) )
-      //  return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Cancelled );
-      //else
-      //  errorMessage = "Tea Commerce - ePay - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_ePay_error" ), ePayResponse );
+      if ( xmlResponse.XPathSelectElement( "//ProcessResponse" ) != null && xmlResponse.XPathSelectElement( "//ProcessResponse/ResponseCode" ).Value == "OK" ) {
+        return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Cancelled );
+      } else {
+        errorMessage = "Tea Commerce - Netaxept - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_netaxept_error" ), xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
+      }
 
       Log.Add( LogTypes.Error, -1, errorMessage );
       return new APIInfo( errorMessage );
     }
 
+    private XDocument QueryTransaction( string transactionId, Dictionary<string, string> settings ) {
+      Dictionary<string, string> inputFields = new Dictionary<string, string>();
+      inputFields[ "merchantId" ] = settings[ "merchantId" ];
+      inputFields[ "token" ] = settings[ "token" ];
+      inputFields[ "transactionId" ] = transactionId;
 
+      return XDocument.Parse( MakePostRequest( ( settings[ "testMode" ] != "1" ? "https://epayment.bbs.no/Netaxept/Query.aspx" : "https://epayment-test.bbs.no/Netaxept/Query.aspx" ), inputFields ), LoadOptions.PreserveWhitespace );
+    }
 
   }
 }
