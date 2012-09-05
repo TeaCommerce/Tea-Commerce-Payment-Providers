@@ -168,7 +168,7 @@ namespace TeaCommerce.PaymentProviders {
 
         return new APIInfo( transactionId, paymentStatus );
       } else {
-        errorMessage = "Tea Commerce - Netaxept - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_netaxept_error" ), xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
+        errorMessage = "Tea Commerce - Netaxept - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_Netaxept_error" ), xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
       }
 
       Log.Add( LogTypes.Error, -1, errorMessage );
@@ -190,7 +190,7 @@ namespace TeaCommerce.PaymentProviders {
       if ( xmlResponse.XPathSelectElement( "//ProcessResponse" ) != null && xmlResponse.XPathSelectElement( "//ProcessResponse/ResponseCode" ).Value == "OK" ) {
         return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Captured );
       } else {
-        errorMessage = "Tea Commerce - Netaxept - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_netaxept_error" ), xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
+        errorMessage = "Tea Commerce - Netaxept - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_Netaxept_error" ), xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
       }
 
       Log.Add( LogTypes.Error, -1, errorMessage );
@@ -212,7 +212,7 @@ namespace TeaCommerce.PaymentProviders {
       if ( xmlResponse.XPathSelectElement( "//ProcessResponse" ) != null && xmlResponse.XPathSelectElement( "//ProcessResponse/ResponseCode" ).Value == "OK" ) {
         return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Refunded );
       } else {
-        errorMessage = "Tea Commerce - Netaxept - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_netaxept_error" ), xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
+        errorMessage = "Tea Commerce - Netaxept - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_Netaxept_error" ), xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
       }
 
       Log.Add( LogTypes.Error, -1, errorMessage );
@@ -233,7 +233,7 @@ namespace TeaCommerce.PaymentProviders {
       if ( xmlResponse.XPathSelectElement( "//ProcessResponse" ) != null && xmlResponse.XPathSelectElement( "//ProcessResponse/ResponseCode" ).Value == "OK" ) {
         return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Cancelled );
       } else {
-        errorMessage = "Tea Commerce - Netaxept - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_netaxept_error" ), xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
+        errorMessage = "Tea Commerce - Netaxept - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_Netaxept_error" ), xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
       }
 
       Log.Add( LogTypes.Error, -1, errorMessage );
