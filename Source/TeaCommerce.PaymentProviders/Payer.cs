@@ -1,21 +1,21 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Net;
 using System.Web;
 using TeaCommerce.Data;
 using TeaCommerce.Data.Payment;
-using TeaCommerce.PaymentProviders.wannafindService;
 using umbraco.BusinessLogic;
-using TeaCommerce.PaymentProviders.PayerService;
 using System;
-using System.IO;
 using System.Xml.Linq;
 using TeaCommerce.PaymentProviders.Extensions;
-using System.Web.Services.Protocols;
 
 namespace TeaCommerce.PaymentProviders {
   public class Payer : APaymentProvider {
+
+    public override bool AllowsGetStatus { get { return false; } }
+    public override bool AllowsCancelPayment { get { return false; } }
+    public override bool AllowsCapturePayment { get { return false; } }
+    public override bool AllowsRefundPayment { get { return false; } }
 
     public override Dictionary<string, string> DefaultSettings {
       get {
@@ -28,7 +28,6 @@ namespace TeaCommerce.PaymentProviders {
           defaultSettings[ "payment_methods" ] = "auto";
           defaultSettings[ "md5Key1" ] = string.Empty;
           defaultSettings[ "md5Key2" ] = string.Empty;
-          defaultSettings[ "webservicepassword" ] = string.Empty;
           defaultSettings[ "test_mode" ] = "false";
           defaultSettings[ "productNumberPropertyAlias" ] = "productNumber";
           defaultSettings[ "productNamePropertyAlias" ] = "productName";
@@ -44,7 +43,7 @@ namespace TeaCommerce.PaymentProviders {
     public override string FormPostUrl { get { return "https://secure.pay-read.se/PostAPI_V1/InitPayFlow"; } }
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-payer-with-tea-commerce/"; } }
 
-    public override Dictionary<string, string> GenerateForm( Data.Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
+    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
       HttpServerUtility server = HttpContext.Current.Server;
 
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
@@ -221,123 +220,19 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override APIInfo GetStatus( Order order, Dictionary<string, string> settings ) {
-      return ExecutePayerService( settings, ( PaymentGateway paymentGateway, string sessionId ) => {
-        TransactionStatus info = paymentGateway.GetTransactionStatus( sessionId, order.TransactionPaymentTransactionId );
-
-        //TODO: anders
-        //PaymentStatus paymentStatus = PaymentStatus.Initial;
-
-        //switch ( returnData.returncode ) {
-        //  case 5:
-        //    paymentStatus = PaymentStatus.Authorized;
-        //    break;
-        //  case 6:
-        //    paymentStatus = PaymentStatus.Captured;
-        //    break;
-        //  case 7:
-        //    paymentStatus = PaymentStatus.Cancelled;
-        //    break;
-        //  case 8:
-        //    paymentStatus = PaymentStatus.Refunded;
-        //    break;
-        //}
-
-        
-        //return new APIInfo( order.TransactionPaymentTransactionId, paymentStatus );
-
-        return new APIInfo( info.Cost + " - " + info.Currency + " - " + info.CustomerAccount + " - " + info.Description + " - " + info.IsDebited + " - " + info.IsTest + " - " + info.Name + " - " + info.Paid + " - " + info.TransactionId + " - " + info.Type + " - " + info.UserId + " - " + info.Vat );
-      } );
-
-
       throw new NotImplementedException();
-      //string errorMessage = string.Empty;
-
-      //try {
-      //  return ExecutePayerService( settings, ( PaymentGateway paymentGateway, string sessionId ) => {
-      //    paymentGateway.tra
-
-      //    return new APIInfo( "" );
-      //  } );
-
-      //  //returnArray returnData = GetPayerService( settings ).checkTransaction( int.Parse( order.TransactionPaymentTransactionId ), string.Empty, order.Id.ToString(), string.Empty, string.Empty );
-
-      //  //PaymentStatus paymentStatus = PaymentStatus.Initial;
-
-      //  //switch ( returnData.returncode ) {
-      //  //  case 5:
-      //  //    paymentStatus = PaymentStatus.Authorized;
-      //  //    break;
-      //  //  case 6:
-      //  //    paymentStatus = PaymentStatus.Captured;
-      //  //    break;
-      //  //  case 7:
-      //  //    paymentStatus = PaymentStatus.Cancelled;
-      //  //    break;
-      //  //  case 8:
-      //  //    paymentStatus = PaymentStatus.Refunded;
-      //  //    break;
-      //  //}
-
-      //  //return new APIInfo( order.TransactionPaymentTransactionId, paymentStatus );
-      //} catch ( WebException ) {
-      //  errorMessage = "Tea Commerce - Payer - " + umbraco.ui.Text( "teaCommerce", "paymentProvider_Payer_wrongCredentials" );
-      //}
-
-      //Log.Add( LogTypes.Error, -1, errorMessage );
-      //return new APIInfo( errorMessage );
     }
 
     public override APIInfo CapturePayment( Order order, Dictionary<string, string> settings ) {
-      return ExecutePayerService( settings, ( PaymentGateway paymentGateway, string sessionId ) => {
-        SettleInfo info = paymentGateway.Settle( sessionId, order.TransactionPaymentTransactionId, (double)order.TotalPrice );
-
-        //TODO: anders
-        //return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Captured );
-
-        return new APIInfo( info.ChargeLogId + " - " + info.PaymentId + " - " + info.ResponseCode.ToString() + " - " + info.ResponseText );
-      } );
+      throw new NotImplementedException();
     }
 
     public override APIInfo RefundPayment( Order order, Dictionary<string, string> settings ) {
-      return ExecutePayerService( settings, ( PaymentGateway paymentGateway, string sessionId ) => {
-        RefundInfo info = paymentGateway.Refund( sessionId, order.TransactionPaymentTransactionId, string.Empty, (double)order.TotalPrice );
-
-        //TODO: anders
-        //return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Refunded );
-
-        return new APIInfo( info.PaymentId + " - " + info.ResponseCode.ToString() + " - " + info.ResponseText );
-      } );
+      throw new NotImplementedException();
     }
 
     public override APIInfo CancelPayment( Order order, Dictionary<string, string> settings ) {
-      return ExecutePayerService( settings, ( PaymentGateway paymentGateway, string sessionId ) => {
-        AuthReverseInfo info = paymentGateway.AuthReverse( sessionId, order.TransactionPaymentTransactionId, (double)order.TotalPrice );
-
-        //TODO: anders
-        //return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Cancelled );
-
-        return new APIInfo( info.PaymentId + " - " + info.ResponseCode.ToString() + " - " + info.ResponseText );
-      } );
-    }
-
-    protected APIInfo ExecutePayerService( Dictionary<string, string> settings, Func<PaymentGateway, string, APIInfo> method ) {
-      string errorMessage = string.Empty;
-
-      try {
-        PaymentGateway paymentGateway = new PaymentGateway();
-        string sessionId = paymentGateway.CreateSession( settings[ "payer_agentid" ], settings[ "webservicepassword" ] );
-
-        APIInfo apiInfo = method( paymentGateway, sessionId );
-
-        paymentGateway.DestroySession( sessionId );
-
-        return apiInfo;
-      } catch ( SoapException ) {
-        errorMessage = "Tea Commerce - Payer - " + umbraco.ui.Text( "teaCommerce", "paymentProvider_Payer_wrongCredentials" );
-      }
-
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      throw new NotImplementedException();
     }
 
   }

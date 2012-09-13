@@ -75,11 +75,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Reference.map</DependentUpon>
     </Compile>
-    <Compile Include="Web References\PayerService\Reference.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Reference.map</DependentUpon>
-    </Compile>
     <Compile Include="Web References\PayExService\Reference.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -189,41 +184,6 @@
     <None Include="Web References\AuthorizeNetService\ValidateCustomerPaymentProfileResponseType.datasource">
       <DependentUpon>Reference.map</DependentUpon>
     </None>
-    <None Include="Web References\PayerService\AuthorizeInfo.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\PayerService\AuthReverseInfo.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\PayerService\InitializeInfo.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\PayerService\item.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Web References\PayerService\PaymentGateway.wsdl" />
-    <None Include="Web References\PayerService\PhoneCallInfo.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\PayerService\Reference.map">
-      <Generator>MSDiscoCodeGenerator</Generator>
-      <LastGenOutput>Reference.cs</LastGenOutput>
-    </None>
-    <None Include="Web References\PayerService\RefundInfo.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\PayerService\SettleInfo.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\PayerService\Transaction.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\PayerService\TransactionStatus.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\PayerService\UserResult.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
     <None Include="Web References\PayExService\pxorder.wsdl" />
     <None Include="Web References\PayExService\Reference.map">
       <Generator>MSDiscoCodeGenerator</Generator>
@@ -263,17 +223,6 @@
     <WebReferences Include="Web References\" />
   </ItemGroup>
   <ItemGroup>
-    <WebReferenceUrl Include="http://secure.pay-read.se/soap/PaymentGateway_V2.wsdl">
-      <UrlBehavior>Static</UrlBehavior>
-      <RelPath>Web References\PayerService\</RelPath>
-      <UpdateFromURL>http://secure.pay-read.se/soap/PaymentGateway_V2.wsdl</UpdateFromURL>
-      <ServiceLocationURL>
-      </ServiceLocationURL>
-      <CachedDynamicPropName>
-      </CachedDynamicPropName>
-      <CachedAppSettingsObjectName>Settings</CachedAppSettingsObjectName>
-      <CachedSettingsPropName>TeaCommerce_PaymentProviders_PayerService_PaymentGateway</CachedSettingsPropName>
-    </WebReferenceUrl>
     <WebReferenceUrl Include="https://apitest.authorize.net/soap/v1/Service.asmx">
       <UrlBehavior>Static</UrlBehavior>
       <RelPath>Web References\AuthorizeNetService\</RelPath>
