@@ -108,6 +108,7 @@ namespace TeaCommerce.PaymentProviders {
       inputFields[ "id_type" ] = "1";
 
       int itemIndex = 1;
+      //Lines are added in reverse order of the UI
 
       //Payment fee
       if ( order.PaymentFee != 0 ) {

@@ -53,6 +53,7 @@
   <ItemGroup>
     <Compile Include="AuthorizeNet.cs" />
     <Compile Include="Netaxept.cs" />
+    <Compile Include="Payer.cs" />
     <Compile Include="DIBS.cs" />
     <Compile Include="ePay.cs" />
     <Compile Include="Extensions\EnumerableExtensions.cs" />
