@@ -1,13 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Web;
+using System.Xml.Linq;
 using TeaCommerce.Data;
 using TeaCommerce.Data.Payment;
-using umbraco.BusinessLogic;
-using System;
-using System.Xml.Linq;
 using TeaCommerce.PaymentProviders.Extensions;
+using umbraco.BusinessLogic;
 
 namespace TeaCommerce.PaymentProviders {
   public class Payer : APaymentProvider {
