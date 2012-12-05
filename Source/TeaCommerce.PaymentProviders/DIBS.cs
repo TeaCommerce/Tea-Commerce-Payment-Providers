@@ -103,7 +103,7 @@ namespace TeaCommerce.PaymentProviders {
       string orderName = request.Form[ "orderid" ];
       string authkey = request.Form[ "authkey" ];
       string capturenow = request.Form[ "capturenow" ];
-      string fee = request.Form[ "fee" ];
+      string fee = request.Form[ "fee" ] ?? "0"; //Is not always in the return data
       string paytype = request.Form[ "paytype" ];
       string cardnomask = request.Form[ "cardnomask" ];
 
