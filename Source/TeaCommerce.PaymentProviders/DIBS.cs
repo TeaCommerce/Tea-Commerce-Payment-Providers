@@ -4,15 +4,17 @@ using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Web;
-using TeaCommerce.Data;
-using TeaCommerce.Data.Payment;
-using umbraco.BusinessLogic;
+using TeaCommerce.Api.Models;
+using TeaCommerce.Api.PaymentProviders;
+using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
 
   public class DIBS : APaymentProvider {
 
-    public override Dictionary<string, string> DefaultSettings {
+    protected const string apiErrorFormatString = "Error making API request - Error message: {0}";
+
+    public override IDictionary<string, string> DefaultSettings {
       get {
         if ( defaultSettings == null ) {
           defaultSettings = new Dictionary<string, string>();
@@ -36,13 +38,13 @@ namespace TeaCommerce.PaymentProviders {
     public override string FormPostUrl { get { return "https://payment.architrade.com/paymentweb/start.action"; } }
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-dibs-with-tea-commerce/"; } }
 
-    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
+    public override IDictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
       List<string> settingsToExclude = new string[] { "md5k1", "md5k2", "apiusername", "apipassword" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
-      inputFields[ "orderid" ] = order.Name;
+      inputFields[ "orderid" ] = order.CartNumber;
 
-      string strAmount = ( order.TotalPrice * 100M ).ToString( "0", CultureInfo.InvariantCulture );
+      string strAmount = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
       inputFields[ "amount" ] = strAmount;
 
       string currency = ISO4217CurrencyCodes[ order.CurrencyISOCode ];
@@ -69,7 +71,7 @@ namespace TeaCommerce.PaymentProviders {
       string md5CheckValue = string.Empty;
       md5CheckValue += settings[ "md5k1" ];
       md5CheckValue += "merchant=" + settings[ "merchant" ];
-      md5CheckValue += "&orderid=" + order.Name;
+      md5CheckValue += "&orderid=" + order.CartNumber;
       md5CheckValue += "&currency=" + currency;
       md5CheckValue += "&amount=" + strAmount;
 
@@ -78,15 +80,15 @@ namespace TeaCommerce.PaymentProviders {
       return inputFields;
     }
 
-    public override string GetContinueUrl( Dictionary<string, string> settings ) {
+    public override string GetContinueUrl( IDictionary<string, string> settings ) {
       return settings[ "accepturl" ];
     }
 
-    public override string GetCancelUrl( Dictionary<string, string> settings ) {
+    public override string GetCancelUrl( IDictionary<string, string> settings ) {
       return settings[ "cancelurl" ];
     }
 
-    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, Dictionary<string, string> settings ) {
+    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
       //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/DIBSTestCallback.txt" ) ) ) ) {
       //  writer.WriteLine( "Form:" );
       //  foreach ( string k in request.Form.Keys ) {
@@ -100,7 +102,6 @@ namespace TeaCommerce.PaymentProviders {
       string transaction = request.Form[ "transact" ];
       string currencyCode = request.Form[ "currency" ];
       string strAmount = request.Form[ "amount" ];
-      string orderName = request.Form[ "orderid" ];
       string authkey = request.Form[ "authkey" ];
       string capturenow = request.Form[ "capturenow" ];
       string fee = request.Form[ "fee" ] ?? "0"; //Is not always in the return data
@@ -118,70 +119,70 @@ namespace TeaCommerce.PaymentProviders {
 
       //authkey = MD5(k2 + MD5(k1 + "transact=tt&amount=aa&currency=cc"))
       if ( GetMD5Hash( settings[ "md5k2" ] + GetMD5Hash( md5CheckValue ) ).Equals( authkey ) )
-        return new CallbackInfo( orderName, totalAmount / 100M, transaction, !autoCaptured ? PaymentStatus.Authorized : PaymentStatus.Captured, paytype, cardnomask );
+        return new CallbackInfo( totalAmount / 100M, transaction, !autoCaptured ? PaymentState.Authorized : PaymentState.Captured, paytype, cardnomask );
       else
         errorMessage = "Tea Commerce - DIBS - MD5Sum security check failed";
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
+      LoggingService.Instance.Log( errorMessage );
       return new CallbackInfo( errorMessage );
     }
 
-    public override APIInfo GetStatus( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
       try {
-        string response = MakePostRequest( "https://@payment.architrade.com/cgi-adm/payinfo.cgi?transact=" + order.TransactionPaymentTransactionId, inputFields, new NetworkCredential( settings[ "apiusername" ], settings[ "apipassword" ] ) );
+        string response = MakePostRequest( "https://@payment.architrade.com/cgi-adm/payinfo.cgi?transact=" + order.TransactionInformation.TransactionId, inputFields, new NetworkCredential( settings[ "apiusername" ], settings[ "apipassword" ] ) );
 
         Regex regex = new Regex( @"status=(\d+)" );
         string status = regex.Match( response ).Groups[ 1 ].Value;
 
-        PaymentStatus paymentStatus = PaymentStatus.Initial;
+        PaymentState paymentState = PaymentState.Initiated;
 
         switch ( status ) {
           case "2":
-            paymentStatus = PaymentStatus.Authorized;
+            paymentState = PaymentState.Authorized;
             break;
           case "5":
-            paymentStatus = PaymentStatus.Captured;
+            paymentState = PaymentState.Captured;
             break;
           case "6":
-            paymentStatus = PaymentStatus.Cancelled;
+            paymentState = PaymentState.Cancelled;
             break;
           case "11":
-            paymentStatus = PaymentStatus.Refunded;
+            paymentState = PaymentState.Refunded;
             break;
         }
 
-        return new APIInfo( order.TransactionPaymentTransactionId, paymentStatus );
+        return new ApiInfo( order.TransactionInformation.TransactionId, paymentState );
       } catch ( WebException ) {
-        errorMessage = "Tea Commerce - DIBS - " + umbraco.ui.Text( "teaCommerce", "paymentProvider_DIBS_wrongCredentials" );
+        errorMessage = "Tea Commerce - DIBS - Error making API request - Wrong credentials";
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo CapturePayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
       string merchant = settings[ "merchant" ];
       inputFields[ "merchant" ] = merchant;
 
-      string strAmount = ( order.TotalPrice * 100M ).ToString( "0" );
+      string strAmount = ( order.TotalPrice.WithVat * 100M ).ToString( "0" );
       inputFields[ "amount" ] = strAmount;
 
-      inputFields[ "orderid" ] = order.Name;
-      inputFields[ "transact" ] = order.TransactionPaymentTransactionId;
+      inputFields[ "orderid" ] = order.CartNumber;
+      inputFields[ "transact" ] = order.TransactionInformation.TransactionId;
       inputFields[ "textreply" ] = "yes";
 
       //MD5(key2 + MD5(key1 + “merchant=<merchant>&orderid=<orderid> &transact=<transact>&amount=<amount>"))
       string md5CheckValue = string.Empty;
       md5CheckValue += settings[ "md5k1" ];
       md5CheckValue += "merchant=" + merchant;
-      md5CheckValue += "&orderid=" + order.Name;
-      md5CheckValue += "&transact=" + order.TransactionPaymentTransactionId;
+      md5CheckValue += "&orderid=" + order.CartNumber;
+      md5CheckValue += "&transact=" + order.TransactionInformation.TransactionId;
       md5CheckValue += "&amount=" + strAmount;
 
       inputFields[ "md5key" ] = GetMD5Hash( settings[ "md5k2" ] + GetMD5Hash( md5CheckValue ) );
@@ -193,29 +194,29 @@ namespace TeaCommerce.PaymentProviders {
         string result = reg.Match( response ).Groups[ 1 ].Value;
 
         if ( result.Equals( "0" ) )
-          return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Captured );
+          return new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Captured );
         else
-          errorMessage = "Tea Commerce - DIBS - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_DIBS_error" ), result );
+          errorMessage = "Tea Commerce - DIBS - " + string.Format( apiErrorFormatString, result );
       } catch ( WebException ) {
-        errorMessage = "Tea Commerce - DIBS - " + umbraco.ui.Text( "teaCommerce", "paymentProvider_DIBS_wrongCredentials" );
+        errorMessage = "Tea Commerce - DIBS - Error making API request - Wrong credentials";
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo RefundPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
       string merchant = settings[ "merchant" ];
       inputFields[ "merchant" ] = merchant;
 
-      string strAmount = ( order.TotalPrice * 100M ).ToString( "0" );
+      string strAmount = ( order.TotalPrice.WithVat * 100M ).ToString( "0" );
       inputFields[ "amount" ] = strAmount;
 
-      inputFields[ "orderid" ] = order.Name;
-      inputFields[ "transact" ] = order.TransactionPaymentTransactionId;
+      inputFields[ "orderid" ] = order.CartNumber;
+      inputFields[ "transact" ] = order.TransactionInformation.TransactionId;
       inputFields[ "textreply" ] = "yes";
 
       inputFields[ "currency" ] = ISO4217CurrencyCodes[ order.CurrencyISOCode ];
@@ -224,8 +225,8 @@ namespace TeaCommerce.PaymentProviders {
       string md5CheckValue = string.Empty;
       md5CheckValue += settings[ "md5k1" ];
       md5CheckValue += "merchant=" + merchant;
-      md5CheckValue += "&orderid=" + order.Name;
-      md5CheckValue += "&transact=" + order.TransactionPaymentTransactionId;
+      md5CheckValue += "&orderid=" + order.CartNumber;
+      md5CheckValue += "&transact=" + order.TransactionInformation.TransactionId;
       md5CheckValue += "&amount=" + strAmount;
 
       inputFields[ "md5key" ] = GetMD5Hash( settings[ "md5k2" ] + GetMD5Hash( md5CheckValue ) );
@@ -237,34 +238,34 @@ namespace TeaCommerce.PaymentProviders {
         string result = reg.Match( response ).Groups[ 1 ].Value;
 
         if ( result.Equals( "0" ) )
-          return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Refunded );
+          return new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Refunded );
         else
-          errorMessage = "Tea Commerce - DIBS - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_DIBS_error" ), result );
+          errorMessage = "Tea Commerce - DIBS - " + string.Format( apiErrorFormatString, result );
       } catch ( WebException ) {
-        errorMessage = "Tea Commerce - DIBS - " + umbraco.ui.Text( "teaCommerce", "paymentProvider_DIBS_wrongCredentials" );
+        errorMessage = "Tea Commerce - DIBS - Error making API request - Wrong credentials";
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo CancelPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
       string merchant = settings[ "merchant" ];
       inputFields[ "merchant" ] = merchant;
 
-      inputFields[ "orderid" ] = order.Name;
-      inputFields[ "transact" ] = order.TransactionPaymentTransactionId;
+      inputFields[ "orderid" ] = order.CartNumber;
+      inputFields[ "transact" ] = order.TransactionInformation.TransactionId;
       inputFields[ "textreply" ] = "yes";
 
       //MD5(key2 + MD5(key1 + “merchant=<merchant>&orderid=<orderid>&transact=<transact>)) 
       string md5CheckValue = string.Empty;
       md5CheckValue += settings[ "md5k1" ];
       md5CheckValue += "merchant=" + merchant;
-      md5CheckValue += "&orderid=" + order.Name;
-      md5CheckValue += "&transact=" + order.TransactionPaymentTransactionId;
+      md5CheckValue += "&orderid=" + order.CartNumber;
+      md5CheckValue += "&transact=" + order.TransactionInformation.TransactionId;
 
       inputFields[ "md5key" ] = GetMD5Hash( settings[ "md5k2" ] + GetMD5Hash( md5CheckValue ) );
 
@@ -275,15 +276,34 @@ namespace TeaCommerce.PaymentProviders {
         string result = reg.Match( response ).Groups[ 1 ].Value;
 
         if ( result.Equals( "0" ) )
-          return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Cancelled );
+          return new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Cancelled );
         else
-          errorMessage = "Tea Commerce - DIBS - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_DIBS_error" ), result );
+          errorMessage = "Tea Commerce - DIBS - " + string.Format( apiErrorFormatString, result );
       } catch ( WebException ) {
-        errorMessage = "Tea Commerce - DIBS - " + umbraco.ui.Text( "teaCommerce", "paymentProvider_DIBS_wrongCredentials" );
+        errorMessage = "Tea Commerce - DIBS - Error making API request - Wrong credentials";
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
+    }
+
+    public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
+      switch ( settingsKey ) {
+        case "accepturl":
+          return settingsKey + "<br/><small>e.g. /continue/</small>";
+        case "cancelurl":
+          return settingsKey + "<br/><small>e.g. /cancel/</small>";
+        case "capturenow":
+          return settingsKey + "<br/><small>1 = true; 0 = false</small>";
+        case "calcfee":
+          return settingsKey + "<br/><small>1 = true; 0 = false</small>";
+        case "paytype":
+          return settingsKey + "<br/><small>e.g. VISA,MC</small>";
+        case "test":
+          return settingsKey + "<br/><small>1 = true; 0 = false</small>";
+        default:
+          return base.GetLocalizedSettingsKey( settingsKey, culture );
+      }
     }
 
   }

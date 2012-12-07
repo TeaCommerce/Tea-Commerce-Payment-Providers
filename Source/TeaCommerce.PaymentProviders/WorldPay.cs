@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Web;
-using TeaCommerce.Data;
-using TeaCommerce.Data.Payment;
-using umbraco.BusinessLogic;
+using TeaCommerce.Api.Models;
+using TeaCommerce.Api.PaymentProviders;
+using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
   public class WorldPay : APaymentProvider {
@@ -14,12 +14,12 @@ namespace TeaCommerce.PaymentProviders {
 
     protected const string defaultParameterValue = "No value";
 
-    public override bool AllowsGetStatus { get { return false; } }
-    public override bool AllowsCancelPayment { get { return false; } }
-    public override bool AllowsCapturePayment { get { return false; } }
-    public override bool AllowsRefundPayment { get { return false; } }
+    public override bool SupportsRetrievalOfPaymentStatus { get { return false; } }
+    public override bool SupportsCancellationOfPayment { get { return false; } }
+    public override bool SupportsCapturingOfPayment { get { return false; } }
+    public override bool SupportsRefundOfPayment { get { return false; } }
 
-    public override Dictionary<string, string> DefaultSettings {
+    public override IDictionary<string, string> DefaultSettings {
       get {
         if ( defaultSettings == null ) {
           defaultSettings = new Dictionary<string, string>();
@@ -41,32 +41,32 @@ namespace TeaCommerce.PaymentProviders {
 
     public override string FormPostUrl { get { return !isTesting ? "https://secure.worldpay.com/wcc/purchase" : "https://secure-test.worldpay.com/wcc/purchase"; } }
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-worldpay-with-tea-commerce/"; } }
-    public override bool AllowCallbackWithoutOrderId { get { return true; } }
+    public override bool AllowsCallbackWithoutOrderId { get { return true; } }
 
-    public override Dictionary<string, string> GenerateForm( Data.Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
+    public override IDictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
       List<string> settingsToExclude = new string[] { "md5Secret", "callbackPW", "streetAddressPropertyAlias", "cityPropertyAlias", "zipCodePropertyAlias" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
       isTesting = !settings[ "testMode" ].Equals( "0" );
 
       //cartId
-      inputFields[ "cartId" ] = order.Name;
+      inputFields[ "cartId" ] = order.CartNumber;
 
       //currency
       inputFields[ "currency" ] = order.CurrencyISOCode;
 
       //amount
-      string amount = order.TotalPrice.ToString( "0.00", CultureInfo.InvariantCulture );
+      string amount = order.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
       inputFields[ "amount" ] = amount;
 
       inputFields[ "successURL" ] = teaCommerceContinueUrl;
       inputFields[ "cancelURL" ] = teaCommerceCancelUrl;
 
       //name
-      inputFields[ "name" ] = order.FirstName + " " + order.LastName;
+      inputFields[ "name" ] = order.PaymentInformation.FirstName + " " + order.PaymentInformation.LastName;
 
       //email
-      inputFields[ "email" ] = order.Email;
+      inputFields[ "email" ] = order.PaymentInformation.Email;
 
       //country
       inputFields[ "country" ] = order.Country.CountryCode;
@@ -97,22 +97,22 @@ namespace TeaCommerce.PaymentProviders {
 
       //MD5 check
       inputFields[ "signatureFields" ] = "amount:currency:instId:cartId";
-      inputFields[ "signature" ] = GetMD5Hash( settings[ "md5Secret" ] + ":" + amount + ":" + order.CurrencyISOCode + ":" + settings[ "instId" ] + ":" + order.Name );
+      inputFields[ "signature" ] = GetMD5Hash( settings[ "md5Secret" ] + ":" + amount + ":" + order.CurrencyISOCode + ":" + settings[ "instId" ] + ":" + order.CartNumber );
 
       //WorldPay dont support to show order line information to the shopper
 
       return inputFields;
     }
 
-    public override string GetContinueUrl( Dictionary<string, string> settings ) {
+    public override string GetContinueUrl( IDictionary<string, string> settings ) {
       return settings[ "successURL" ];
     }
 
-    public override string GetCancelUrl( Dictionary<string, string> settings ) {
+    public override string GetCancelUrl( IDictionary<string, string> settings ) {
       return settings[ "cancelURL" ];
     }
 
-    public override long? GetOrderId( HttpRequest request, Dictionary<string, string> settings ) {
+    public override Guid GetOrderId( HttpRequest request, IDictionary<string, string> settings ) {
       //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/worldPayTestGetOrderId.txt" ) ) ) ) {
       //  writer.WriteLine( "Form:" );
       //  foreach ( string k in request.Form.Keys ) {
@@ -133,11 +133,11 @@ namespace TeaCommerce.PaymentProviders {
       } else
         errorMessage = "Tea Commerce - WorldPay - Payment response password check failed - callbackPW: " + callbackPW + " - paymentResponsePassword: " + paymentResponsePassword;
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
+      LoggingService.Instance.Log( errorMessage );
       return null;
     }
 
-    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, Dictionary<string, string> settings ) {
+    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
       //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/worldPayTestCallback.txt" ) ) ) ) {
       //  writer.WriteLine( "Form:" );
       //  foreach ( string k in request.Form.Keys ) {
@@ -153,37 +153,50 @@ namespace TeaCommerce.PaymentProviders {
       if ( callbackPW.Equals( paymentResponsePassword ) ) {
 
         if ( request.Form[ "transStatus" ].Equals( "Y" ) ) {
-          string orderName = request.Form[ "cartId" ];
           decimal totalAmount = decimal.Parse( request.Form[ "authAmount" ], CultureInfo.InvariantCulture );
           string transaction = request.Form[ "transId" ];
-          PaymentStatus paymentStatus = request.Form[ "authMode" ].Equals( "E" ) ? PaymentStatus.Authorized : PaymentStatus.Captured;
-
+          PaymentState paymentState = request.Form[ "authMode" ].Equals( "E" ) ? PaymentState.Authorized : PaymentState.Captured;
           string cardtype = request.Form[ "cardtype" ];
 
-          return new CallbackInfo( orderName, totalAmount, transaction, paymentStatus, cardtype, string.Empty );
+          return new CallbackInfo( totalAmount, transaction, paymentState, cardtype );
         } else
           errorMessage = "Tea Commerce - WorldPay - Cancelled transaction";
       } else
         errorMessage = "Tea Commerce - WorldPay - Payment response password check failed - callbackPW: " + callbackPW + " - paymentResponsePassword: " + paymentResponsePassword;
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
+      LoggingService.Instance.Log( errorMessage );
       return new CallbackInfo( errorMessage );
     }
 
-    public override APIInfo GetStatus( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
       throw new NotImplementedException();
     }
 
-    public override APIInfo CapturePayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
       throw new NotImplementedException();
     }
 
-    public override APIInfo RefundPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
       throw new NotImplementedException();
     }
 
-    public override APIInfo CancelPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
       throw new NotImplementedException();
+    }
+
+    public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
+      switch ( settingsKey ) {
+        case "successURL":
+          return settingsKey + "<br/><small>e.g. /continue/</small>";
+        case "cancelURL":
+          return settingsKey + "<br/><small>e.g. /cancel/</small>";
+        case "authMode":
+          return settingsKey + "<br/><small>A = automatic, E = manual</small>";
+        case "testMode":
+          return settingsKey + "<br/><small>1 = true; 0 = false</small>";
+        default:
+          return base.GetLocalizedSettingsKey( settingsKey, culture );
+      }
     }
 
   }

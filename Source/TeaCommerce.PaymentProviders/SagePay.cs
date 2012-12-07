@@ -3,22 +3,24 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Web;
-using TeaCommerce.Data;
-using TeaCommerce.Data.Payment;
+using TeaCommerce.Api.Models;
+using TeaCommerce.Api.PaymentProviders;
 using TeaCommerce.PaymentProviders.Extensions;
-using umbraco.BusinessLogic;
+using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
 
   public class SagePay : APaymentProvider {
 
+    protected const string apiErrorFormatString = "Error making API request: {0}";
+
     protected const string defaultParameterValue = "No value";
     protected string formPostUrl;
 
     public override string FormPostUrl { get { return formPostUrl; } }
-    public override bool AllowsGetStatus { get { return false; } }
+    public override bool SupportsRetrievalOfPaymentStatus { get { return false; } }
 
-    public override Dictionary<string, string> DefaultSettings {
+    public override IDictionary<string, string> DefaultSettings {
       get {
         if ( defaultSettings == null ) {
           defaultSettings = new Dictionary<string, string>();
@@ -39,7 +41,7 @@ namespace TeaCommerce.PaymentProviders {
 
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-sage-pay-with-tea-commerce/"; } }
 
-    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
+    public override IDictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
       List<string> settingsToExclude = new string[] { "streetAddressPropertyAlias", "cityPropertyAlias", "zipCodePropertyAlias", "statePropertyAlias", "shippingFirstNamePropertyAlias", "shippingLastNamePropertyAlias", "shippingStreetAddressPropertyAlias", "shippingCityPropertyAlias", "shippingZipCodePropertyAlias", "shippingStatePropertyAlias", "testMode" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
@@ -62,10 +64,10 @@ namespace TeaCommerce.PaymentProviders {
       string state = stateProperty != null && !string.IsNullOrEmpty( stateProperty.Value ) ? stateProperty.Value : string.Empty;
 
       OrderProperty shippingFirstNameProperty = settings.ContainsKey( "shippingFirstNamePropertyAlias" ) ? order.Properties.FirstOrDefault( i => i.Alias.Equals( settings[ "shippingFirstNamePropertyAlias" ] ) ) : null;
-      string shippingFirstName = shippingFirstNameProperty != null && !string.IsNullOrEmpty( shippingFirstNameProperty.Value ) ? shippingFirstNameProperty.Value : order.FirstName;
+      string shippingFirstName = shippingFirstNameProperty != null && !string.IsNullOrEmpty( shippingFirstNameProperty.Value ) ? shippingFirstNameProperty.Value : order.PaymentInformation.FirstName;
 
       OrderProperty shippingLastNameProperty = settings.ContainsKey( "shippingLastNamePropertyAlias" ) ? order.Properties.FirstOrDefault( i => i.Alias.Equals( settings[ "shippingLastNamePropertyAlias" ] ) ) : null;
-      string shippingLastName = shippingLastNameProperty != null && !string.IsNullOrEmpty( shippingLastNameProperty.Value ) ? shippingLastNameProperty.Value : order.LastName;
+      string shippingLastName = shippingLastNameProperty != null && !string.IsNullOrEmpty( shippingLastNameProperty.Value ) ? shippingLastNameProperty.Value : order.PaymentInformation.LastName;
 
       OrderProperty shippingStreetAddressProperty = settings.ContainsKey( "shippingStreetAddressPropertyAlias" ) ? order.Properties.FirstOrDefault( i => i.Alias.Equals( settings[ "shippingStreetAddressPropertyAlias" ] ) ) : null;
       string shippingStreetAddress = shippingStreetAddressProperty != null && !string.IsNullOrEmpty( shippingStreetAddressProperty.Value ) ? shippingStreetAddressProperty.Value : streetAddress;
@@ -81,16 +83,16 @@ namespace TeaCommerce.PaymentProviders {
 
       #endregion
 
-      inputFields[ "VendorTxCode" ] = order.Name;
-      inputFields[ "Amount" ] = order.TotalPrice.ToString( "0.00", CultureInfo.InvariantCulture );
+      inputFields[ "VendorTxCode" ] = order.CartNumber;
+      inputFields[ "Amount" ] = order.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
       inputFields[ "Currency" ] = order.CurrencyISOCode;
       if ( inputFields.ContainsKey( "Description" ) )
         inputFields[ "Description" ] = inputFields[ "Description" ].Truncate( 100 );
       inputFields[ "SuccessURL" ] = teaCommerceContinueUrl;
       inputFields[ "FailureURL" ] = teaCommerceCancelUrl;
       inputFields[ "NotificationURL" ] = teaCommerceCallBackUrl;
-      inputFields[ "BillingSurname" ] = order.LastName.Truncate( 20 );
-      inputFields[ "BillingFirstnames" ] = order.FirstName.Truncate( 20 );
+      inputFields[ "BillingSurname" ] = order.PaymentInformation.LastName.Truncate( 20 );
+      inputFields[ "BillingFirstnames" ] = order.PaymentInformation.FirstName.Truncate( 20 );
       inputFields[ "BillingAddress1" ] = streetAddress.Truncate( 100 );
       inputFields[ "BillingCity" ] = city.Truncate( 40 );
       inputFields[ "BillingPostCode" ] = zipCode.Truncate( 10 );
@@ -108,7 +110,7 @@ namespace TeaCommerce.PaymentProviders {
         inputFields[ "DeliveryState" ] = shippingState.Truncate( 2 );
       }
 
-      Dictionary<string, string> responseFields = GetFields( MakePostRequest( GetMethodUrl( "PURCHASE", settings ), inputFields ) );
+      IDictionary<string, string> responseFields = GetFields( MakePostRequest( GetMethodUrl( "PURCHASE", settings ), inputFields ) );
       string status = responseFields[ "Status" ];
 
       if ( status.Equals( "OK" ) || status.Equals( "OK REPEATED" ) ) {
@@ -121,21 +123,21 @@ namespace TeaCommerce.PaymentProviders {
         formPostUrl = responseFields[ "NextURL" ];
       } else {
         formPostUrl = teaCommerceCancelUrl;
-        Log.Add( LogTypes.Error, -1, "Tea Commerce - SagePay - Error in GenerateForm - Status: " + status + " - Status details: " + responseFields[ "StatusDetail" ] );
+        LoggingService.Instance.Log( "Tea Commerce - SagePay - Error in GenerateForm - Status: " + status + " - Status details: " + responseFields[ "StatusDetail" ] );
       }
 
       return new Dictionary<string, string>();
     }
 
-    public override string GetContinueUrl( Dictionary<string, string> settings ) {
+    public override string GetContinueUrl( IDictionary<string, string> settings ) {
       return settings[ "SuccessURL" ];
     }
 
-    public override string GetCancelUrl( Dictionary<string, string> settings ) {
+    public override string GetCancelUrl( IDictionary<string, string> settings ) {
       return settings[ "FailureURL" ];
     }
 
-    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, Dictionary<string, string> settings ) {
+    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
       //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/SagePayTestCallback.txt" ) ) ) ) {
       //  writer.WriteLine( "FORM:" );
       //  foreach ( string k in request.Form.Keys ) {
@@ -181,7 +183,7 @@ namespace TeaCommerce.PaymentProviders {
         CallbackInfo callbackInfo = null;
 
         if ( status.Equals( "OK" ) || status.Equals( "AUTHENTICATED" ) || status.Equals( "REGISTERED" ) ) {
-          callbackInfo = new CallbackInfo( vendorTxCode, order.TotalPrice, transaction, !request.Form[ "TxType" ].Equals( "PAYMENT" ) ? PaymentStatus.Authorized : PaymentStatus.Captured, cardType, last4Digits );
+          callbackInfo = new CallbackInfo( order.TotalPrice.WithVat, transaction, !request.Form[ "TxType" ].Equals( "PAYMENT" ) ? PaymentState.Authorized : PaymentState.Captured, cardType, last4Digits );
 
           lock ( order ) {
             if ( status.Equals( "OK" ) )
@@ -215,15 +217,15 @@ namespace TeaCommerce.PaymentProviders {
       } else
         errorMessage = string.Format( "Tea Commerce - SagePay - VPSSignature check isn't valid - Calculated signature: {0} - SagePay VPSSignature: {1}", calcedMD5Hash, VPSSignature );
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
+      LoggingService.Instance.Log( errorMessage );
       return new CallbackInfo( errorMessage );
     }
 
-    public override APIInfo GetStatus( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
       throw new NotSupportedException();
     }
 
-    public override APIInfo CapturePayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
@@ -233,14 +235,14 @@ namespace TeaCommerce.PaymentProviders {
       inputFields[ "TxType" ] = "AUTHORISE";
       inputFields[ "Vendor" ] = settings[ "Vendor" ];
       inputFields[ "VendorTxCode" ] = vendorTxCode.ToString();
-      inputFields[ "Amount" ] = order.TotalPrice.ToString( "0.00", CultureInfo.InvariantCulture );
+      inputFields[ "Amount" ] = order.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
       inputFields[ "Description" ] = settings[ "Description" ].Truncate( 100 );
-      inputFields[ "RelatedVPSTxId" ] = order.TransactionPaymentTransactionId;
-      inputFields[ "RelatedVendorTxCode" ] = order.Name;
+      inputFields[ "RelatedVPSTxId" ] = order.TransactionInformation.TransactionId;
+      inputFields[ "RelatedVendorTxCode" ] = order.CartNumber;
       inputFields[ "RelatedSecurityKey" ] = order.Properties.First( i => i.Alias.Equals( "SecurityKey" ) ).Value;
       inputFields[ "ApplyAVSCV2" ] = "0";
 
-      Dictionary<string, string> responseFields = GetFields( MakePostRequest( GetMethodUrl( "AUTHORISE", settings ), inputFields ) );
+      IDictionary<string, string> responseFields = GetFields( MakePostRequest( GetMethodUrl( "AUTHORISE", settings ), inputFields ) );
 
       if ( responseFields[ "Status" ].Equals( "OK" ) ) {
         lock ( order ) {
@@ -250,15 +252,15 @@ namespace TeaCommerce.PaymentProviders {
           order.Save();
         }
 
-        return new APIInfo( responseFields[ "VPSTxId" ], PaymentStatus.Captured );
+        return new ApiInfo( responseFields[ "VPSTxId" ], PaymentState.Captured );
       } else
-        errorMessage = "Tea Commerce - SagePay - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_SagePay_error" ), responseFields[ "StatusDetail" ] );
+        errorMessage = "Tea Commerce - SagePay - " + string.Format( apiErrorFormatString, responseFields[ "StatusDetail" ] );
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo RefundPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
@@ -268,16 +270,16 @@ namespace TeaCommerce.PaymentProviders {
       inputFields[ "TxType" ] = "REFUND";
       inputFields[ "Vendor" ] = settings[ "Vendor" ];
       inputFields[ "VendorTxCode" ] = vendorTxCode.ToString();
-      inputFields[ "Amount" ] = order.TotalPrice.ToString( "0.00", CultureInfo.InvariantCulture );
+      inputFields[ "Amount" ] = order.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
       inputFields[ "Currency" ] = order.CurrencyISOCode;
       inputFields[ "Description" ] = settings[ "Description" ].Truncate( 100 );
-      inputFields[ "RelatedVPSTxId" ] = order.TransactionPaymentTransactionId;
+      inputFields[ "RelatedVPSTxId" ] = order.TransactionInformation.TransactionId;
       inputFields[ "RelatedVendorTxCode" ] = order.Properties.First( i => i.Alias.Equals( "VendorTxCode" ) ).Value;
       inputFields[ "RelatedSecurityKey" ] = order.Properties.First( i => i.Alias.Equals( "SecurityKey" ) ).Value;
       inputFields[ "RelatedTxAuthNo" ] = order.Properties.First( i => i.Alias.Equals( "TxAuthNo" ) ).Value;
       inputFields[ "ApplyAVSCV2" ] = "0";
 
-      Dictionary<string, string> responseFields = GetFields( MakePostRequest( GetMethodUrl( "REFUND", settings ), inputFields ) );
+      IDictionary<string, string> responseFields = GetFields( MakePostRequest( GetMethodUrl( "REFUND", settings ), inputFields ) );
 
       if ( responseFields[ "Status" ].Equals( "OK" ) ) {
         lock ( order ) {
@@ -286,41 +288,56 @@ namespace TeaCommerce.PaymentProviders {
           order.Save();
         }
 
-        return new APIInfo( responseFields[ "VPSTxId" ], PaymentStatus.Refunded );
+        return new ApiInfo( responseFields[ "VPSTxId" ], PaymentState.Refunded );
       } else
-        errorMessage = "Tea Commerce - SagePay - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_SagePay_error" ), responseFields[ "StatusDetail" ] );
+        errorMessage = "Tea Commerce - SagePay - " + string.Format( apiErrorFormatString, responseFields[ "StatusDetail" ] );
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo CancelPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
       inputFields[ "VPSProtocol" ] = "2.23";
       inputFields[ "TxType" ] = "CANCEL";
       inputFields[ "Vendor" ] = settings[ "Vendor" ];
-      inputFields[ "VendorTxCode" ] = order.Name;
-      inputFields[ "VPSTxId" ] = order.TransactionPaymentTransactionId;
+      inputFields[ "VendorTxCode" ] = order.CartNumber;
+      inputFields[ "VPSTxId" ] = order.TransactionInformation.TransactionId;
       inputFields[ "SecurityKey" ] = order.Properties.First( i => i.Alias.Equals( "SecurityKey" ) ).Value;
 
-      Dictionary<string, string> responseFields = GetFields( MakePostRequest( GetMethodUrl( "CANCEL", settings ), inputFields ) );
+      IDictionary<string, string> responseFields = GetFields( MakePostRequest( GetMethodUrl( "CANCEL", settings ), inputFields ) );
 
       if ( responseFields[ "Status" ].Equals( "OK" ) ) {
-        return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Cancelled );
+        return new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Cancelled );
       } else
-        errorMessage = "Tea Commerce - SagePay - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_SagePay_error" ), responseFields[ "StatusDetail" ] );
+        errorMessage = "Tea Commerce - SagePay - " + string.Format( apiErrorFormatString, responseFields[ "StatusDetail" ] );
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    protected Dictionary<string, string> GetFields( string response ) {
+    public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
+      switch ( settingsKey ) {
+        case "SuccessURL":
+          return settingsKey + "<br/><small>e.g. /continue/</small>";
+        case "FailureURL":
+          return settingsKey + "<br/><small>e.g. /cancel/</small>";
+        case "TxType":
+          return settingsKey + "<br/><small>PAYMENT, AUTHENTICATE</small>";
+        case "testMode":
+          return settingsKey + "<br/><small>LIVE, TEST, SIMULATOR</small>";
+        default:
+          return base.GetLocalizedSettingsKey( settingsKey, culture );
+      }
+    }
+
+    protected IDictionary<string, string> GetFields( string response ) {
       return response.Split( Environment.NewLine.ToCharArray(), StringSplitOptions.RemoveEmptyEntries ).ToDictionary( i => i.Substring( 0, i.IndexOf( "=" ) ), i => i.Substring( i.IndexOf( "=" ) + 1, i.Length - ( i.IndexOf( "=" ) + 1 ) ) );
     }
 
-    protected string GetMethodUrl( string type, Dictionary<string, string> settings ) {
+    protected string GetMethodUrl( string type, IDictionary<string, string> settings ) {
       switch ( settings[ "testMode" ].ToUpperInvariant() ) {
         case "LIVE":
           switch ( type.ToUpperInvariant() ) {

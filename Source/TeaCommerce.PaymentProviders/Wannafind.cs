@@ -3,15 +3,18 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Web;
-using TeaCommerce.Data;
-using TeaCommerce.Data.Payment;
+using TeaCommerce.Api.Models;
+using TeaCommerce.Api.PaymentProviders;
 using TeaCommerce.PaymentProviders.wannafindService;
-using umbraco.BusinessLogic;
+using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
   public class Wannafind : APaymentProvider {
 
-    public override Dictionary<string, string> DefaultSettings {
+    protected const string apiErrorFormatString = "Error making API request - Error code: {0} - see http://www.wannafind.dk/support/downloads/19/ (page 27) for a description of these";
+    protected const string wrongCredentialsError = "Error making API request - Wrong credentials or IP address not allowed";
+
+    public override IDictionary<string, string> DefaultSettings {
       get {
         if ( defaultSettings == null ) {
           defaultSettings = new Dictionary<string, string>();
@@ -33,7 +36,7 @@ namespace TeaCommerce.PaymentProviders {
     public override string FormAttributes { get { return @" id=""wannafind"" name=""wannafind"" target=""wannafind_paymentwindow"""; } }
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-wannafind-with-tea-commerce/"; } }
 
-    public override Dictionary<string, string> GenerateForm( Data.Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
+    public override IDictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
       List<string> settingsToExclude = new string[] { "md5AuthSecret", "md5CallbackSecret", "apiUser", "apiPassword" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
@@ -45,7 +48,7 @@ namespace TeaCommerce.PaymentProviders {
       inputFields[ "currency" ] = currency;
 
       //amount
-      string amount = ( order.TotalPrice * 100M ).ToString( "0", CultureInfo.InvariantCulture );
+      string amount = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
       inputFields[ "amount" ] = amount;
 
       inputFields[ "accepturl" ] = teaCommerceContinueUrl;
@@ -81,19 +84,19 @@ namespace TeaCommerce.PaymentProviders {
       return inputFields;
     }
 
-    public override string SubmitJavascriptFunction( Dictionary<string, string> inputFields, Dictionary<string, string> settings ) {
+    public override string SubmitJavascriptFunction( IDictionary<string, string> inputFields, IDictionary<string, string> settings ) {
       return @"openPaymenWindow();";
     }
 
-    public override string GetContinueUrl( Dictionary<string, string> settings ) {
+    public override string GetContinueUrl( IDictionary<string, string> settings ) {
       return settings[ "accepturl" ];
     }
 
-    public override string GetCancelUrl( Dictionary<string, string> settings ) {
+    public override string GetCancelUrl( IDictionary<string, string> settings ) {
       return settings[ "declineurl" ];
     }
 
-    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, Dictionary<string, string> settings ) {
+    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
       //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/wannafindTestCallback.txt" ) ) ) ) {
       //  writer.WriteLine( "QueryString:" );
       //  foreach ( string k in request.QueryString.Keys ) {
@@ -120,99 +123,112 @@ namespace TeaCommerce.PaymentProviders {
         decimal totalAmount = decimal.Parse( amount, CultureInfo.InvariantCulture );
 
         //Wannafind cant give us info about auto capturing
-        return new CallbackInfo( order.Name, totalAmount / 100M, transaction, PaymentStatus.Authorized, cardtype, cardnomask );
+        return new CallbackInfo( totalAmount / 100M, transaction, PaymentState.Authorized, cardtype, cardnomask );
       } else
         errorMessage = "Tea Commerce - Wannafind - MD5Sum security check failed";
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
+      LoggingService.Instance.Log( errorMessage );
       return new CallbackInfo( errorMessage );
     }
 
-    public override APIInfo GetStatus( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
       try {
-        returnArray returnData = GetWannafindServiceClient( settings ).checkTransaction( int.Parse( order.TransactionPaymentTransactionId ), string.Empty, order.Id.ToString(), string.Empty, string.Empty );
+        returnArray returnData = GetWannafindServiceClient( settings ).checkTransaction( int.Parse( order.TransactionInformation.TransactionId ), string.Empty, order.Id.ToString(), string.Empty, string.Empty );
 
-        PaymentStatus paymentStatus = PaymentStatus.Initial;
+        PaymentState paymentState = PaymentState.Initiated;
 
         switch ( returnData.returncode ) {
           case 5:
-            paymentStatus = PaymentStatus.Authorized;
+            paymentState = PaymentState.Authorized;
             break;
           case 6:
-            paymentStatus = PaymentStatus.Captured;
+            paymentState = PaymentState.Captured;
             break;
           case 7:
-            paymentStatus = PaymentStatus.Cancelled;
+            paymentState = PaymentState.Cancelled;
             break;
           case 8:
-            paymentStatus = PaymentStatus.Refunded;
+            paymentState = PaymentState.Refunded;
             break;
         }
 
-        return new APIInfo( order.TransactionPaymentTransactionId, paymentStatus );
+        return new ApiInfo( order.TransactionInformation.TransactionId, paymentState );
       } catch ( WebException ) {
-        errorMessage = "Tea Commerce - Wannafind - " + umbraco.ui.Text( "teaCommerce", "paymentProvider_Wannafind_wrongCredentials" );
+        errorMessage = "Tea Commerce - Wannafind - " + wrongCredentialsError;
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo CapturePayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
       try {
         //When capturing of the complete amount - send 0 as parameter for amount
-        int returnCode = GetWannafindServiceClient( settings ).captureTransaction( int.Parse( order.TransactionPaymentTransactionId ), 0 );
+        int returnCode = GetWannafindServiceClient( settings ).captureTransaction( int.Parse( order.TransactionInformation.TransactionId ), 0 );
         if ( returnCode == 0 )
-          return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Captured );
+          return new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Captured );
         else
-          errorMessage = "Tea Commerce - Wannafind - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_Wannafind_error" ), returnCode );
+          errorMessage = "Tea Commerce - Wannafind - " + string.Format( apiErrorFormatString, returnCode );
       } catch ( WebException ) {
-        errorMessage = "Tea Commerce - Wannafind - " + umbraco.ui.Text( "teaCommerce", "paymentProvider_Wannafind_wrongCredentials" );
+        errorMessage = "Tea Commerce - Wannafind - " + wrongCredentialsError;
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo RefundPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
       try {
-        int returnCode = GetWannafindServiceClient( settings ).creditTransaction( int.Parse( order.TransactionPaymentTransactionId ), (int)( order.TotalPrice * 100M ) );
+        int returnCode = GetWannafindServiceClient( settings ).creditTransaction( int.Parse( order.TransactionInformation.TransactionId ), (int)( order.TotalPrice.WithVat * 100M ) );
         if ( returnCode == 0 )
-          return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Refunded );
+          return new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Refunded );
         else
-          errorMessage = "Tea Commerce - Wannafind - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_Wannafind_error" ), returnCode );
+          errorMessage = "Tea Commerce - Wannafind - " + string.Format( apiErrorFormatString, returnCode );
       } catch ( WebException ) {
-        errorMessage = "Tea Commerce - Wannafind - " + umbraco.ui.Text( "teaCommerce", "paymentProvider_Wannafind_wrongCredentials" );
+        errorMessage = "Tea Commerce - Wannafind - " + wrongCredentialsError;
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo CancelPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
       try {
-        int returnCode = GetWannafindServiceClient( settings ).cancelTransaction( int.Parse( order.TransactionPaymentTransactionId ) );
+        int returnCode = GetWannafindServiceClient( settings ).cancelTransaction( int.Parse( order.TransactionInformation.TransactionId ) );
         if ( returnCode == 0 )
-          return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Cancelled );
+          return new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Cancelled );
         else
-          errorMessage = "Tea Commerce - Wannafind - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_Wannafind_error" ), returnCode );
+          errorMessage = "Tea Commerce - Wannafind - " + string.Format( apiErrorFormatString, returnCode );
       } catch ( WebException ) {
-        errorMessage = "Tea Commerce - Wannafind - " + umbraco.ui.Text( "teaCommerce", "paymentProvider_Wannafind_wrongCredentials" );
+        errorMessage = "Tea Commerce - Wannafind - " + wrongCredentialsError;
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    protected pgwapi GetWannafindServiceClient( Dictionary<string, string> settings ) {
+    public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
+      switch ( settingsKey ) {
+        case "accepturl":
+          return settingsKey + "<br/><small>e.g. /continue/</small>";
+        case "declineurl":
+          return settingsKey + "<br/><small>e.g. /cancel/</small>";
+        case "cardtype":
+          return settingsKey + "<br/><small>e.g. VISA,MC</small>";
+        default:
+          return base.GetLocalizedSettingsKey( settingsKey, culture );
+      }
+    }
+
+    protected pgwapi GetWannafindServiceClient( IDictionary<string, string> settings ) {
       pgwapi paymentGateWayApi = new pgwapi();
       paymentGateWayApi.Credentials = new NetworkCredential( settings[ "apiUser" ], settings[ "apiPassword" ] );
       return paymentGateWayApi;

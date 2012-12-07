@@ -4,15 +4,17 @@ using System.Linq;
 using System.Web;
 using System.Xml.Linq;
 using System.Xml.XPath;
-using TeaCommerce.Data;
-using TeaCommerce.Data.Payment;
-using umbraco.BusinessLogic;
+using TeaCommerce.Api.Models;
+using TeaCommerce.Api.PaymentProviders;
+using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
 
   public class Netaxept : APaymentProvider {
 
-    public override Dictionary<string, string> DefaultSettings {
+    protected const string apiErrorFormatString = "Error making API request - Error message: {0}";
+
+    public override IDictionary<string, string> DefaultSettings {
       get {
         if ( defaultSettings == null ) {
           defaultSettings = new Dictionary<string, string>();
@@ -33,18 +35,18 @@ namespace TeaCommerce.PaymentProviders {
     public override string FormPostUrl { get { return formPostUrl; } }
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-netaxept-with-tea-commerce/"; } }
 
-    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
+    public override IDictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
       List<string> settingsToExclude = new string[] { "accepturl", "cancelurl", "instantcapture", "testMode" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
       //orderNumber
-      inputFields[ "orderNumber" ] = order.Name;
+      inputFields[ "orderNumber" ] = order.CartNumber;
 
       //currencyCode
       inputFields[ "currencyCode" ] = order.CurrencyISOCode;
 
       //amount
-      inputFields[ "amount" ] = ( order.TotalPrice * 100M ).ToString( "0", CultureInfo.InvariantCulture );
+      inputFields[ "amount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
 
       //redirectUrl
       inputFields[ "redirectUrl" ] = teaCommerceCallBackUrl;
@@ -65,21 +67,21 @@ namespace TeaCommerce.PaymentProviders {
 
         formPostUrl = ( settings[ "testMode" ] != "1" ? "https://epayment.bbs.no/Terminal/default.aspx" : "https://epayment-test.bbs.no/Terminal/default.aspx" ) + "?merchantId=" + settings[ "merchantId" ] + "&transactionId=" + xmlResponse.XPathSelectElement( "//TransactionId" ).Value;
       } else {
-        Log.Add( LogTypes.Error, -1, "Tea Commerce - Netaxept - GenerateForm error - " + xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
+        LoggingService.Instance.Log( "Tea Commerce - Netaxept - GenerateForm error - " + xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
       }
 
       return new Dictionary<string, string>();
     }
 
-    public override string GetContinueUrl( Dictionary<string, string> settings ) {
+    public override string GetContinueUrl( IDictionary<string, string> settings ) {
       return settings[ "accepturl" ];
     }
 
-    public override string GetCancelUrl( Dictionary<string, string> settings ) {
+    public override string GetCancelUrl( IDictionary<string, string> settings ) {
       return settings[ "cancelurl" ];
     }
 
-    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, Dictionary<string, string> settings ) {
+    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
       //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/NetaxceptCallback.txt" ) ) ) ) {
       //  writer.WriteLine( "QueryString:" );
       //  foreach ( string k in request.QueryString.Keys ) {
@@ -116,7 +118,7 @@ namespace TeaCommerce.PaymentProviders {
             string cardNumber = xmlResponse.XPathSelectElement( "//PaymentInfo/CardInformation/MaskedPAN" ).Value;
 
             HttpContext.Current.Response.Redirect( order.GetPropertyValue( "teaCommerceContinueUrl" ), false );
-            return new CallbackInfo( order.Name, totalAmount, transactionId, !autoCapture ? PaymentStatus.Authorized : PaymentStatus.Captured, cardType, cardNumber );
+            return new CallbackInfo( totalAmount, transactionId, !autoCapture ? PaymentState.Authorized : PaymentState.Captured, cardType, cardNumber );
           } else {
             errorMessage = "Tea Commerce - Netaxept - ProcessCallback error - " + xmlResponse.XPathSelectElement( "//Error/Message" ).Value;
           }
@@ -135,19 +137,19 @@ namespace TeaCommerce.PaymentProviders {
       //If we get here an error occured and we redirect to the cancel url
       HttpContext.Current.Response.Redirect( order.GetPropertyValue( "teaCommerceCancelUrl" ), false );
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
+      LoggingService.Instance.Log( errorMessage );
       return new CallbackInfo( errorMessage );
     }
 
-    public override APIInfo GetStatus( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
       inputFields[ "merchantId" ] = settings[ "merchantId" ];
       inputFields[ "token" ] = settings[ "token" ];
-      inputFields[ "transactionId" ] = order.TransactionPaymentTransactionId;
+      inputFields[ "transactionId" ] = order.TransactionInformation.TransactionId;
 
-      XDocument xmlResponse = QueryTransaction( order.TransactionPaymentTransactionId, settings );
+      XDocument xmlResponse = QueryTransaction( order.TransactionInformation.TransactionId, settings );
 
       if ( xmlResponse.XPathSelectElement( "//PaymentInfo" ) != null ) {
         string transactionId = xmlResponse.XPathSelectElement( "//PaymentInfo/TransactionId" ).Value;
@@ -156,91 +158,108 @@ namespace TeaCommerce.PaymentProviders {
         bool captured = decimal.Parse( xmlResponse.XPathSelectElement( "//PaymentInfo/Summary/AmountCaptured" ).Value, CultureInfo.InvariantCulture ) > 0;
         bool refunded = decimal.Parse( xmlResponse.XPathSelectElement( "//PaymentInfo/Summary/AmountCredited" ).Value, CultureInfo.InvariantCulture ) > 0;
 
-        PaymentStatus paymentStatus = PaymentStatus.Initial;
+        PaymentState paymentState = PaymentState.Initiated;
         if ( refunded )
-          paymentStatus = PaymentStatus.Refunded;
+          paymentState = PaymentState.Refunded;
         else if ( captured )
-          paymentStatus = PaymentStatus.Captured;
+          paymentState = PaymentState.Captured;
         else if ( cancelled )
-          paymentStatus = PaymentStatus.Cancelled;
+          paymentState = PaymentState.Cancelled;
         else if ( authorized )
-          paymentStatus = PaymentStatus.Authorized;
+          paymentState = PaymentState.Authorized;
 
-        return new APIInfo( transactionId, paymentStatus );
+        return new ApiInfo( transactionId, paymentState );
       } else {
-        errorMessage = "Tea Commerce - Netaxept - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_Netaxept_error" ), xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
+        errorMessage = "Tea Commerce - Netaxept - " + string.Format( apiErrorFormatString, xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo CapturePayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
       inputFields[ "merchantId" ] = settings[ "merchantId" ];
       inputFields[ "token" ] = settings[ "token" ];
       inputFields[ "operation" ] = "CAPTURE";
-      inputFields[ "transactionId" ] = order.TransactionPaymentTransactionId;
-      inputFields[ "transactionAmount" ] = ( order.TotalPrice * 100M ).ToString( "0", CultureInfo.InvariantCulture );
+      inputFields[ "transactionId" ] = order.TransactionInformation.TransactionId;
+      inputFields[ "transactionAmount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
 
       XDocument xmlResponse = XDocument.Parse( MakePostRequest( ( settings[ "testMode" ] != "1" ? "https://epayment.bbs.no/Netaxept/Process.aspx" : "https://epayment-test.bbs.no/Netaxept/Process.aspx" ), inputFields ), LoadOptions.PreserveWhitespace );
 
       if ( xmlResponse.XPathSelectElement( "//ProcessResponse" ) != null && xmlResponse.XPathSelectElement( "//ProcessResponse/ResponseCode" ).Value == "OK" ) {
-        return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Captured );
+        return new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Captured );
       } else {
-        errorMessage = "Tea Commerce - Netaxept - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_Netaxept_error" ), xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
+        errorMessage = "Tea Commerce - Netaxept - " + string.Format( apiErrorFormatString, xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo RefundPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
       inputFields[ "merchantId" ] = settings[ "merchantId" ];
       inputFields[ "token" ] = settings[ "token" ];
       inputFields[ "operation" ] = "CREDIT";
-      inputFields[ "transactionId" ] = order.TransactionPaymentTransactionId;
-      inputFields[ "transactionAmount" ] = ( order.TotalPrice * 100M ).ToString( "0", CultureInfo.InvariantCulture );
+      inputFields[ "transactionId" ] = order.TransactionInformation.TransactionId;
+      inputFields[ "transactionAmount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
 
       XDocument xmlResponse = XDocument.Parse( MakePostRequest( ( settings[ "testMode" ] != "1" ? "https://epayment.bbs.no/Netaxept/Process.aspx" : "https://epayment-test.bbs.no/Netaxept/Process.aspx" ), inputFields ), LoadOptions.PreserveWhitespace );
 
       if ( xmlResponse.XPathSelectElement( "//ProcessResponse" ) != null && xmlResponse.XPathSelectElement( "//ProcessResponse/ResponseCode" ).Value == "OK" ) {
-        return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Refunded );
+        return new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Refunded );
       } else {
-        errorMessage = "Tea Commerce - Netaxept - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_Netaxept_error" ), xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
+        errorMessage = "Tea Commerce - Netaxept - " + string.Format( apiErrorFormatString, xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo CancelPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
       inputFields[ "merchantId" ] = settings[ "merchantId" ];
       inputFields[ "token" ] = settings[ "token" ];
       inputFields[ "operation" ] = "ANNUL";
-      inputFields[ "transactionId" ] = order.TransactionPaymentTransactionId;
+      inputFields[ "transactionId" ] = order.TransactionInformation.TransactionId;
 
       XDocument xmlResponse = XDocument.Parse( MakePostRequest( ( settings[ "testMode" ] != "1" ? "https://epayment.bbs.no/Netaxept/Process.aspx" : "https://epayment-test.bbs.no/Netaxept/Process.aspx" ), inputFields ), LoadOptions.PreserveWhitespace );
 
       if ( xmlResponse.XPathSelectElement( "//ProcessResponse" ) != null && xmlResponse.XPathSelectElement( "//ProcessResponse/ResponseCode" ).Value == "OK" ) {
-        return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Cancelled );
+        return new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Cancelled );
       } else {
-        errorMessage = "Tea Commerce - Netaxept - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_Netaxept_error" ), xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
+        errorMessage = "Tea Commerce - Netaxept - " + string.Format( apiErrorFormatString, xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    private XDocument QueryTransaction( string transactionId, Dictionary<string, string> settings ) {
+    public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
+      switch ( settingsKey ) {
+        case "accepturl":
+          return settingsKey + "<br/><small>e.g. /continue/</small>";
+        case "cancelurl":
+          return settingsKey + "<br/><small>e.g. /cancel/</small>";
+        case "instantcapture":
+          return settingsKey + "<br/><small>1 = true; 0 = false</small>";
+        case "paymentMethodList":
+          return settingsKey + "<br/><small>e.g. Visa,MasterCard</small>";
+        case "testMode":
+          return settingsKey + "<br/><small>1 = true; 0 = false</small>";
+        default:
+          return base.GetLocalizedSettingsKey( settingsKey, culture );
+      }
+    }
+
+    private XDocument QueryTransaction( string transactionId, IDictionary<string, string> settings ) {
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
       inputFields[ "merchantId" ] = settings[ "merchantId" ];
       inputFields[ "token" ] = settings[ "token" ];

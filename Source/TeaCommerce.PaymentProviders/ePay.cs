@@ -3,18 +3,20 @@ using System.Globalization;
 using System.Linq;
 using System.ServiceModel;
 using System.Web;
-using TeaCommerce.Data;
-using TeaCommerce.Data.Payment;
+using TeaCommerce.Api.Models;
+using TeaCommerce.Api.PaymentProviders;
 using TeaCommerce.PaymentProviders.ePayService;
-using umbraco.BusinessLogic;
 using TeaCommerce.PaymentProviders.Extensions;
-using System.IO;
+using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
 
   public class ePay : APaymentProvider {
 
-    public override Dictionary<string, string> DefaultSettings {
+    protected const string apiErrorFormatString = "Error making API request - Error code: {0} - see http://tech.epay.dk/Error-codes_3.html for a description of these";
+    protected const string apiErrorAdvancedFormatString = "Error making API request - Error code: {0} - PBS error code: {1} - see http://tech.epay.dk/Error-codes_3.html for a description of these";
+
+    public override IDictionary<string, string> DefaultSettings {
       get {
         if ( defaultSettings == null ) {
           defaultSettings = new Dictionary<string, string>();
@@ -36,19 +38,19 @@ namespace TeaCommerce.PaymentProviders {
     public override string FormPostUrl { get { return "https://ssl.ditonlinebetalingssystem.dk/integration/ewindow/Default.aspx"; } }
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-epay-with-tea-commerce/"; } }
 
-    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
+    public override IDictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
       List<string> settingsToExclude = new string[] { "md5securitykey", "webservicepassword", "iframeelement" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
       //orderid
-      inputFields[ "orderid" ] = order.Name;
+      inputFields[ "orderid" ] = order.CartNumber;
 
       //currency
       string currency = ISO4217CurrencyCodes[ order.CurrencyISOCode ];
       inputFields[ "currency" ] = currency;
 
       //amount
-      string strAmount = ( order.TotalPrice * 100M ).ToString( "0", CultureInfo.InvariantCulture );
+      string strAmount = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
       inputFields[ "amount" ] = strAmount;
 
       inputFields[ "accepturl" ] = teaCommerceContinueUrl;
@@ -81,7 +83,7 @@ namespace TeaCommerce.PaymentProviders {
       return inputFields;
     }
 
-    public override string SubmitJavascriptFunction( Dictionary<string, string> inputFields, Dictionary<string, string> settings ) {
+    public override string SubmitJavascriptFunction( IDictionary<string, string> inputFields, IDictionary<string, string> settings ) {
       string rtnString = string.Empty;
 
       //If its state 3 (fullscreen) we return empty string because it's not supported by the JavaScript
@@ -110,15 +112,15 @@ namespace TeaCommerce.PaymentProviders {
       return rtnString;
     }
 
-    public override string GetContinueUrl( Dictionary<string, string> settings ) {
+    public override string GetContinueUrl( IDictionary<string, string> settings ) {
       return settings[ "accepturl" ];
     }
 
-    public override string GetCancelUrl( Dictionary<string, string> settings ) {
+    public override string GetCancelUrl( IDictionary<string, string> settings ) {
       return settings[ "cancelurl" ];
     }
 
-    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, Dictionary<string, string> settings ) {
+    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
       //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/ePayTestCallback.txt" ) ) ) ) {
       //  writer.WriteLine( "QueryString:" );
       //  foreach ( string k in request.QueryString.Keys ) {
@@ -130,7 +132,6 @@ namespace TeaCommerce.PaymentProviders {
       string errorMessage = string.Empty;
 
       string transaction = request.QueryString[ "txnid" ];
-      string orderName = request.QueryString[ "orderid" ];
       string strAmount = request.QueryString[ "amount" ];
       string hash = request.QueryString[ "hash" ];
 
@@ -153,90 +154,109 @@ namespace TeaCommerce.PaymentProviders {
 
         bool autoCaptured = settings.ContainsKey( "instantcapture" ) && settings[ "instantcapture" ].Equals( "1" );
 
-        return new CallbackInfo( orderName, totalAmount / 100M, transaction, !autoCaptured ? PaymentStatus.Authorized : PaymentStatus.Captured, cardid, cardnopostfix );
+        return new CallbackInfo( totalAmount / 100M, transaction, !autoCaptured ? PaymentState.Authorized : PaymentState.Captured, cardid, cardnopostfix );
       } else
         errorMessage = "Tea Commerce - ePay - MD5Sum security check failed";
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
+      LoggingService.Instance.Log( errorMessage );
       return new CallbackInfo( errorMessage );
     }
 
-    public override APIInfo GetStatus( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
       TransactionInformationType tit = new TransactionInformationType();
       int ePayResponse = 0;
 
-      if ( GetEPayServiceClient().gettransaction( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionPaymentTransactionId ), settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref tit, ref ePayResponse ) )
-        return new APIInfo( tit.transactionid.ToString(), GetPaymentStatus( tit.status, tit.creditedamount ) );
+      if ( GetEPayServiceClient().gettransaction( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionInformation.TransactionId ), settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref tit, ref ePayResponse ) )
+        return new ApiInfo( tit.transactionid.ToString(), GetPaymentStatus( tit.status, tit.creditedamount ) );
       else
-        errorMessage = "Tea Commerce - ePay - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_ePay_error" ), ePayResponse );
+        errorMessage = "Tea Commerce - ePay - " + string.Format( apiErrorFormatString, ePayResponse );
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo CapturePayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
       int pbsResponse = 0;
       int ePayResponse = 0;
 
-      if ( GetEPayServiceClient().capture( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionPaymentTransactionId ), (int)( order.TotalPrice * 100M ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref pbsResponse, ref ePayResponse ) )
-        return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Captured );
+      if ( GetEPayServiceClient().capture( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionInformation.TransactionId ), (int)( order.TotalPrice.WithVat * 100M ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref pbsResponse, ref ePayResponse ) )
+        return new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Captured );
       else
-        errorMessage = "Tea Commerce - ePay - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_ePay_errorAdvanced" ), ePayResponse, pbsResponse );
+        errorMessage = "Tea Commerce - ePay - " + string.Format( apiErrorAdvancedFormatString, ePayResponse, pbsResponse );
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo RefundPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
       int pbsResponse = 0;
       int ePayResponse = 0;
 
-      if ( GetEPayServiceClient().credit( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionPaymentTransactionId ), (int)( order.TotalPrice * 100M ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref pbsResponse, ref ePayResponse ) )
-        return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Refunded );
+      if ( GetEPayServiceClient().credit( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionInformation.TransactionId ), (int)( order.TotalPrice.WithVat * 100M ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref pbsResponse, ref ePayResponse ) )
+        return new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Refunded );
       else
-        errorMessage = "Tea Commerce - ePay - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_ePay_errorAdvanced" ), ePayResponse, pbsResponse );
+        errorMessage = "Tea Commerce - ePay - " + string.Format( apiErrorAdvancedFormatString, ePayResponse, pbsResponse );
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo CancelPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
       int ePayResponse = 0;
 
-      if ( GetEPayServiceClient().delete( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionPaymentTransactionId ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref ePayResponse ) )
-        return new APIInfo( order.TransactionPaymentTransactionId, PaymentStatus.Cancelled );
+      if ( GetEPayServiceClient().delete( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionInformation.TransactionId ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref ePayResponse ) )
+        return new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Cancelled );
       else
-        errorMessage = "Tea Commerce - ePay - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_ePay_error" ), ePayResponse );
+        errorMessage = "Tea Commerce - ePay - " + string.Format( apiErrorFormatString, ePayResponse );
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
+    }
+
+    public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
+      switch ( settingsKey ) {
+        case "accepturl":
+          return settingsKey + "<br/><small>e.g. /continue/</small>";
+        case "cancelurl":
+          return settingsKey + "<br/><small>e.g. /cancel/</small>";
+        case "instantcapture":
+          return settingsKey + "<br/><small>1 = true; 0 = false</small>";
+        case "paymenttype":
+          return settingsKey + "<br/><small>e.g. 2,4</small>";
+        case "windowstate":
+          return settingsKey + "<br/><small>1 = overlay; 2 = iframe; 3 = fullscreen</small>";
+        case "iframeelement":
+          return settingsKey + "<br/><small>Used when window state = 2</small>";
+        default:
+          return base.GetLocalizedSettingsKey( settingsKey, culture );
+      }
     }
 
     protected PaymentSoapClient GetEPayServiceClient() {
       return new PaymentSoapClient( new BasicHttpBinding( BasicHttpSecurityMode.Transport ), new EndpointAddress( "https://ssl.ditonlinebetalingssystem.dk/remote/payment.asmx" ) );
     }
 
-    protected PaymentStatus GetPaymentStatus( TransactionStatus transactionStatus, int refundAmount ) {
-      PaymentStatus paymentStatus = PaymentStatus.Initial;
+    protected PaymentState GetPaymentStatus( TransactionStatus transactionStatus, int refundAmount ) {
+      PaymentState paymentState = PaymentState.Initiated;
       if ( transactionStatus == TransactionStatus.PAYMENT_NEW )
-        paymentStatus = PaymentStatus.Authorized;
+        paymentState = PaymentState.Authorized;
       else if ( transactionStatus == TransactionStatus.PAYMENT_CAPTURED && refundAmount == 0 )
-        paymentStatus = PaymentStatus.Captured;
+        paymentState = PaymentState.Captured;
       else if ( transactionStatus == TransactionStatus.PAYMENT_DELETED )
-        paymentStatus = PaymentStatus.Cancelled;
+        paymentState = PaymentState.Cancelled;
       else if ( transactionStatus == TransactionStatus.PAYMENT_CAPTURED && refundAmount != 0 )
-        paymentStatus = PaymentStatus.Refunded;
+        paymentState = PaymentState.Refunded;
       else if ( transactionStatus == TransactionStatus.PAYMENT_EUROLINE_WAIT_CAPTURE || transactionStatus == TransactionStatus.PAYMENT_EUROLINE_WAIT_CREDIT )
-        paymentStatus = PaymentStatus.PendingExternalSystem;
-      return paymentStatus;
+        paymentState = PaymentState.PendingExternalSystem;
+      return paymentState;
     }
 
   }

@@ -4,20 +4,20 @@ using System.Globalization;
 using System.Linq;
 using System.Web;
 using System.Xml.Linq;
-using TeaCommerce.Data;
-using TeaCommerce.Data.Payment;
+using TeaCommerce.Api.Models;
+using TeaCommerce.Api.PaymentProviders;
 using TeaCommerce.PaymentProviders.Extensions;
-using umbraco.BusinessLogic;
+using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
   public class Payer : APaymentProvider {
 
-    public override bool AllowsGetStatus { get { return false; } }
-    public override bool AllowsCancelPayment { get { return false; } }
-    public override bool AllowsCapturePayment { get { return false; } }
-    public override bool AllowsRefundPayment { get { return false; } }
+    public override bool SupportsRetrievalOfPaymentStatus { get { return false; } }
+    public override bool SupportsCancellationOfPayment { get { return false; } }
+    public override bool SupportsCapturingOfPayment { get { return false; } }
+    public override bool SupportsRefundOfPayment { get { return false; } }
 
-    public override Dictionary<string, string> DefaultSettings {
+    public override IDictionary<string, string> DefaultSettings {
       get {
         if ( defaultSettings == null ) {
           defaultSettings = new Dictionary<string, string>();
@@ -43,7 +43,7 @@ namespace TeaCommerce.PaymentProviders {
     public override string FormPostUrl { get { return "https://secure.pay-read.se/PostAPI_V1/InitPayFlow"; } }
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-payer-with-tea-commerce/"; } }
 
-    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
+    public override IDictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
       HttpServerUtility server = HttpContext.Current.Server;
 
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
@@ -67,8 +67,8 @@ namespace TeaCommerce.PaymentProviders {
 
       //Buyer details
       payerData.Add( new XElement( "buyer_details",
-        new XElement( "first_name", server.HtmlEncode( order.FirstName ) ),
-        new XElement( "last_name", server.HtmlEncode( order.LastName ) ),
+        new XElement( "first_name", server.HtmlEncode( order.PaymentInformation.FirstName ) ),
+        new XElement( "last_name", server.HtmlEncode( order.PaymentInformation.LastName ) ),
         new XElement( "address_line_1", server.HtmlEncode( string.Empty ) ),
         new XElement( "address_line_2", server.HtmlEncode( string.Empty ) ),
         new XElement( "postal_code", server.HtmlEncode( string.Empty ) ),
@@ -77,7 +77,7 @@ namespace TeaCommerce.PaymentProviders {
         new XElement( "phone_home", server.HtmlEncode( string.Empty ) ),
         new XElement( "phone_work", server.HtmlEncode( string.Empty ) ),
         new XElement( "phone_mobile", server.HtmlEncode( string.Empty ) ),
-        new XElement( "email", server.HtmlEncode( order.Email ) ),
+        new XElement( "email", server.HtmlEncode( order.PaymentInformation.Email ) ),
         new XElement( "organisation", server.HtmlEncode( string.Empty ) ),
         new XElement( "orgnr", server.HtmlEncode( string.Empty ) ),
         new XElement( "customer_id", server.HtmlEncode( string.Empty ) )
@@ -96,34 +96,34 @@ namespace TeaCommerce.PaymentProviders {
           new XElement( "line_number", lineCounter.ToString() ),
           new XElement( "description", server.HtmlEncode( productNameProp != null ? productNameProp.Value : string.Empty ) ),
           new XElement( "item_number", server.HtmlEncode( productNumberProp != null ? productNumberProp.Value : string.Empty ) ),
-          new XElement( "price_including_vat", server.HtmlEncode( orderLine.TotalPrice.ToString( CultureInfo.InvariantCulture ) ) ),
-          new XElement( "vat_percentage", server.HtmlEncode( ( orderLine.VAT * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "price_including_vat", server.HtmlEncode( orderLine.TotalPrice.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "vat_percentage", server.HtmlEncode( ( orderLine.VatRate * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "quantity", server.HtmlEncode( orderLine.Quantity.ToString( CultureInfo.InvariantCulture ) ) )
         ) );
         lineCounter++;
       }
 
       //Shipping fee
-      if ( order.ShippingFee != 0 ) {
+      if ( order.ShipmentInformation.TotalPrice.WithVat != 0 ) {
         purchaseList.Add( new XElement( "freeform_purchase",
           new XElement( "line_number", lineCounter.ToString() ),
           new XElement( "description", server.HtmlEncode( string.Format( settings[ "shippingMethodFormatString" ], order.ShippingMethod.Name ) ) ),
           new XElement( "item_number", server.HtmlEncode( settings[ "shippingMethodProductNumber" ] ) ),
-          new XElement( "price_including_vat", server.HtmlEncode( order.ShippingFee.ToString( CultureInfo.InvariantCulture ) ) ),
-          new XElement( "vat_percentage", server.HtmlEncode( ( order.ShippingVAT * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "price_including_vat", server.HtmlEncode( order.ShipmentInformation.TotalPrice.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "vat_percentage", server.HtmlEncode( ( order.ShipmentInformation.VatRate * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "quantity", "1" )
         ) );
         lineCounter++;
       }
 
       //Payment fee
-      if ( order.PaymentFee != 0 ) {
+      if ( order.PaymentInformation.TotalPrice.WithVat != 0 ) {
         purchaseList.Add( new XElement( "freeform_purchase",
           new XElement( "line_number", lineCounter.ToString() ),
           new XElement( "description", server.HtmlEncode( string.Format( settings[ "paymentMethodFormatString" ], order.PaymentMethod.Name ) ) ),
           new XElement( "item_number", server.HtmlEncode( settings[ "paymentMethodProductNumber" ] ) ),
-          new XElement( "price_including_vat", server.HtmlEncode( order.PaymentFee.ToString( CultureInfo.InvariantCulture ) ) ),
-          new XElement( "vat_percentage", server.HtmlEncode( ( order.PaymentVAT * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "price_including_vat", server.HtmlEncode( order.PaymentInformation.TotalPrice.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "vat_percentage", server.HtmlEncode( ( order.PaymentInformation.VatRate * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "quantity", "1" )
         ) );
         lineCounter++;
@@ -131,7 +131,7 @@ namespace TeaCommerce.PaymentProviders {
 
       payerData.Add( new XElement( "purchase",
         new XElement( "currency", server.HtmlEncode( order.Currency.ISOCode ) ),
-        new XElement( "reference_id", server.HtmlEncode( order.Name ) ),
+        new XElement( "reference_id", server.HtmlEncode( order.CartNumber ) ),
         purchaseList
       ) );
 
@@ -168,15 +168,15 @@ namespace TeaCommerce.PaymentProviders {
       return inputFields;
     }
 
-    public override string GetContinueUrl( Dictionary<string, string> settings ) {
+    public override string GetContinueUrl( IDictionary<string, string> settings ) {
       return settings[ "success_redirect_url" ];
     }
 
-    public override string GetCancelUrl( Dictionary<string, string> settings ) {
+    public override string GetCancelUrl( IDictionary<string, string> settings ) {
       return settings[ "redirect_back_to_shop_url" ];
     }
 
-    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, Dictionary<string, string> settings ) {
+    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
       //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/PayerTestCallback.txt" ) ) ) ) {
       //  writer.WriteLine( "QueryString:" );
       //  foreach ( string k in request.QueryString.Keys ) {
@@ -200,13 +200,12 @@ namespace TeaCommerce.PaymentProviders {
         if ( md5CheckValue == request.QueryString[ "md5sum" ] ) {
           HttpContext.Current.Response.Output.Write( "TRUE" );
 
-          string orderName = request.QueryString[ "payer_merchant_reference_id" ];
           string transaction = request.QueryString[ "payread_payment_id" ];
           string paymentType = request.QueryString[ "payer_payment_type" ];
           string callbackType = request.QueryString[ "payer_callback_type" ];
-          PaymentStatus paymentStatus = callbackType == "auth" ? PaymentStatus.Authorized : PaymentStatus.Captured;
+          PaymentState paymentState = callbackType == "auth" ? PaymentState.Authorized : PaymentState.Captured;
 
-          return new CallbackInfo( orderName, order.TotalPrice, transaction, paymentStatus, paymentType, string.Empty );
+          return new CallbackInfo( order.TotalPrice.WithVat, transaction, paymentState, paymentType );
         } else {
           errorMessage = "Tea Commerce - Payer - MD5Sum security check failed";
         }
@@ -215,24 +214,39 @@ namespace TeaCommerce.PaymentProviders {
       }
 
       HttpContext.Current.Response.Output.Write( "FALSE" );
-      Log.Add( LogTypes.Error, -1, errorMessage );
+      LoggingService.Instance.Log( errorMessage );
       return new CallbackInfo( errorMessage );
     }
 
-    public override APIInfo GetStatus( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
       throw new NotImplementedException();
     }
 
-    public override APIInfo CapturePayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
       throw new NotImplementedException();
     }
 
-    public override APIInfo RefundPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
       throw new NotImplementedException();
     }
 
-    public override APIInfo CancelPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
       throw new NotImplementedException();
+    }
+
+    public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
+      switch ( settingsKey ) {
+        case "success_redirect_url":
+          return settingsKey + "<br/><small>e.g. /continue/</small>";
+        case "redirect_back_to_shop_url":
+          return settingsKey + "<br/><small>e.g. /cancel/</small>";
+        case "payment_methods":
+          return settingsKey + "<br/><small>e.g. invoice,card</small>";
+        case "test_mode":
+          return settingsKey + "<br/><small>1 = true; 0 = false</small>";
+        default:
+          return base.GetLocalizedSettingsKey( settingsKey, culture );
+      }
     }
 
   }

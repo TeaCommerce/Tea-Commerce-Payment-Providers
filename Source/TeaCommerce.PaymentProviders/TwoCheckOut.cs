@@ -3,22 +3,22 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Web;
-using TeaCommerce.Data;
-using TeaCommerce.Data.Payment;
+using TeaCommerce.Api.Models;
+using TeaCommerce.Api.PaymentProviders;
 using TeaCommerce.PaymentProviders.Extensions;
-using umbraco.BusinessLogic;
+using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
   public class TwoCheckOut : APaymentProvider {
 
     protected const string defaultParameterValue = "";
 
-    public override bool AllowsGetStatus { get { return false; } }
-    public override bool AllowsCancelPayment { get { return false; } }
-    public override bool AllowsCapturePayment { get { return false; } }
-    public override bool AllowsRefundPayment { get { return false; } }
+    public override bool SupportsRetrievalOfPaymentStatus { get { return false; } }
+    public override bool SupportsCancellationOfPayment { get { return false; } }
+    public override bool SupportsCapturingOfPayment { get { return false; } }
+    public override bool SupportsRefundOfPayment { get { return false; } }
 
-    public override Dictionary<string, string> DefaultSettings {
+    public override IDictionary<string, string> DefaultSettings {
       get {
         if ( defaultSettings == null ) {
           defaultSettings = new Dictionary<string, string>();
@@ -48,21 +48,21 @@ namespace TeaCommerce.PaymentProviders {
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-2checkout-with-tea-commerce/"; } }
     public override bool FinalizeAtContinueUrl { get { return true; } }
 
-    public override Dictionary<string, string> GenerateForm( Data.Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
+    public override IDictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
       List<string> settingsToExclude = new string[] { "secretWord", "productNumberPropertyAlias", "productNamePropertyAlias", "shippingMethodProductNumber", "shippingMethodFormatString", "paymentMethodProductNumber", "paymentMethodFormatString", "streetAddressPropertyAlias", "cityPropertyAlias", "statePropertyAlias", "zipCodePropertyAlias", "phonePropertyAlias", "phoneExtensionPropertyAlias" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
       //cartId
-      inputFields[ "cart_order_id" ] = order.Name;
+      inputFields[ "cart_order_id" ] = order.CartNumber;
 
       //amount
-      string amount = order.TotalPrice.ToString( "0.00", CultureInfo.InvariantCulture );
+      string amount = order.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
       inputFields[ "total" ] = amount;
 
       inputFields[ "x_receipt_link_url" ] = teaCommerceContinueUrl;
 
       //card_holder_name
-      inputFields[ "card_holder_name" ] = order.FirstName + " " + order.LastName;
+      inputFields[ "card_holder_name" ] = order.PaymentInformation.FirstName + " " + order.PaymentInformation.LastName;
 
       //street_address
       OrderProperty streetAddressProperty = settings.ContainsKey( "streetAddressPropertyAlias" ) ? order.Properties.FirstOrDefault( i => i.Alias.Equals( settings[ "streetAddressPropertyAlias" ] ) ) : null;
@@ -84,7 +84,7 @@ namespace TeaCommerce.PaymentProviders {
       inputFields[ "country" ] = order.Country.CountryCode;
 
       //email
-      inputFields[ "email" ] = order.Email;
+      inputFields[ "email" ] = order.PaymentInformation.Email;
 
       //phone
       OrderProperty phonePropertyAlias = settings.ContainsKey( "phonePropertyAlias" ) ? order.Properties.FirstOrDefault( i => i.Alias.Equals( settings[ "phonePropertyAlias" ] ) ) : null;
@@ -111,20 +111,20 @@ namespace TeaCommerce.PaymentProviders {
       //Lines are added in reverse order of the UI
 
       //Payment fee
-      if ( order.PaymentFee != 0 ) {
+      if ( order.PaymentInformation.TotalPrice.WithVat != 0 ) {
         inputFields[ "c_prod_" + itemIndex ] = settings[ "paymentMethodProductNumber" ] + ",1";
         inputFields[ "c_name_" + itemIndex ] = string.Format( settings[ "paymentMethodFormatString" ], order.PaymentMethod.Name ).Truncate( 128 );
         inputFields[ "c_description_" + itemIndex ] = string.Empty;
-        inputFields[ "c_price_" + itemIndex ] = order.PaymentFee.ToString( "0.00", CultureInfo.InvariantCulture );
+        inputFields[ "c_price_" + itemIndex ] = order.PaymentInformation.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
         itemIndex++;
       }
 
       //Shipping fee
-      if ( order.ShippingFee != 0 ) {
+      if ( order.ShipmentInformation.TotalPrice.WithVat != 0 ) {
         inputFields[ "c_prod_" + itemIndex ] = settings[ "shippingMethodProductNumber" ] + ",1";
         inputFields[ "c_name_" + itemIndex ] = string.Format( settings[ "shippingMethodFormatString" ], order.ShippingMethod.Name ).Truncate( 128 );
         inputFields[ "c_description_" + itemIndex ] = string.Empty;
-        inputFields[ "c_price_" + itemIndex ] = order.ShippingFee.ToString( "0.00", CultureInfo.InvariantCulture );
+        inputFields[ "c_price_" + itemIndex ] = order.ShipmentInformation.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
         itemIndex++;
       }
 
@@ -140,7 +140,7 @@ namespace TeaCommerce.PaymentProviders {
         inputFields[ "c_prod_" + itemIndex ] = productNumberProp.Value + "," + orderLine.Quantity.ToString();
         inputFields[ "c_name_" + itemIndex ] = productNameProp.Value.Truncate( 128 );
         inputFields[ "c_description_" + itemIndex ] = string.Empty;
-        inputFields[ "c_price_" + itemIndex ] = orderLine.UnitPrice.ToString( "0.00", CultureInfo.InvariantCulture );
+        inputFields[ "c_price_" + itemIndex ] = orderLine.UnitPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
 
         itemIndex++;
       }
@@ -148,15 +148,15 @@ namespace TeaCommerce.PaymentProviders {
       return inputFields;
     }
 
-    public override string GetContinueUrl( Dictionary<string, string> settings ) {
+    public override string GetContinueUrl( IDictionary<string, string> settings ) {
       return settings[ "x_receipt_link_url" ];
     }
 
-    public override string GetCancelUrl( Dictionary<string, string> settings ) {
+    public override string GetCancelUrl( IDictionary<string, string> settings ) {
       return string.Empty;
     }
 
-    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, Dictionary<string, string> settings ) {
+    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
       //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/2CheckOutTestCallback.txt" ) ) ) ) {
       //  writer.WriteLine( "QueryString:" );
       //  foreach ( string k in request.QueryString.Keys ) {
@@ -181,32 +181,42 @@ namespace TeaCommerce.PaymentProviders {
       string calculatedMD5 = GetMD5Hash( md5CheckValue ).ToUpperInvariant();
 
       if ( calculatedMD5 == key ) {
-        string orderName = request.QueryString[ "cart_order_id" ];
         decimal totalAmount = decimal.Parse( strAmount, CultureInfo.InvariantCulture );
-        PaymentStatus paymentStatus = PaymentStatus.Authorized;
+        PaymentState paymentState = PaymentState.Authorized;
 
-        return new CallbackInfo( orderName, totalAmount, transaction, paymentStatus, string.Empty, string.Empty );
+        return new CallbackInfo( totalAmount, transaction, paymentState );
       } else
         errorMessage = "Tea Commerce - 2CheckOut - MD5Sum security check failed - key: " + key + " - calculatedMD5: " + calculatedMD5;
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
+      LoggingService.Instance.Log( errorMessage );
       return new CallbackInfo( errorMessage );
     }
 
-    public override APIInfo GetStatus( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
       throw new NotImplementedException();
     }
 
-    public override APIInfo CapturePayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
       throw new NotImplementedException();
     }
 
-    public override APIInfo RefundPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
       throw new NotImplementedException();
     }
 
-    public override APIInfo CancelPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
       throw new NotImplementedException();
+    }
+
+    public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
+      switch ( settingsKey ) {
+        case "x_receipt_link_url":
+          return settingsKey + "<br/><small>e.g. /continue/</small>";
+        case "demo":
+          return settingsKey + "<br/><small>Y = true; N = false</small>";
+        default:
+          return base.GetLocalizedSettingsKey( settingsKey, culture );
+      }
     }
 
   }

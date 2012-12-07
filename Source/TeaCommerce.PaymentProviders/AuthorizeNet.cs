@@ -6,10 +6,10 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
-using TeaCommerce.Data;
-using TeaCommerce.Data.Payment;
+using TeaCommerce.Api.Models;
+using TeaCommerce.Api.PaymentProviders;
 using TeaCommerce.PaymentProviders.AuthorizeNetService;
-using umbraco.BusinessLogic;
+using TeaCommerce.Api.Infrastructure.Logging;
 
 
 namespace TeaCommerce.PaymentProviders {
@@ -17,11 +17,11 @@ namespace TeaCommerce.PaymentProviders {
 
     protected bool isTesting;
 
-    public override bool AllowsCancelPayment { get { return false; } }
-    public override bool AllowsCapturePayment { get { return false; } }
-    public override bool AllowsRefundPayment { get { return false; } }
+    public override bool SupportsCancellationOfPayment { get { return false; } }
+    public override bool SupportsCapturingOfPayment { get { return false; } }
+    public override bool SupportsRefundOfPayment { get { return false; } }
 
-    public override Dictionary<string, string> DefaultSettings {
+    public override IDictionary<string, string> DefaultSettings {
       get {
         if ( defaultSettings == null ) {
           defaultSettings = new Dictionary<string, string>();
@@ -39,9 +39,9 @@ namespace TeaCommerce.PaymentProviders {
 
     public override string FormPostUrl { get { return !isTesting ? "https://secure.authorize.net/gateway/transact.dll" : "https://test.authorize.net/gateway/transact.dll"; } }
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-authorize-net-with-tea-commerce/"; } }
-    public override bool AllowCallbackWithoutOrderId { get { return true; } }
+    public override bool AllowsCallbackWithoutOrderId { get { return true; } }
 
-    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
+    public override IDictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
       List<string> settingsToExclude = new string[] { "transactionKey", "md5HashKey", "testing" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
@@ -54,9 +54,9 @@ namespace TeaCommerce.PaymentProviders {
       inputFields[ "x_relay_response" ] = "TRUE";
       inputFields[ "x_receipt_link_method" ] = "LINK";
 
-      inputFields[ "x_invoice_num" ] = order.Name;
+      inputFields[ "x_invoice_num" ] = order.CartNumber;
 
-      string amount = order.TotalPrice.ToString( "0.00", CultureInfo.InvariantCulture );
+      string amount = order.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
       inputFields[ "x_amount" ] = amount;
 
       inputFields[ "x_receipt_link_url" ] = teaCommerceContinueUrl;
@@ -73,15 +73,15 @@ namespace TeaCommerce.PaymentProviders {
       return inputFields;
     }
 
-    public override string GetContinueUrl( Dictionary<string, string> settings ) {
+    public override string GetContinueUrl( IDictionary<string, string> settings ) {
       return settings[ "x_receipt_link_url" ];
     }
 
-    public override string GetCancelUrl( Dictionary<string, string> settings ) {
+    public override string GetCancelUrl( IDictionary<string, string> settings ) {
       return settings[ "x_cancel_url" ];
     }
 
-    public override long? GetOrderId( HttpRequest request, Dictionary<string, string> settings ) {
+    public override Guid GetOrderId( HttpRequest request, IDictionary<string, string> settings ) {
       //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/AuthorizeNetTestGetOrderId.txt" ) ) ) ) {
       //  writer.WriteLine( "Form:" );
       //  foreach ( string k in request.Form.Keys ) {
@@ -112,11 +112,11 @@ namespace TeaCommerce.PaymentProviders {
       } else
         errorMessage = "Tea Commerce - Authorize.net - Payment not approved: " + responseCode;
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
+      LoggingService.Instance.Log( errorMessage );
       return null;
     }
 
-    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, Dictionary<string, string> settings ) {
+    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
       //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/AuthorizeNetTestCallback.txt" ) ) ) ) {
       //  writer.WriteLine( "Form:" );
       //  foreach ( string k in request.Form.Keys ) {
@@ -139,70 +139,84 @@ namespace TeaCommerce.PaymentProviders {
         string calculatedMd5Hash = Regex.Replace( BitConverter.ToString( x.ComputeHash( Encoding.ASCII.GetBytes( settings[ "md5HashKey" ] + settings[ "x_login" ] + transaction + amount ) ) ), "-", string.Empty );
 
         if ( gatewayMd5Hash.Equals( calculatedMd5Hash ) ) {
-          string orderName = request.Form[ "x_invoice_num" ];
-          PaymentStatus paymentStatus = PaymentStatus.Authorized;
+          PaymentState paymentState = PaymentState.Authorized;
           if ( request.Form[ "x_type" ].Equals( "auth_capture" ) )
-            paymentStatus = PaymentStatus.Captured;
+            paymentState = PaymentState.Captured;
           string cardType = request.Form[ "x_card_type" ];
           string cardNumber = request.Form[ "x_account_number" ];
 
-          return new CallbackInfo( orderName, decimal.Parse( amount, CultureInfo.InvariantCulture ), transaction, paymentStatus, cardType, cardNumber );
+          return new CallbackInfo( decimal.Parse( amount, CultureInfo.InvariantCulture ), transaction, paymentState, cardType, cardNumber );
         } else
           errorMessage = "Tea Commerce - Authorize.net - MD5Sum security check failed - " + gatewayMd5Hash + " - " + calculatedMd5Hash + " - " + settings[ "md5HashKey" ];
       } else
         errorMessage = "Tea Commerce - Authorize.net - Payment not approved: " + responseCode;
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
+      LoggingService.Instance.Log( errorMessage );
       return new CallbackInfo( errorMessage );
     }
 
-    public override APIInfo GetStatus( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
-      GetTransactionDetailsResponseType result = GetAuthorizeNetServiceClient( settings ).GetTransactionDetails( new MerchantAuthenticationType() { name = settings[ "x_login" ], transactionKey = settings[ "transactionKey" ] }, order.TransactionPaymentTransactionId );
+      GetTransactionDetailsResponseType result = GetAuthorizeNetServiceClient( settings ).GetTransactionDetails( new MerchantAuthenticationType() { name = settings[ "x_login" ], transactionKey = settings[ "transactionKey" ] }, order.TransactionInformation.TransactionId );
 
       if ( result.resultCode == MessageTypeEnum.Ok ) {
 
-        PaymentStatus paymentStatus = PaymentStatus.Initial;
+        PaymentState paymentState = PaymentState.Initiated;
         switch ( result.transaction.transactionStatus ) {
           case "authorizedPendingCapture":
-            paymentStatus = PaymentStatus.Authorized;
+            paymentState = PaymentState.Authorized;
             break;
           case "capturedPendingSettlement":
           case "settledSuccessfully":
-            paymentStatus = PaymentStatus.Captured;
+            paymentState = PaymentState.Captured;
             break;
           case "voided":
-            paymentStatus = PaymentStatus.Cancelled;
+            paymentState = PaymentState.Cancelled;
             break;
           case "refundSettledSuccessfully":
           case "refundPendingSettlement":
-            paymentStatus = PaymentStatus.Refunded;
+            paymentState = PaymentState.Refunded;
             break;
         }
 
-        return new APIInfo( result.transaction.transId, paymentStatus );
+        return new ApiInfo( result.transaction.transId, paymentState );
       } else {
-        errorMessage = "Tea Commerce - Authorize.net - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_AuthorizeNet_error" ), result.messages[ 0 ].code, result.messages[ 0 ].text );
+        errorMessage = "Tea Commerce - Authorize.net - " + string.Format( "Error making API request - Error code: {0} - Description: {1}", result.messages[ 0 ].code, result.messages[ 0 ].text );
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo CapturePayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
       throw new NotImplementedException();
     }
 
-    public override APIInfo RefundPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
       throw new NotImplementedException();
     }
 
-    public override APIInfo CancelPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
       throw new NotImplementedException();
     }
 
-    protected Service GetAuthorizeNetServiceClient( Dictionary<string, string> settings ) {
+    public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
+      switch ( settingsKey ) {
+        case "x_receipt_link_url":
+          return settingsKey + "<br/><small>e.g. /continue/</small>";
+        case "x_cancel_url":
+          return settingsKey + "<br/><small>e.g. /cancel/</small>";
+        case "x_type":
+          return settingsKey + "<br/><small>e.g. AUTH_ONLY or AUTH_CAPTURE</small>";
+        case "testing":
+          return settingsKey + "<br/><small>1 = true; 0 = false</small>";
+        default:
+          return base.GetLocalizedSettingsKey( settingsKey, culture );
+      }
+    }
+
+    protected Service GetAuthorizeNetServiceClient( IDictionary<string, string> settings ) {
       Service service = new Service();
       bool isTesting = settings[ "testing" ] == "1";
       service.Url = !isTesting ? "https://api.authorize.net/soap/v1/Service.asmx" : "https://apitest.authorize.net/soap/v1/Service.asmx";

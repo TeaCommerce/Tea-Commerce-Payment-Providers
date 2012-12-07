@@ -5,19 +5,21 @@ using System.Linq;
 using System.Web;
 using System.Xml.Linq;
 using System.Xml.XPath;
-using TeaCommerce.Data;
-using TeaCommerce.Data.Payment;
+using TeaCommerce.Api.Models;
+using TeaCommerce.Api.PaymentProviders;
 using TeaCommerce.PaymentProviders.Extensions;
 using TeaCommerce.PaymentProviders.PayExService;
-using umbraco.BusinessLogic;
+using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
   public class PayEx : APaymentProvider {
 
+    protected const string apiErrorFormatString = "Error making API request - Error code: {0} - Description: {1}";
+
     protected bool isTesting;
     protected string formPostUrl;
 
-    public override Dictionary<string, string> DefaultSettings {
+    public override IDictionary<string, string> DefaultSettings {
       get {
         if ( defaultSettings == null ) {
           defaultSettings = new Dictionary<string, string>();
@@ -27,7 +29,7 @@ namespace TeaCommerce.PaymentProviders {
           defaultSettings[ "cancelUrl" ] = string.Empty;
           defaultSettings[ "purchaseOperation" ] = "AUTHORIZATION";
           defaultSettings[ "encryptionKey" ] = string.Empty;
-          defaultSettings[ "productNumberPropertyAlias" ] = "productNumber";
+          defaultSettings[ "productNumberPropertyAlias" ] = "productNumber";//TODO: disse skal rettes til vores nye best practice
           defaultSettings[ "productNamePropertyAlias" ] = "productName";
           defaultSettings[ "testing" ] = "0";
         }
@@ -39,14 +41,14 @@ namespace TeaCommerce.PaymentProviders {
     public override bool FinalizeAtContinueUrl { get { return true; } }
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-payex-with-tea-commerce/"; } }
 
-    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
+    public override IDictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
       long accountNumber = long.Parse( settings[ "accountNumber" ] );
       string purchaseOperation = settings[ "purchaseOperation" ];
-      int price = (int)Math.Round( order.TotalPrice * 100M, 0 );
+      int price = (int)Math.Round( order.TotalPrice.WithVat * 100M, 0 );
       string priceArgList = string.Empty;
       string currency = order.CurrencyISOCode;
-      int vat = (int)Math.Round( order.VAT * 100M * 100M, 0 );
-      string orderId = order.Name;
+      int vat = (int)Math.Round( order.VatRate * 100M * 100M, 0 );
+      string orderId = order.CartNumber;
       string productNumber = order.OrderLines.Select( ol => ol.Properties.First( p => p.Alias.Equals( settings[ "productNumberPropertyAlias" ] ) ).Value ).Join( ", " );
       string description = order.OrderLines.Select( ol => ol.Properties.First( p => p.Alias.Equals( settings[ "productNamePropertyAlias" ] ) ).Value ).Join( ", " );
       string clientIPAddress = HttpContext.Current.Request.UserHostAddress;
@@ -77,21 +79,21 @@ namespace TeaCommerce.PaymentProviders {
       } else {
         formPostUrl = teaCommerceCancelUrl;
         string errorDescription = xmlDoc.XPathSelectElement( "//status/description" ).Value;
-        Log.Add( LogTypes.Error, -1, "Tea Commerce - PayEx - Error in GenerateForm - Error code: " + errorCode + " - Description: " + errorDescription );
+        LoggingService.Instance.Log( "Tea Commerce - PayEx - Error in GenerateForm - Error code: " + errorCode + " - Description: " + errorDescription );
       }
 
       return new Dictionary<string, string>();
     }
 
-    public override string GetContinueUrl( Dictionary<string, string> settings ) {
+    public override string GetContinueUrl( IDictionary<string, string> settings ) {
       return settings[ "returnURL" ];
     }
 
-    public override string GetCancelUrl( Dictionary<string, string> settings ) {
+    public override string GetCancelUrl( IDictionary<string, string> settings ) {
       return settings[ "cancelUrl" ];
     }
 
-    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, Dictionary<string, string> settings ) {
+    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
       long accountNumber = long.Parse( settings[ "accountNumber" ] );
@@ -112,28 +114,27 @@ namespace TeaCommerce.PaymentProviders {
 
       //0 = Sale | 3 = Authorize
       if ( errorCode.Equals( "OK" ) && ( transactionStatus.Equals( "0" ) || transactionStatus.Equals( "3" ) ) && !bool.Parse( xmlDoc.XPathSelectElement( "//alreadyCompleted" ).Value ) ) {
-        string orderName = xmlDoc.XPathSelectElement( "//orderId" ).Value;
         decimal amount = decimal.Parse( xmlDoc.XPathSelectElement( "//amount" ).Value, CultureInfo.InvariantCulture );
         string transactionNumber = xmlDoc.XPathSelectElement( "//transactionNumber" ).Value;
-        PaymentStatus paymentStatus = transactionStatus.Equals( "3" ) ? PaymentStatus.Authorized : PaymentStatus.Captured;
+        PaymentState paymentState = transactionStatus.Equals( "3" ) ? PaymentState.Authorized : PaymentState.Captured;
         string paymentMethod = xmlDoc.XPathSelectElement( "//paymentMethod" ).Value;
         string maskedNumber = xmlDoc.XPathSelectElement( "//maskedNumber" ).Value;
 
-        return new CallbackInfo( orderName, amount / 100M, transactionNumber, paymentStatus, paymentMethod, maskedNumber );
+        return new CallbackInfo( amount / 100M, transactionNumber, paymentState, paymentMethod, maskedNumber );
       } else {
         string errorDescription = xmlDoc.XPathSelectElement( "//status/description" ).Value;
         errorMessage = "Tea Commerce - PayEx - Callback failed - Error code: " + errorCode + " - Description: " + errorDescription;
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
+      LoggingService.Instance.Log( errorMessage );
       return new CallbackInfo( errorMessage );
     }
 
-    public override APIInfo GetStatus( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
       long accountNumber = long.Parse( settings[ "accountNumber" ] );
-      int transactionNumber = int.Parse( order.TransactionPaymentTransactionId );
+      int transactionNumber = int.Parse( order.TransactionInformation.TransactionId );
 
       string md5Hash = GetMD5Hash( accountNumber.ToString() + transactionNumber.ToString() + settings[ "encryptionKey" ] );
 
@@ -141,40 +142,40 @@ namespace TeaCommerce.PaymentProviders {
       string errorCode = xmlDoc.XPathSelectElement( "//status/errorCode" ).Value;
 
       if ( errorCode.Equals( "OK" ) ) {
-        PaymentStatus paymentStatus = PaymentStatus.Initial;
+        PaymentState paymentState = PaymentState.Initiated;
         switch ( xmlDoc.XPathSelectElement( "//transactionStatus" ).Value ) {
           case "3":
-            paymentStatus = PaymentStatus.Authorized;
+            paymentState = PaymentState.Authorized;
             break;
           case "6":
-            paymentStatus = PaymentStatus.Captured;
+            paymentState = PaymentState.Captured;
             break;
           case "4":
-            paymentStatus = PaymentStatus.Cancelled;
+            paymentState = PaymentState.Cancelled;
             break;
           case "2":
-            paymentStatus = PaymentStatus.Refunded;
+            paymentState = PaymentState.Refunded;
             break;
         }
 
-        return new APIInfo( xmlDoc.XPathSelectElement( "//transactionNumber" ).Value, paymentStatus );
+        return new ApiInfo( xmlDoc.XPathSelectElement( "//transactionNumber" ).Value, paymentState );
       } else {
         string errorDescription = xmlDoc.XPathSelectElement( "//status/description" ).Value;
-        errorMessage = "Tea Commerce - PayEx - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_PayEx_error" ), errorCode, errorDescription );
+        errorMessage = "Tea Commerce - PayEx - " + string.Format( apiErrorFormatString, errorCode, errorDescription );
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo CapturePayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
       long accountNumber = long.Parse( settings[ "accountNumber" ] );
-      int transactionNumber = int.Parse( order.TransactionPaymentTransactionId );
-      int amount = (int)Math.Round( order.TotalPrice * 100M, 0 );
-      string orderId = order.Name;
-      int vatAmount = (int)Math.Round( order.VAT * 100M * 100M, 0 );
+      int transactionNumber = int.Parse( order.TransactionInformation.TransactionId );
+      int amount = (int)Math.Round( order.TotalPrice.WithVat * 100M, 0 );
+      string orderId = order.CartNumber;
+      int vatAmount = (int)Math.Round( order.VatRate * 100M * 100M, 0 );
       string additionalValues = string.Empty;
 
       string md5Hash = GetMD5Hash( accountNumber.ToString() + transactionNumber.ToString() + amount.ToString() + orderId + vatAmount.ToString() + additionalValues + settings[ "encryptionKey" ] );
@@ -183,24 +184,24 @@ namespace TeaCommerce.PaymentProviders {
       string errorCode = xmlDoc.XPathSelectElement( "//status/errorCode" ).Value;
 
       if ( errorCode.Equals( "OK" ) && xmlDoc.XPathSelectElement( "//transactionStatus" ).Value.Equals( "6" ) ) {
-        return new APIInfo( xmlDoc.XPathSelectElement( "//transactionNumber" ).Value, PaymentStatus.Captured );
+        return new ApiInfo( xmlDoc.XPathSelectElement( "//transactionNumber" ).Value, PaymentState.Captured );
       } else {
         string errorDescription = xmlDoc.XPathSelectElement( "//status/description" ).Value;
-        errorMessage = "Tea Commerce - PayEx - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_PayEx_error" ), errorCode, errorDescription );
+        errorMessage = "Tea Commerce - PayEx - " + string.Format( apiErrorFormatString, errorCode, errorDescription );
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo RefundPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
       long accountNumber = long.Parse( settings[ "accountNumber" ] );
-      int transactionNumber = int.Parse( order.TransactionPaymentTransactionId );
-      int amount = (int)Math.Round( order.TotalPrice * 100M, 0 );
-      string orderId = order.Name;
-      int vatAmount = (int)Math.Round( order.VAT * 100M, 0 );
+      int transactionNumber = int.Parse( order.TransactionInformation.TransactionId );
+      int amount = (int)Math.Round( order.TotalPrice.WithVat * 100M, 0 );
+      string orderId = order.CartNumber;
+      int vatAmount = (int)Math.Round( order.VatRate * 100M, 0 );
       string additionalValues = string.Empty;
 
       string md5Hash = GetMD5Hash( accountNumber.ToString() + transactionNumber.ToString() + amount.ToString() + orderId + vatAmount.ToString() + additionalValues + settings[ "encryptionKey" ] );
@@ -209,21 +210,21 @@ namespace TeaCommerce.PaymentProviders {
       string errorCode = xmlDoc.XPathSelectElement( "//status/errorCode" ).Value;
 
       if ( errorCode.Equals( "OK" ) && xmlDoc.XPathSelectElement( "//transactionStatus" ).Value.Equals( "2" ) ) {
-        return new APIInfo( xmlDoc.XPathSelectElement( "//transactionNumber" ).Value, PaymentStatus.Refunded );
+        return new ApiInfo( xmlDoc.XPathSelectElement( "//transactionNumber" ).Value, PaymentState.Refunded );
       } else {
         string errorDescription = xmlDoc.XPathSelectElement( "//status/description" ).Value;
-        errorMessage = "Tea Commerce - PayEx - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_PayEx_error" ), errorCode, errorDescription );
+        errorMessage = "Tea Commerce - PayEx - " + string.Format( apiErrorFormatString, errorCode, errorDescription );
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    public override APIInfo CancelPayment( Order order, Dictionary<string, string> settings ) {
+    public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
       string errorMessage = string.Empty;
 
       long accountNumber = long.Parse( settings[ "accountNumber" ] );
-      int transactionNumber = int.Parse( order.TransactionPaymentTransactionId );
+      int transactionNumber = int.Parse( order.TransactionInformation.TransactionId );
 
       string md5Hash = GetMD5Hash( accountNumber.ToString() + transactionNumber.ToString() + settings[ "encryptionKey" ] );
 
@@ -231,17 +232,34 @@ namespace TeaCommerce.PaymentProviders {
       string errorCode = xmlDoc.XPathSelectElement( "//status/errorCode" ).Value;
 
       if ( errorCode.Equals( "OK" ) && xmlDoc.XPathSelectElement( "//transactionStatus" ).Value.Equals( "4" ) ) {
-        return new APIInfo( xmlDoc.XPathSelectElement( "//transactionNumber" ).Value, PaymentStatus.Cancelled );
+        return new ApiInfo( xmlDoc.XPathSelectElement( "//transactionNumber" ).Value, PaymentState.Cancelled );
       } else {
         string errorDescription = xmlDoc.XPathSelectElement( "//status/description" ).Value;
-        errorMessage = "Tea Commerce - PayEx - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_PayEx_error" ), errorCode, errorDescription );
+        errorMessage = "Tea Commerce - PayEx - " + string.Format( apiErrorFormatString, errorCode, errorDescription );
       }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      LoggingService.Instance.Log( errorMessage );
+      return new ApiInfo( errorMessage );
     }
 
-    protected PxOrder GetPayExServiceClient( Dictionary<string, string> settings ) {
+    public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
+      switch ( settingsKey ) {
+        case "clientLanguage":
+          return settingsKey + "<br/><small>e.g. en-US or da-DK</small>";
+        case "returnURL":
+          return settingsKey + "<br/><small>e.g. /continue/</small>";
+        case "cancelUrl":
+          return settingsKey + "<br/><small>e.g. /cancel/</small>";
+        case "purchaseOperation":
+          return settingsKey + "<br/><small>e.g. SALE or AUTHORIZATION</small>";
+        case "testing":
+          return settingsKey + "<br/><small>1 = true; 0 = false</small>";
+        default:
+          return base.GetLocalizedSettingsKey( settingsKey, culture );
+      }
+    }
+
+    protected PxOrder GetPayExServiceClient( IDictionary<string, string> settings ) {
       PxOrder pxOrder = new PxOrder();
       pxOrder.Url = settings[ "testing" ] != "1" ? "https://external.payex.com/pxorder/pxorder.asmx" : "https://test-external.payex.com/pxorder/pxorder.asmx";
       return pxOrder;
