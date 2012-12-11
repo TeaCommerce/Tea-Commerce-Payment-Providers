@@ -11,7 +11,6 @@ namespace TeaCommerce.PaymentProviders.Extensions {
     /// <param name="seperator">Seperator text between each element</param>
     /// <returns>String containing each element seperated by the <paramref name="seperator"/></returns>
     public static string Join( this IEnumerable source, string seperator ) {
-      "".Truncate( 100, "" );
       string returnStr = string.Empty;
 
       StringBuilder sb = new StringBuilder();

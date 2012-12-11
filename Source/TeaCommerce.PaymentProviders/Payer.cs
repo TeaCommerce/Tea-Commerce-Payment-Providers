@@ -10,6 +10,8 @@ using TeaCommerce.PaymentProviders.Extensions;
 using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
+
+  [PaymentProvider( "Payer" )]
   public class Payer : APaymentProvider {
 
     public override bool SupportsRetrievalOfPaymentStatus { get { return false; } }

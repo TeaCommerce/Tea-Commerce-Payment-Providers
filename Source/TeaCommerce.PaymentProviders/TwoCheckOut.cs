@@ -9,6 +9,8 @@ using TeaCommerce.PaymentProviders.Extensions;
 using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
+
+  [PaymentProvider( "2CheckOut" )]
   public class TwoCheckOut : APaymentProvider {
 
     protected const string defaultParameterValue = "";
@@ -32,9 +34,8 @@ namespace TeaCommerce.PaymentProviders {
           defaultSettings[ "shippingMethodFormatString" ] = "Shipping fee ({0})";
           defaultSettings[ "paymentMethodProductNumber" ] = "2000";
           defaultSettings[ "paymentMethodFormatString" ] = "Payment fee ({0})";
-          defaultSettings[ "streetAddressPropertyAlias" ] = "streetAddress";
+          defaultSettings[ "streetAddressPropertyAlias" ] = "streetAddress"; //TODO: hedder de også det i den nye best practice??
           defaultSettings[ "cityPropertyAlias" ] = "city";
-          defaultSettings[ "statePropertyAlias" ] = "state";
           defaultSettings[ "zipCodePropertyAlias" ] = "zipCode";
           defaultSettings[ "phonePropertyAlias" ] = "phone";
           defaultSettings[ "phoneExtensionPropertyAlias" ] = "phoneExtension";
@@ -65,19 +66,20 @@ namespace TeaCommerce.PaymentProviders {
       inputFields[ "card_holder_name" ] = order.PaymentInformation.FirstName + " " + order.PaymentInformation.LastName;
 
       //street_address
-      OrderProperty streetAddressProperty = settings.ContainsKey( "streetAddressPropertyAlias" ) ? order.Properties.FirstOrDefault( i => i.Alias.Equals( settings[ "streetAddressPropertyAlias" ] ) ) : null;
+      CustomProperty streetAddressProperty = settings.ContainsKey( "streetAddressPropertyAlias" ) ? order.Properties.Get( settings[ "streetAddressPropertyAlias" ] ) : null;
       inputFields[ "street_address" ] = streetAddressProperty != null && !string.IsNullOrEmpty( streetAddressProperty.Value ) ? streetAddressProperty.Value : defaultParameterValue;
 
       //city
-      OrderProperty cityPropertyAlias = settings.ContainsKey( "cityPropertyAlias" ) ? order.Properties.FirstOrDefault( i => i.Alias.Equals( settings[ "cityPropertyAlias" ] ) ) : null;
+      CustomProperty cityPropertyAlias = settings.ContainsKey( "cityPropertyAlias" ) ? order.Properties.Get( settings[ "cityPropertyAlias" ] ) : null;
       inputFields[ "city" ] = cityPropertyAlias != null && !string.IsNullOrEmpty( cityPropertyAlias.Value ) ? cityPropertyAlias.Value : defaultParameterValue;
 
       //state
-      OrderProperty statePropertyAlias = settings.ContainsKey( "statePropertyAlias" ) ? order.Properties.FirstOrDefault( i => i.Alias.Equals( settings[ "statePropertyAlias" ] ) ) : null;
+      //TODO - se på states i alle providers
+      CustomProperty statePropertyAlias = settings.ContainsKey( "statePropertyAlias" ) ? order.Properties.Get( settings[ "statePropertyAlias" ] ) : null;
       inputFields[ "state" ] = statePropertyAlias != null && !string.IsNullOrEmpty( statePropertyAlias.Value ) ? statePropertyAlias.Value : defaultParameterValue;
 
       //zip
-      OrderProperty zipCodePropertyAlias = settings.ContainsKey( "zipCodePropertyAlias" ) ? order.Properties.FirstOrDefault( i => i.Alias.Equals( settings[ "zipCodePropertyAlias" ] ) ) : null;
+      CustomProperty zipCodePropertyAlias = settings.ContainsKey( "zipCodePropertyAlias" ) ? order.Properties.Get( settings[ "zipCodePropertyAlias" ] ) : null;
       inputFields[ "zip" ] = zipCodePropertyAlias != null && !string.IsNullOrEmpty( zipCodePropertyAlias.Value ) ? zipCodePropertyAlias.Value : defaultParameterValue;
 
       //country
@@ -87,11 +89,11 @@ namespace TeaCommerce.PaymentProviders {
       inputFields[ "email" ] = order.PaymentInformation.Email;
 
       //phone
-      OrderProperty phonePropertyAlias = settings.ContainsKey( "phonePropertyAlias" ) ? order.Properties.FirstOrDefault( i => i.Alias.Equals( settings[ "phonePropertyAlias" ] ) ) : null;
+      CustomProperty phonePropertyAlias = settings.ContainsKey( "phonePropertyAlias" ) ? order.Properties.Get( settings[ "phonePropertyAlias" ] ) : null;
       inputFields[ "phone" ] = phonePropertyAlias != null && !string.IsNullOrEmpty( phonePropertyAlias.Value ) ? phonePropertyAlias.Value : defaultParameterValue;
 
       //phone_extension
-      OrderProperty phoneExtensionPropertyAlias = settings.ContainsKey( "phoneExtensionPropertyAlias" ) ? order.Properties.FirstOrDefault( i => i.Alias.Equals( settings[ "phoneExtensionPropertyAlias" ] ) ) : null;
+      CustomProperty phoneExtensionPropertyAlias = settings.ContainsKey( "phoneExtensionPropertyAlias" ) ? order.Properties.Get( settings[ "phoneExtensionPropertyAlias" ] ) : null;
       inputFields[ "phone_extension" ] = phoneExtensionPropertyAlias != null && !string.IsNullOrEmpty( phoneExtensionPropertyAlias.Value ) ? phoneExtensionPropertyAlias.Value : defaultParameterValue;
 
       //fixed
@@ -134,8 +136,8 @@ namespace TeaCommerce.PaymentProviders {
 
       for ( int i = orderLines.Count - 1; i >= 0; i-- ) {
         orderLine = orderLines[ i ];
-        OrderLineProperty productNameProp = orderLine.Properties.SingleOrDefault( op => op.Alias.Equals( settings[ "productNamePropertyAlias" ] ) );
-        OrderLineProperty productNumberProp = orderLine.Properties.SingleOrDefault( op => op.Alias.Equals( settings[ "productNumberPropertyAlias" ] ) );
+        CustomProperty productNameProp = orderLine.Properties.Get( settings[ "productNamePropertyAlias" ] );
+        CustomProperty productNumberProp = orderLine.Properties.Get( settings[ "productNumberPropertyAlias" ] );
 
         inputFields[ "c_prod_" + itemIndex ] = productNumberProp.Value + "," + orderLine.Quantity.ToString();
         inputFields[ "c_name_" + itemIndex ] = productNameProp.Value.Truncate( 128 );

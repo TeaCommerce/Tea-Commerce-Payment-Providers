@@ -9,6 +9,7 @@ using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
 
+  [PaymentProvider( "PayPal" )]
   public class PayPal : APaymentProvider {
 
     protected const string apiErrorFormatString = "Error making API request - Error code: {0} - see https://cms.paypal.com/us/cgi-bin/?cmd=_render-content&content_ID=developer/e_howto_api_nvp_errorcodes for a description of these";

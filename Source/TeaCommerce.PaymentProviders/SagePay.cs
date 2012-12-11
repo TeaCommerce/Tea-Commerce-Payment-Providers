@@ -10,6 +10,7 @@ using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
 
+  [PaymentProvider( "SagePay" )]
   public class SagePay : APaymentProvider {
 
     protected const string apiErrorFormatString = "Error making API request: {0}";
@@ -115,9 +116,9 @@ namespace TeaCommerce.PaymentProviders {
 
       if ( status.Equals( "OK" ) || status.Equals( "OK REPEATED" ) ) {
         lock ( order ) {
-          order.AddProperty( new OrderProperty( "SecurityKey", responseFields[ "SecurityKey" ], true ) );
-          order.AddProperty( new OrderProperty( "TeaCommerceContinueUrl", teaCommerceContinueUrl, true ) );
-          order.AddProperty( new OrderProperty( "TeaCommerceCancelUrl", teaCommerceCancelUrl, true ) );
+          order.Properties.AddOrUpdate( new CustomProperty( "SecurityKey", responseFields[ "SecurityKey" ] ) { ServerSideOnly = true } );
+          order.Properties.AddOrUpdate( new CustomProperty( "TeaCommerceContinueUrl", teaCommerceContinueUrl ) { ServerSideOnly = true } );
+          order.Properties.AddOrUpdate( new CustomProperty( "TeaCommerceCancelUrl", teaCommerceCancelUrl ) { ServerSideOnly = true } );
           order.Save();
         }
         formPostUrl = responseFields[ "NextURL" ];
@@ -185,11 +186,14 @@ namespace TeaCommerce.PaymentProviders {
         if ( status.Equals( "OK" ) || status.Equals( "AUTHENTICATED" ) || status.Equals( "REGISTERED" ) ) {
           callbackInfo = new CallbackInfo( order.TotalPrice.WithVat, transaction, !request.Form[ "TxType" ].Equals( "PAYMENT" ) ? PaymentState.Authorized : PaymentState.Captured, cardType, last4Digits );
 
+          //TODO: søg efter lock
           lock ( order ) {
-            if ( status.Equals( "OK" ) )
-              order.AddProperty( new OrderProperty( "TxAuthNo", txAuthNo, true ) );
-            order.AddProperty( new OrderProperty( "VendorTxCode", vendorTxCode, true ) );
-            order.Save();
+            if ( status.Equals( "OK" ) ) {
+              order.Properties.AddOrUpdate( new CustomProperty( "TxAuthNo", txAuthNo ) { ServerSideOnly = true } );
+            }
+            order.Properties.AddOrUpdate( new CustomProperty( "VendorTxCode", vendorTxCode ) { ServerSideOnly = true } );
+            //TODO: søg efter save - ordren bliver vel gemt når den kommer tilbage?
+            //order.Save();
           }
 
           inputFields[ "Status" ] = "OK";
@@ -246,9 +250,9 @@ namespace TeaCommerce.PaymentProviders {
 
       if ( responseFields[ "Status" ].Equals( "OK" ) ) {
         lock ( order ) {
-          order.AddProperty( new OrderProperty( "VendorTxCode", vendorTxCode.ToString(), true ) );
-          order.AddProperty( new OrderProperty( "TxAuthNo", responseFields[ "TxAuthNo" ], true ) );
-          order.AddProperty( new OrderProperty( "SecurityKey", responseFields[ "SecurityKey" ], true ) );
+          order.Properties.AddOrUpdate( new CustomProperty( "VendorTxCode", vendorTxCode.ToString() ) { ServerSideOnly = true } );
+          order.Properties.AddOrUpdate( new CustomProperty( "TxAuthNo", responseFields[ "TxAuthNo" ] ) { ServerSideOnly = true } );
+          order.Properties.AddOrUpdate( new CustomProperty( "SecurityKey", responseFields[ "SecurityKey" ] ) { ServerSideOnly = true } );
           order.Save();
         }
 
@@ -283,8 +287,8 @@ namespace TeaCommerce.PaymentProviders {
 
       if ( responseFields[ "Status" ].Equals( "OK" ) ) {
         lock ( order ) {
-          order.AddProperty( new OrderProperty( "VendorTxCode", vendorTxCode.ToString(), true ) );
-          order.AddProperty( new OrderProperty( "TxAuthNo", responseFields[ "TxAuthNo" ], true ) );
+          order.Properties.AddOrUpdate( new CustomProperty( "VendorTxCode", vendorTxCode.ToString() ) { ServerSideOnly = true } );
+          order.Properties.AddOrUpdate( new CustomProperty( "TxAuthNo", responseFields[ "TxAuthNo" ] ) { ServerSideOnly = true } );
           order.Save();
         }
 

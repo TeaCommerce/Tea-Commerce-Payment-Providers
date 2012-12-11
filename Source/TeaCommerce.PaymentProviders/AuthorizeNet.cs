@@ -6,42 +6,47 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
+using TeaCommerce.Api.Common;
+using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
 using TeaCommerce.Api.PaymentProviders;
 using TeaCommerce.PaymentProviders.AuthorizeNetService;
-using TeaCommerce.Api.Infrastructure.Logging;
-
+using TeaCommerce.PaymentProviders.Extensions;
 
 namespace TeaCommerce.PaymentProviders {
+
+  [PaymentProvider( "AuthorizeNet" )]
   public class AuthorizeNet : APaymentProvider {
-
-    protected bool isTesting;
-
-    public override bool SupportsCancellationOfPayment { get { return false; } }
-    public override bool SupportsCapturingOfPayment { get { return false; } }
-    public override bool SupportsRefundOfPayment { get { return false; } }
 
     public override IDictionary<string, string> DefaultSettings {
       get {
-        if ( defaultSettings == null ) {
-          defaultSettings = new Dictionary<string, string>();
-          defaultSettings[ "x_login" ] = string.Empty;
-          defaultSettings[ "x_receipt_link_url" ] = string.Empty;
-          defaultSettings[ "x_cancel_url" ] = string.Empty;
-          defaultSettings[ "x_type" ] = "AUTH_ONLY";
-          defaultSettings[ "transactionKey" ] = string.Empty;
-          defaultSettings[ "md5HashKey" ] = string.Empty;
-          defaultSettings[ "testing" ] = "0";
-        }
+        Dictionary<string, string> defaultSettings = new Dictionary<string, string>();
+        defaultSettings[ "x_login" ] = string.Empty;
+        defaultSettings[ "x_receipt_link_url" ] = string.Empty;
+        defaultSettings[ "x_cancel_url" ] = string.Empty;
+        defaultSettings[ "x_type" ] = "AUTH_ONLY";
+        defaultSettings[ "transactionKey" ] = string.Empty;
+        defaultSettings[ "md5HashKey" ] = string.Empty;
+        defaultSettings[ "testing" ] = "0";
         return defaultSettings;
       }
     }
-
-    public override string FormPostUrl { get { return !isTesting ? "https://secure.authorize.net/gateway/transact.dll" : "https://test.authorize.net/gateway/transact.dll"; } }
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-authorize-net-with-tea-commerce/"; } }
+
+    protected bool isTesting;
+    public override string FormPostUrl { get { return !isTesting ? "https://secure.authorize.net/gateway/transact.dll" : "https://test.authorize.net/gateway/transact.dll"; } }
+
     public override bool AllowsCallbackWithoutOrderId { get { return true; } }
 
+    public override bool SupportsRetrievalOfPaymentStatus { get { return true; } }
+
     public override IDictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+      order.MustNotBeNull( "order" );
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "x_login", "settings" );
+      settings.MustContainKey( "x_type", "settings" );
+      settings.MustContainKey( "transactionKey", "settings" );
+
       List<string> settingsToExclude = new string[] { "transactionKey", "md5HashKey", "testing" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
@@ -74,88 +79,118 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override string GetContinueUrl( IDictionary<string, string> settings ) {
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "x_receipt_link_url", "settings" );
+
       return settings[ "x_receipt_link_url" ];
     }
 
     public override string GetCancelUrl( IDictionary<string, string> settings ) {
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "x_cancel_url", "settings" );
+
       return settings[ "x_cancel_url" ];
     }
 
-    public override Guid GetOrderId( HttpRequest request, IDictionary<string, string> settings ) {
-      //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/AuthorizeNetTestGetOrderId.txt" ) ) ) ) {
-      //  writer.WriteLine( "Form:" );
-      //  foreach ( string k in request.Form.Keys ) {
-      //    writer.WriteLine( k + " : " + request.Form[ k ] );
-      //  }
-      //  writer.Flush();
-      //}
+    public override string GetCartNumber( HttpRequest request, IDictionary<string, string> settings ) {
+      string cartNumber = "";
 
-      string errorMessage = string.Empty;
+      try {
+        request.MustNotBeNull( "request" );
+        settings.MustNotBeNull( "settings" );
 
-      string responseCode = request.Form[ "x_response_code" ];
-      if ( responseCode.Equals( "1" ) ) {
+        //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/AuthorizeNetTestGetOrderId.txt" ) ) ) ) {
+        //  writer.WriteLine( "Form:" );
+        //  foreach ( string k in request.Form.Keys ) {
+        //    writer.WriteLine( k + " : " + request.Form[ k ] );
+        //  }
+        //  writer.Flush();
+        //}
 
-        string amount = request.Form[ "x_amount" ];
-        string transaction = request.Form[ "x_trans_id" ];
+        string responseCode = request.Form[ "x_response_code" ];
+        if ( responseCode.Equals( "1" ) ) {
 
-        string gatewayMd5Hash = request.Form[ "x_MD5_Hash" ];
+          string amount = request.Form[ "x_amount" ];
+          string transaction = request.Form[ "x_trans_id" ];
 
-        MD5CryptoServiceProvider x = new MD5CryptoServiceProvider();
-        string calculatedMd5Hash = Regex.Replace( BitConverter.ToString( x.ComputeHash( Encoding.ASCII.GetBytes( settings[ "md5HashKey" ] + settings[ "x_login" ] + transaction + amount ) ) ), "-", string.Empty );
+          string gatewayMd5Hash = request.Form[ "x_MD5_Hash" ];
 
-        if ( gatewayMd5Hash.Equals( calculatedMd5Hash ) ) {
-          string orderName = request.Form[ "x_invoice_num" ];
+          MD5CryptoServiceProvider x = new MD5CryptoServiceProvider();
+          string calculatedMd5Hash = Regex.Replace( BitConverter.ToString( x.ComputeHash( Encoding.ASCII.GetBytes( settings[ "md5HashKey" ] + settings[ "x_login" ] + transaction + amount ) ) ), "-", string.Empty );
 
-          return long.Parse( orderName.Remove( 0, TeaCommerceSettings.OrderNamePrefix.Length ) );
-        } else
-          errorMessage = "Tea Commerce - Authorize.net - MD5Sum security check failed - " + gatewayMd5Hash + " - " + calculatedMd5Hash + " - " + settings[ "md5HashKey" ];
-      } else
-        errorMessage = "Tea Commerce - Authorize.net - Payment not approved: " + responseCode;
+          if ( gatewayMd5Hash.Equals( calculatedMd5Hash ) ) {
+            cartNumber = request.Form[ "x_invoice_num" ];
+          } else {
+            LoggingService.Instance.Log( "Authorize.net - MD5Sum security check failed - " + gatewayMd5Hash + " - " + calculatedMd5Hash + " - " + settings[ "md5HashKey" ] );
+          }
+        } else {
+          LoggingService.Instance.Log( "Authorize.net - Payment not approved: " + responseCode );
+        }
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp );
+      }
 
-      LoggingService.Instance.Log( errorMessage );
-      return null;
+      return cartNumber;
     }
 
     public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
-      //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/AuthorizeNetTestCallback.txt" ) ) ) ) {
-      //  writer.WriteLine( "Form:" );
-      //  foreach ( string k in request.Form.Keys ) {
-      //    writer.WriteLine( k + " : " + request.Form[ k ] );
-      //  }
-      //  writer.Flush();
-      //}
+      CallbackInfo callbackInfo = null;
 
-      string errorMessage = string.Empty;
+      try {
+        order.MustNotBeNull( "order" );
+        request.MustNotBeNull( "request" );
+        settings.MustNotBeNull( "settings" );
+        settings.MustContainKey( "md5HashKey", "settings" );
+        settings.MustContainKey( "x_login", "settings" );
 
-      string responseCode = request.Form[ "x_response_code" ];
-      if ( responseCode.Equals( "1" ) ) {
+        //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/AuthorizeNetTestCallback.txt" ) ) ) ) {
+        //  writer.WriteLine( "Form:" );
+        //  foreach ( string k in request.Form.Keys ) {
+        //    writer.WriteLine( k + " : " + request.Form[ k ] );
+        //  }
+        //  writer.Flush();
+        //}
 
-        string amount = request.Form[ "x_amount" ];
-        string transaction = request.Form[ "x_trans_id" ];
+        string responseCode = request.Form[ "x_response_code" ];
+        if ( responseCode.Equals( "1" ) ) {
 
-        string gatewayMd5Hash = request.Form[ "x_MD5_Hash" ];
+          string amount = request.Form[ "x_amount" ];
+          string transaction = request.Form[ "x_trans_id" ];
 
-        MD5CryptoServiceProvider x = new MD5CryptoServiceProvider();
-        string calculatedMd5Hash = Regex.Replace( BitConverter.ToString( x.ComputeHash( Encoding.ASCII.GetBytes( settings[ "md5HashKey" ] + settings[ "x_login" ] + transaction + amount ) ) ), "-", string.Empty );
+          string gatewayMd5Hash = request.Form[ "x_MD5_Hash" ];
 
-        if ( gatewayMd5Hash.Equals( calculatedMd5Hash ) ) {
-          PaymentState paymentState = PaymentState.Authorized;
-          if ( request.Form[ "x_type" ].Equals( "auth_capture" ) )
-            paymentState = PaymentState.Captured;
-          string cardType = request.Form[ "x_card_type" ];
-          string cardNumber = request.Form[ "x_account_number" ];
+          MD5CryptoServiceProvider x = new MD5CryptoServiceProvider();
+          string calculatedMd5Hash = Regex.Replace( BitConverter.ToString( x.ComputeHash( Encoding.ASCII.GetBytes( settings[ "md5HashKey" ] + settings[ "x_login" ] + transaction + amount ) ) ), "-", string.Empty );
 
-          return new CallbackInfo( decimal.Parse( amount, CultureInfo.InvariantCulture ), transaction, paymentState, cardType, cardNumber );
-        } else
-          errorMessage = "Tea Commerce - Authorize.net - MD5Sum security check failed - " + gatewayMd5Hash + " - " + calculatedMd5Hash + " - " + settings[ "md5HashKey" ];
-      } else
-        errorMessage = "Tea Commerce - Authorize.net - Payment not approved: " + responseCode;
+          if ( gatewayMd5Hash.Equals( calculatedMd5Hash ) ) {
+            PaymentState paymentState = PaymentState.Authorized;
+            if ( request.Form[ "x_type" ].Equals( "auth_capture" ) )
+              paymentState = PaymentState.Captured;
+            string cardType = request.Form[ "x_card_type" ];
+            string cardNumber = request.Form[ "x_account_number" ];
 
-      LoggingService.Instance.Log( errorMessage );
-      return new CallbackInfo( errorMessage );
+            callbackInfo = new CallbackInfo( decimal.Parse( amount, CultureInfo.InvariantCulture ), transaction, paymentState, cardType, cardNumber );
+          } else {
+            LoggingService.Instance.Log( "Authorize.net - MD5Sum security check failed - " + gatewayMd5Hash + " - " + calculatedMd5Hash + " - " + settings[ "md5HashKey" ] );
+          }
+        } else {
+          LoggingService.Instance.Log( "Authorize.net - Payment not approved: " + responseCode );
+        }
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp );
+      }
+
+      return callbackInfo;
     }
 
     public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
+      order.MustNotBeNull( "order" );
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "x_login", "settings" );
+      settings.MustContainKey( "transactionKey", "settings" );
+
+      ApiInfo apiInfo = null;
+
       string errorMessage = string.Empty;
 
       GetTransactionDetailsResponseType result = GetAuthorizeNetServiceClient( settings ).GetTransactionDetails( new MerchantAuthenticationType() { name = settings[ "x_login" ], transactionKey = settings[ "transactionKey" ] }, order.TransactionInformation.TransactionId );
@@ -180,25 +215,12 @@ namespace TeaCommerce.PaymentProviders {
             break;
         }
 
-        return new ApiInfo( result.transaction.transId, paymentState );
+        apiInfo = new ApiInfo( result.transaction.transId, paymentState );
       } else {
-        errorMessage = "Tea Commerce - Authorize.net - " + string.Format( "Error making API request - Error code: {0} - Description: {1}", result.messages[ 0 ].code, result.messages[ 0 ].text );
+        apiInfo = new ApiInfo( "Authorize.net - " + string.Format( "Error making API request - Error code: {0} - Description: {1}", result.messages[ 0 ].code, result.messages[ 0 ].text ) );
       }
 
-      LoggingService.Instance.Log( errorMessage );
-      return new ApiInfo( errorMessage );
-    }
-
-    public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
-      throw new NotImplementedException();
-    }
-
-    public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
-      throw new NotImplementedException();
-    }
-
-    public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
-      throw new NotImplementedException();
+      return apiInfo;
     }
 
     public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {

@@ -9,6 +9,8 @@ using TeaCommerce.PaymentProviders.wannafindService;
 using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
+
+  [PaymentProvider( "Wannafind" )]
   public class Wannafind : APaymentProvider {
 
     protected const string apiErrorFormatString = "Error making API request - Error code: {0} - see http://www.wannafind.dk/support/downloads/19/ (page 27) for a description of these";

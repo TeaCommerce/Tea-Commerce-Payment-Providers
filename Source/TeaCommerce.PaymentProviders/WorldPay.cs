@@ -8,6 +8,8 @@ using TeaCommerce.Api.PaymentProviders;
 using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
+
+  [PaymentProvider( "WorldPay" )]
   public class WorldPay : APaymentProvider {
 
     protected bool isTesting;

@@ -13,6 +13,7 @@ using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
 
+  [PaymentProvider( "Ogone" )]
   public class Ogone : APaymentProvider {
 
     protected const string apiErrorFormatString = "Error making API request - Error code: {0} - {1}";

@@ -1,6 +1,6 @@
-﻿
+﻿using System;
 using System.Text;
-using System;
+
 namespace TeaCommerce.PaymentProviders.Extensions {
   public static class StringExtensions {
 

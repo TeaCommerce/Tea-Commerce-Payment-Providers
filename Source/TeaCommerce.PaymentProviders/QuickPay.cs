@@ -1,42 +1,47 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Web;
 using System.Xml.Linq;
 using System.Xml.XPath;
+using TeaCommerce.Api.Common;
+using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
 using TeaCommerce.Api.PaymentProviders;
+using TeaCommerce.Api.Services;
 using TeaCommerce.PaymentProviders.Extensions;
-using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
 
+  [PaymentProvider( "QuickPay" )]
   public class QuickPay : APaymentProvider {
-
-    protected const string formPostUrl = "https://secure.quickpay.dk/form/";
-    protected const string apiPostUrl = "https://secure.quickpay.dk/api/";
 
     public override IDictionary<string, string> DefaultSettings {
       get {
-        if ( defaultSettings == null ) {
-          defaultSettings = new Dictionary<string, string>();
-          defaultSettings[ "merchant" ] = string.Empty;
-          defaultSettings[ "language" ] = "en";
-          defaultSettings[ "continueurl" ] = string.Empty;
-          defaultSettings[ "cancelurl" ] = string.Empty;
-          defaultSettings[ "autocapture" ] = "0";
-          defaultSettings[ "cardtypelock" ] = string.Empty;
-          defaultSettings[ "md5secret" ] = string.Empty;
-          defaultSettings[ "testmode" ] = "0";
-        }
+        Dictionary<string, string> defaultSettings = new Dictionary<string, string>();
+        defaultSettings[ "merchant" ] = string.Empty;
+        defaultSettings[ "language" ] = "en";
+        defaultSettings[ "continueurl" ] = string.Empty;
+        defaultSettings[ "cancelurl" ] = string.Empty;
+        defaultSettings[ "autocapture" ] = "0";
+        defaultSettings[ "cardtypelock" ] = string.Empty;
+        defaultSettings[ "md5secret" ] = string.Empty;
+        defaultSettings[ "testmode" ] = "0";
         return defaultSettings;
       }
     }
-
-    public override string FormPostUrl { get { return formPostUrl; } }
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-quickpay-wit-tea-commerce/"; } }
 
+    public override string FormPostUrl { get { return "https://secure.quickpay.dk/form/"; } }
+
     public override IDictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+      order.MustNotBeNull( "order" );
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "merchant", "settings" );
+      settings.MustContainKey( "language", "settings" );
+      settings.MustContainKey( "md5secret", "settings" );
+
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
       inputFields[ "protocol" ] = "4";
@@ -50,7 +55,12 @@ namespace TeaCommerce.PaymentProviders {
         orderName = "0" + orderName;
       inputFields[ "ordernumber" ] = orderName;
       inputFields[ "amount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
-      inputFields[ "currency" ] = order.CurrencyISOCode;
+
+      Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
+      if ( !ISO4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
+        throw new Exception( "You must specify an ISO 4217 currency code for the " + currency.Name + " currency" );
+      }
+      inputFields[ "currency" ] = currency.IsoCode;
 
       inputFields[ "continueurl" ] = teaCommerceContinueUrl;
       inputFields[ "cancelurl" ] = teaCommerceCancelUrl;
@@ -73,70 +83,90 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override string GetContinueUrl( IDictionary<string, string> settings ) {
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "continueurl", "settings" );
+
       return settings[ "continueurl" ];
     }
 
     public override string GetCancelUrl( IDictionary<string, string> settings ) {
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "cancelurl", "settings" );
+
       return settings[ "cancelurl" ];
     }
 
     public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
-      //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/QuickPayTestCallback.txt" ) ) ) ) {
-      //  writer.WriteLine( "FORM:" );
-      //  foreach ( string k in request.Form.Keys ) {
-      //    writer.WriteLine( k + " : " + request.Form[ k ] );
-      //  }
-      //  writer.Flush();
-      //}
+      CallbackInfo callbackInfo = null;
 
-      string errorMessage = string.Empty;
+      try {
+        order.MustNotBeNull( "order" );
+        request.MustNotBeNull( "request" );
+        settings.MustNotBeNull( "settings" );
+        settings.MustContainKey( "md5secret", "settings" );
 
-      string md5CheckValue = string.Empty;
-      md5CheckValue += request.Form[ "msgtype" ];
-      md5CheckValue += request.Form[ "ordernumber" ];
-      md5CheckValue += request.Form[ "amount" ];
-      md5CheckValue += request.Form[ "currency" ];
-      md5CheckValue += request.Form[ "time" ];
-      md5CheckValue += request.Form[ "state" ];
-      md5CheckValue += request.Form[ "qpstat" ];
-      md5CheckValue += request.Form[ "qpstatmsg" ];
-      md5CheckValue += request.Form[ "chstat" ];
-      md5CheckValue += request.Form[ "chstatmsg" ];
-      md5CheckValue += request.Form[ "merchant" ];
-      md5CheckValue += request.Form[ "merchantemail" ];
-      md5CheckValue += request.Form[ "transaction" ];
-      md5CheckValue += request.Form[ "cardtype" ];
-      md5CheckValue += request.Form[ "cardnumber" ];
-      md5CheckValue += request.Form[ "splitpayment" ];
-      md5CheckValue += request.Form[ "fraudprobability" ];
-      md5CheckValue += request.Form[ "fraudremarks" ];
-      md5CheckValue += request.Form[ "fraudreport" ];
-      md5CheckValue += request.Form[ "fee" ];
-      md5CheckValue += settings[ "md5secret" ];
+        //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/QuickPayTestCallback.txt" ) ) ) ) {
+        //  writer.WriteLine( "FORM:" );
+        //  foreach ( string k in request.Form.Keys ) {
+        //    writer.WriteLine( k + " : " + request.Form[ k ] );
+        //  }
+        //  writer.Flush();
+        //}
 
-      if ( GetMD5Hash( md5CheckValue ).Equals( request.Form[ "md5check" ] ) ) {
-        string qpstat = request.Form[ "qpstat" ];
+        string md5CheckValue = string.Empty;
+        md5CheckValue += request.Form[ "msgtype" ];
+        md5CheckValue += request.Form[ "ordernumber" ];
+        md5CheckValue += request.Form[ "amount" ];
+        md5CheckValue += request.Form[ "currency" ];
+        md5CheckValue += request.Form[ "time" ];
+        md5CheckValue += request.Form[ "state" ];
+        md5CheckValue += request.Form[ "qpstat" ];
+        md5CheckValue += request.Form[ "qpstatmsg" ];
+        md5CheckValue += request.Form[ "chstat" ];
+        md5CheckValue += request.Form[ "chstatmsg" ];
+        md5CheckValue += request.Form[ "merchant" ];
+        md5CheckValue += request.Form[ "merchantemail" ];
+        md5CheckValue += request.Form[ "transaction" ];
+        md5CheckValue += request.Form[ "cardtype" ];
+        md5CheckValue += request.Form[ "cardnumber" ];
+        md5CheckValue += request.Form[ "splitpayment" ];
+        md5CheckValue += request.Form[ "fraudprobability" ];
+        md5CheckValue += request.Form[ "fraudremarks" ];
+        md5CheckValue += request.Form[ "fraudreport" ];
+        md5CheckValue += request.Form[ "fee" ];
+        md5CheckValue += settings[ "md5secret" ];
 
-        if ( qpstat.Equals( "000" ) ) {
-          decimal amount = decimal.Parse( request.Form[ "amount" ], CultureInfo.InvariantCulture ) / 100M;
-          string state = request.Form[ "state" ];
-          string transaction = request.Form[ "transaction" ];
-          decimal fee = decimal.Parse( request.Form[ "fee" ], CultureInfo.InvariantCulture ) / 100M;
+        if ( GetMD5Hash( md5CheckValue ).Equals( request.Form[ "md5check" ] ) ) {
+          string qpstat = request.Form[ "qpstat" ];
 
-          return new CallbackInfo( amount, transaction, state.Equals( "1" ) ? PaymentState.Authorized : PaymentState.Captured, request.Form[ "cardtype" ], request.Form[ "cardnumber" ] );
+          if ( qpstat.Equals( "000" ) ) {
+            decimal amount = decimal.Parse( request.Form[ "amount" ], CultureInfo.InvariantCulture ) / 100M;
+            string state = request.Form[ "state" ];
+            string transaction = request.Form[ "transaction" ];
+            decimal fee = decimal.Parse( request.Form[ "fee" ], CultureInfo.InvariantCulture ) / 100M;
+
+            callbackInfo = new CallbackInfo( amount, transaction, state.Equals( "1" ) ? PaymentState.Authorized : PaymentState.Captured, request.Form[ "cardtype" ], request.Form[ "cardnumber" ] );
+          } else {
+            string qpstatmsg = request.Form[ "qpstatmsg" ];
+            LoggingService.Instance.Log( "QuickPay - Error making API request<br/>Error code: " + qpstat + "<br/>Error message: " + qpstatmsg + "<br/>See http://quickpay.net/faq/status-codes/ for a description of these" );
+          }
+
         } else {
-          string qpstatmsg = request.Form[ "qpstatmsg" ];
-          errorMessage = "Tea Commerce - QuickPay - Error making API request<br/>Error code: " + qpstat + "<br/>Error message: " + qpstatmsg + "<br/>See http://quickpay.net/faq/status-codes/ for a description of these";
+          LoggingService.Instance.Log( "QuickPay - MD5Sum security check failed" );
         }
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp );
+      }
 
-      } else
-        errorMessage = "Tea Commerce - QuickPay - MD5Sum security check failed";
-
-      LoggingService.Instance.Log( errorMessage );
-      return new CallbackInfo( errorMessage );
+      return callbackInfo;
     }
 
     public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
+      order.MustNotBeNull( "order" );
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "merchant", "settings" );
+      settings.MustContainKey( "md5secret", "settings" );
+
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
       inputFields[ "protocol" ] = "4";
@@ -152,6 +182,11 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
+      order.MustNotBeNull( "order" );
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "merchant", "settings" );
+      settings.MustContainKey( "md5secret", "settings" );
+
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
       inputFields[ "protocol" ] = "4";
@@ -169,6 +204,11 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
+      order.MustNotBeNull( "order" );
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "merchant", "settings" );
+      settings.MustContainKey( "md5secret", "settings" );
+
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
       inputFields[ "protocol" ] = "4";
@@ -185,6 +225,11 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
+      order.MustNotBeNull( "order" );
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "merchant", "settings" );
+      settings.MustContainKey( "md5secret", "settings" );
+
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
       inputFields[ "protocol" ] = "4";
@@ -217,12 +262,11 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     protected ApiInfo MakeApiPostRequest( IDictionary<string, string> inputFields, string MD5Secret ) {
-      string response = MakePostRequest( apiPostUrl, inputFields );
-      string errorMessage = string.Empty;
+      inputFields.MustNotBeNull( "inputFields" );
 
-      #region Status response
+      ApiInfo apiInfo = null;
 
-      XDocument doc = XDocument.Parse( response, LoadOptions.PreserveWhitespace );
+      XDocument doc = XDocument.Parse( MakePostRequest( "https://secure.quickpay.dk/api/", inputFields ), LoadOptions.PreserveWhitespace );
 
       string state = doc.XPathSelectElement( "//state" ).Value;
       string qpstat = doc.XPathSelectElement( "//qpstat" ).Value;
@@ -242,20 +286,20 @@ namespace TeaCommerce.PaymentProviders {
           else if ( state.Equals( "7" ) )
             paymentState = PaymentState.Refunded;
 
-          return new ApiInfo( transaction, paymentState );
-        } else
-          errorMessage = "Tea Commerce - Quickpay - MD5Sum security check failed";
-      } else
-        errorMessage = "Tea Commerce - Quickpay - " + string.Format( "Error making API request<br/>Error code: {0}<br/>Error message: {1}<br/>See http://quickpay.net/faq/status-codes/ for a description of these", qpstat, qpstatmsg );
+          apiInfo = new ApiInfo( transaction, paymentState );
+        } else {
+          apiInfo = new ApiInfo( "Quickpay - MD5Sum security check failed" );
+        }
+      } else {
+        apiInfo = new ApiInfo( "Quickpay - " + string.Format( "Error making API request<br/>Error code: {0}<br/>Error message: {1}<br/>See http://quickpay.net/faq/status-codes/ for a description of these", qpstat, qpstatmsg ) );
+      }
 
-
-      #endregion
-
-      LoggingService.Instance.Log( errorMessage );
-      return new ApiInfo( errorMessage );
+      return apiInfo;
     }
 
     protected bool CheckMD5Sum( XDocument doc, string MD5Secret ) {
+      doc.MustNotBeNull( "doc" );
+
       string md5CheckValue = string.Empty;
       md5CheckValue += doc.XPathSelectElement( "//msgtype" ).Value;
       md5CheckValue += doc.XPathSelectElement( "//ordernumber" ).Value;
@@ -282,6 +326,9 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     protected void MoveInputFieldValue( IDictionary<string, string> inputFields, IDictionary<string, string> settings, string key ) {
+      inputFields.MustNotBeNull( "inputFields" );
+      settings.MustNotBeNull( "settings" );
+
       if ( settings.ContainsKey( key ) && !string.IsNullOrEmpty( settings[ key ] ) )
         inputFields[ key ] = settings[ key ];
     }

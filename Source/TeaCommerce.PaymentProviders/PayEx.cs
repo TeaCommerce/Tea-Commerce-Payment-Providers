@@ -12,6 +12,8 @@ using TeaCommerce.PaymentProviders.PayExService;
 using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
+
+  [PaymentProvider( "PayEx" )]
   public class PayEx : APaymentProvider {
 
     protected const string apiErrorFormatString = "Error making API request - Error code: {0} - Description: {1}";
@@ -74,7 +76,7 @@ namespace TeaCommerce.PaymentProviders {
       string errorCode = xmlDoc.XPathSelectElement( "//status/errorCode" ).Value;
 
       if ( errorCode.Equals( "OK" ) ) {
-        order.AddProperty( new OrderProperty( "orderRef", xmlDoc.XPathSelectElement( "//orderRef" ).Value, true ) );
+        order.Properties.AddOrUpdate( new CustomProperty( "orderRef", xmlDoc.XPathSelectElement( "//orderRef" ).Value ) { ServerSideOnly = true } );
         formPostUrl = xmlDoc.XPathSelectElement( "//redirectUrl" ).Value;
       } else {
         formPostUrl = teaCommerceCancelUrl;
