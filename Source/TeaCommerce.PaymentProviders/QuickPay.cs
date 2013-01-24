@@ -8,8 +8,8 @@ using System.Xml.XPath;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
-using TeaCommerce.Api.PaymentProviders;
 using TeaCommerce.Api.Services;
+using TeaCommerce.Api.Web.PaymentProviders;
 using TeaCommerce.PaymentProviders.Extensions;
 
 namespace TeaCommerce.PaymentProviders {
@@ -276,7 +276,7 @@ namespace TeaCommerce.PaymentProviders {
       if ( qpstat.Equals( "000" ) ) {
         if ( CheckMD5Sum( doc, MD5Secret ) ) {
 
-          PaymentState paymentState = PaymentState.Initiated;
+          PaymentState paymentState = PaymentState.Initialized;
           if ( state.Equals( "1" ) )
             paymentState = PaymentState.Authorized;
           else if ( state.Equals( "3" ) )

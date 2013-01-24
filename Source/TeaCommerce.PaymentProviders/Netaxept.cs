@@ -1,16 +1,16 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Web;
 using System.Xml.Linq;
 using System.Xml.XPath;
-using TeaCommerce.Api.Models;
-using TeaCommerce.Api.PaymentProviders;
-using TeaCommerce.Api.Infrastructure.Logging;
-using TeaCommerce.PaymentProviders.Extensions;
 using TeaCommerce.Api.Common;
-using System;
+using TeaCommerce.Api.Infrastructure.Logging;
+using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Services;
+using TeaCommerce.Api.Web.PaymentProviders;
+using TeaCommerce.PaymentProviders.Extensions;
 
 namespace TeaCommerce.PaymentProviders {
 
@@ -195,7 +195,7 @@ namespace TeaCommerce.PaymentProviders {
         bool captured = decimal.Parse( xmlResponse.XPathSelectElement( "//PaymentInfo/Summary/AmountCaptured" ).Value, CultureInfo.InvariantCulture ) > 0;
         bool refunded = decimal.Parse( xmlResponse.XPathSelectElement( "//PaymentInfo/Summary/AmountCredited" ).Value, CultureInfo.InvariantCulture ) > 0;
 
-        PaymentState paymentState = PaymentState.Initiated;
+        PaymentState paymentState = PaymentState.Initialized;
         if ( refunded )
           paymentState = PaymentState.Refunded;
         else if ( captured )

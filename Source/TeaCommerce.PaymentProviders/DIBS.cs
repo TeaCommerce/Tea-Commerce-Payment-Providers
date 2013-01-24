@@ -8,8 +8,8 @@ using System.Web;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
-using TeaCommerce.Api.PaymentProviders;
 using TeaCommerce.Api.Services;
+using TeaCommerce.Api.Web.PaymentProviders;
 using TeaCommerce.PaymentProviders.Extensions;
 
 namespace TeaCommerce.PaymentProviders {
@@ -178,7 +178,7 @@ namespace TeaCommerce.PaymentProviders {
         Regex regex = new Regex( @"status=(\d+)" );
         string status = regex.Match( response ).Groups[ 1 ].Value;
 
-        PaymentState paymentState = PaymentState.Initiated;
+        PaymentState paymentState = PaymentState.Initialized;
 
         switch ( status ) {
           case "2":

@@ -46,6 +46,9 @@
     <Reference Include="TeaCommerce.Api">
       <HintPath>..\..\Lib\Tea Commerce\TeaCommerce.Api.dll</HintPath>
     </Reference>
+    <Reference Include="TeaCommerce.Api.Web">
+      <HintPath>..\..\Lib\Tea Commerce\TeaCommerce.Api.Web.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AuthorizeNet.cs">

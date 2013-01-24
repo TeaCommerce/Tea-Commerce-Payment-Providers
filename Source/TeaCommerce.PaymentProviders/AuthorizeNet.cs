@@ -9,7 +9,7 @@ using System.Web;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
-using TeaCommerce.Api.PaymentProviders;
+using TeaCommerce.Api.Web.PaymentProviders;
 using TeaCommerce.PaymentProviders.AuthorizeNetService;
 using TeaCommerce.PaymentProviders.Extensions;
 
@@ -197,7 +197,7 @@ namespace TeaCommerce.PaymentProviders {
 
       if ( result.resultCode == MessageTypeEnum.Ok ) {
 
-        PaymentState paymentState = PaymentState.Initiated;
+        PaymentState paymentState = PaymentState.Initialized;
         switch ( result.transaction.transactionStatus ) {
           case "authorizedPendingCapture":
             paymentState = PaymentState.Authorized;

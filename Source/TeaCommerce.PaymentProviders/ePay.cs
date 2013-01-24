@@ -7,8 +7,8 @@ using System.Web;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
-using TeaCommerce.Api.PaymentProviders;
 using TeaCommerce.Api.Services;
+using TeaCommerce.Api.Web.PaymentProviders;
 using TeaCommerce.PaymentProviders.ePayService;
 using TeaCommerce.PaymentProviders.Extensions;
 
@@ -289,7 +289,7 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     protected PaymentState GetPaymentStatus( TransactionStatus transactionStatus, int refundAmount ) {
-      PaymentState paymentState = PaymentState.Initiated;
+      PaymentState paymentState = PaymentState.Initialized;
       if ( transactionStatus == TransactionStatus.PAYMENT_NEW )
         paymentState = PaymentState.Authorized;
       else if ( transactionStatus == TransactionStatus.PAYMENT_CAPTURED && refundAmount == 0 )
