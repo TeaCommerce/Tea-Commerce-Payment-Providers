@@ -268,7 +268,7 @@ namespace TeaCommerce.PaymentProviders {
       inputFields.Add( "USER", settings[ "USER" ] );
       inputFields.Add( "PWD", settings[ "PWD" ] );
       inputFields.Add( "SIGNATURE", settings[ "SIGNATURE" ] );
-      inputFields.Add( "VERSION", "56.0" );
+      inputFields.Add( "VERSION", "98.0" );
       inputFields.Add( "METHOD", methodName );
       return inputFields;
     }
