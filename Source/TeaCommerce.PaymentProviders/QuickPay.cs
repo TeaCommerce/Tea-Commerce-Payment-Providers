@@ -150,14 +150,14 @@ namespace TeaCommerce.PaymentProviders {
             callbackInfo = new CallbackInfo( amount, transaction, state == "1" ? PaymentState.Authorized : PaymentState.Captured, request.Form[ "cardtype" ], request.Form[ "cardnumber" ] );
           } else {
             string qpstatmsg = request.Form[ "qpstatmsg" ];
-            LoggingService.Instance.Log( "Quickpay - Error making API request - error code: " + qpstat + " | error message: " + qpstatmsg );
+            LoggingService.Instance.Log( "Quickpay(" + order.CartNumber + ") - Error making API request - error code: " + qpstat + " | error message: " + qpstatmsg );
           }
 
         } else {
-          LoggingService.Instance.Log( "QuickPay - MD5Sum security check failed" );
+          LoggingService.Instance.Log( "QuickPay(" + order.CartNumber + ") - MD5Sum security check failed" );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "QuickPay - Process callback" );
+        LoggingService.Instance.Log( exp, "QuickPay(" + order.CartNumber + ") - Process callback" );
       }
 
       return callbackInfo;
@@ -182,9 +182,9 @@ namespace TeaCommerce.PaymentProviders {
         string md5Secret = settings[ "md5secret" ];
         inputFields[ "md5check" ] = GetMd5Hash( string.Join( "", inputFields.Values ) + md5Secret );
 
-        apiInfo = MakeApiPostRequest( inputFields, md5Secret );
+        apiInfo = MakeApiPostRequest( order.OrderNumber, inputFields, md5Secret );
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "QuickPay - Get status" );
+        LoggingService.Instance.Log( exp, "QuickPay(" + order.OrderNumber + ") - Get status" );
       }
 
       return apiInfo;
@@ -211,9 +211,9 @@ namespace TeaCommerce.PaymentProviders {
         string md5Secret = settings[ "md5secret" ];
         inputFields[ "md5check" ] = GetMd5Hash( string.Join( "", inputFields.Values ) + md5Secret );
 
-        apiInfo = MakeApiPostRequest( inputFields, md5Secret );
+        apiInfo = MakeApiPostRequest( order.OrderNumber, inputFields, md5Secret );
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "QuickPay - Capture payment" );
+        LoggingService.Instance.Log( exp, "QuickPay(" + order.OrderNumber + ") - Capture payment" );
       }
 
       return apiInfo;
@@ -239,9 +239,9 @@ namespace TeaCommerce.PaymentProviders {
         string md5Secret = settings[ "md5secret" ];
         inputFields[ "md5check" ] = GetMd5Hash( string.Join( "", inputFields.Values ) + md5Secret );
 
-        apiInfo = MakeApiPostRequest( inputFields, md5Secret );
+        apiInfo = MakeApiPostRequest( order.OrderNumber, inputFields, md5Secret );
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "QuickPay - Refund payment" );
+        LoggingService.Instance.Log( exp, "QuickPay(" + order.OrderNumber + ") - Refund payment" );
       }
 
       return apiInfo;
@@ -266,9 +266,9 @@ namespace TeaCommerce.PaymentProviders {
         string md5Secret = settings[ "md5secret" ];
         inputFields[ "md5check" ] = GetMd5Hash( string.Join( "", inputFields.Values ) + md5Secret );
 
-        apiInfo = MakeApiPostRequest( inputFields, md5Secret );
+        apiInfo = MakeApiPostRequest( order.OrderNumber, inputFields, md5Secret );
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "QuickPay - Cancel payment" );
+        LoggingService.Instance.Log( exp, "QuickPay(" + order.OrderNumber + ") - Cancel payment" );
       }
 
       return apiInfo;
@@ -293,7 +293,7 @@ namespace TeaCommerce.PaymentProviders {
 
     #region Helper methods
 
-    protected ApiInfo MakeApiPostRequest( IDictionary<string, string> inputFields, string md5Secret ) {
+    protected ApiInfo MakeApiPostRequest( string orderNumber, IDictionary<string, string> inputFields, string md5Secret ) {
       ApiInfo apiInfo = null;
 
       try {
@@ -321,13 +321,13 @@ namespace TeaCommerce.PaymentProviders {
 
             apiInfo = new ApiInfo( transaction, paymentState );
           } else {
-            LoggingService.Instance.Log( "Quickpay - MD5Sum security check failed" );
+            LoggingService.Instance.Log( "Quickpay(" + orderNumber + ") - MD5Sum security check failed" );
           }
         } else {
-          LoggingService.Instance.Log( "Quickpay - Error making API request - error code: " + qpstat + " | error message: " + qpstatmsg );
+          LoggingService.Instance.Log( "Quickpay(" + orderNumber + ") - Error making API request - error code: " + qpstat + " | error message: " + qpstatmsg );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "QuickPay - Make API post request" );
+        LoggingService.Instance.Log( exp, "QuickPay(" + orderNumber + ") - Make API post request" );
       }
 
       return apiInfo;

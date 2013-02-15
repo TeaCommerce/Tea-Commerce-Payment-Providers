@@ -133,7 +133,7 @@ namespace TeaCommerce.PaymentProviders {
           LoggingService.Instance.Log( "Authorize.net - Payment not approved: " + responseCode );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Authorize.net - Process callback" );
+        LoggingService.Instance.Log( exp, "Authorize.net - Get cart number" );
       }
 
       return cartNumber;
@@ -181,13 +181,13 @@ namespace TeaCommerce.PaymentProviders {
 
             callbackInfo = new CallbackInfo( decimal.Parse( amount, CultureInfo.InvariantCulture ), transaction, paymentState, cardType, cardNumber );
           } else {
-            LoggingService.Instance.Log( "Authorize.net - MD5Sum security check failed - " + gatewayMd5Hash + " - " + calculatedMd5Hash + " - " + settings[ "md5HashKey" ] );
+            LoggingService.Instance.Log( "Authorize.net(" + order.CartNumber + ") - MD5Sum security check failed - " + gatewayMd5Hash + " - " + calculatedMd5Hash + " - " + settings[ "md5HashKey" ] );
           }
         } else {
-          LoggingService.Instance.Log( "Authorize.net - Payment not approved: " + responseCode );
+          LoggingService.Instance.Log( "Authorize.net(" + order.CartNumber + ") - Payment not approved: " + responseCode );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp );
+        LoggingService.Instance.Log( exp, "Authorize.net(" + order.CartNumber + ") - Process callback" );
       }
 
       return callbackInfo;
@@ -226,11 +226,11 @@ namespace TeaCommerce.PaymentProviders {
 
           apiInfo = new ApiInfo( result.transaction.transId, paymentState );
         } else {
-          LoggingService.Instance.Log( "Authorize.net - Error making API request - error code: " + result.messages[ 0 ].code + " | description: " + result.messages[ 0 ].text );
+          LoggingService.Instance.Log( "Authorize.net(" + order.OrderNumber + ") - Error making API request - error code: " + result.messages[ 0 ].code + " | description: " + result.messages[ 0 ].text );
         }
 
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Authorize.net - Get status" );
+        LoggingService.Instance.Log( exp, "Authorize.net(" + order.OrderNumber + ") - Get status" );
       }
 
       return apiInfo;

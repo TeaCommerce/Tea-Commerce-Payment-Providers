@@ -149,10 +149,10 @@ namespace TeaCommerce.PaymentProviders {
 
               callbackInfo = new CallbackInfo( totalAmount, transactionId, !autoCapture ? PaymentState.Authorized : PaymentState.Captured, cardType, cardNumber );
             } else {
-              LoggingService.Instance.Log( "Netaxept - ProcessCallback error - " + xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
+              LoggingService.Instance.Log( "Netaxept(" + order.CartNumber + ") - ProcessCallback error - " + xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
             }
           } else {
-            string errorMessage = "Netaxept - ProcessCallback error - " + xmlResponse.XPathSelectElement( "//Error/Message" ).Value;
+            string errorMessage = "Netaxept(" + order.CartNumber + ") - ProcessCallback error - " + xmlResponse.XPathSelectElement( "//Error/Message" ).Value;
             if ( xmlResponse.XPathSelectElement( "//Error/Result" ) != null ) {
               errorMessage += " response code: " + xmlResponse.XPathSelectElement( "//Error/Result/ResponseCode" ).Value + " transactionId: " + xmlResponse.XPathSelectElement( "//Error/Result/TransactionId" ).Value;
             }
@@ -160,10 +160,10 @@ namespace TeaCommerce.PaymentProviders {
           }
 
         } else {
-          LoggingService.Instance.Log( "Netaxept - Response code isn't valid - response code: " + responseCode );
+          LoggingService.Instance.Log( "Netaxept(" + order.CartNumber + ") - Response code isn't valid - response code: " + responseCode );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Netaxept - Process callback" );
+        LoggingService.Instance.Log( exp, "Netaxept(" + order.CartNumber + ") - Process callback" );
       }
 
       HttpContext.Current.Response.Redirect( order.Properties[ callbackInfo != null ? "teaCommerceContinueUrl" : "teaCommerceCancelUrl" ], false );
@@ -206,11 +206,11 @@ namespace TeaCommerce.PaymentProviders {
 
           apiInfo = new ApiInfo( transactionId, paymentState );
         } else {
-          LoggingService.Instance.Log( "Netaxept - Error making API request - error message: " + xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
+          LoggingService.Instance.Log( "Netaxept(" + order.OrderNumber + ") - Error making API request - error message: " + xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
         }
 
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Netaxept - Get status" );
+        LoggingService.Instance.Log( exp, "Netaxept(" + order.OrderNumber + ") - Get status" );
       }
 
       return apiInfo;
@@ -232,9 +232,9 @@ namespace TeaCommerce.PaymentProviders {
         inputFields[ "transactionId" ] = order.TransactionInformation.TransactionId;
         inputFields[ "transactionAmount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
 
-        apiInfo = MakeApiRequest( inputFields, order.TransactionInformation.TransactionId, PaymentState.Captured, settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ? "https://epayment-test.bbs.no/Netaxept/Process.aspx" : "https://epayment.bbs.no/Netaxept/Process.aspx" );
+        apiInfo = MakeApiRequest( order.OrderNumber, inputFields, order.TransactionInformation.TransactionId, PaymentState.Captured, settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ? "https://epayment-test.bbs.no/Netaxept/Process.aspx" : "https://epayment.bbs.no/Netaxept/Process.aspx" );
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Netaxept - Capture payment" );
+        LoggingService.Instance.Log( exp, "Netaxept(" + order.OrderNumber + ") - Capture payment" );
       }
 
       return apiInfo;
@@ -256,9 +256,9 @@ namespace TeaCommerce.PaymentProviders {
         inputFields[ "transactionId" ] = order.TransactionInformation.TransactionId;
         inputFields[ "transactionAmount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
 
-        apiInfo = MakeApiRequest( inputFields, order.TransactionInformation.TransactionId, PaymentState.Refunded, settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ? "https://epayment-test.bbs.no/Netaxept/Process.aspx" : "https://epayment.bbs.no/Netaxept/Process.aspx" );
+        apiInfo = MakeApiRequest( order.OrderNumber, inputFields, order.TransactionInformation.TransactionId, PaymentState.Refunded, settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ? "https://epayment-test.bbs.no/Netaxept/Process.aspx" : "https://epayment.bbs.no/Netaxept/Process.aspx" );
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Netaxept - Refund payment" );
+        LoggingService.Instance.Log( exp, "Netaxept(" + order.OrderNumber + ") - Refund payment" );
       }
 
       return apiInfo;
@@ -279,9 +279,9 @@ namespace TeaCommerce.PaymentProviders {
         inputFields[ "operation" ] = "ANNUL";
         inputFields[ "transactionId" ] = order.TransactionInformation.TransactionId;
 
-        apiInfo = MakeApiRequest( inputFields, order.TransactionInformation.TransactionId, PaymentState.Cancelled, settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ? "https://epayment-test.bbs.no/Netaxept/Process.aspx" : "https://epayment.bbs.no/Netaxept/Process.aspx" );
+        apiInfo = MakeApiRequest( order.OrderNumber, inputFields, order.TransactionInformation.TransactionId, PaymentState.Cancelled, settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ? "https://epayment-test.bbs.no/Netaxept/Process.aspx" : "https://epayment.bbs.no/Netaxept/Process.aspx" );
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Netaxept - Cancel payment" );
+        LoggingService.Instance.Log( exp, "Netaxept(" + order.OrderNumber + ") - Cancel payment" );
       }
 
       return apiInfo;
@@ -306,7 +306,7 @@ namespace TeaCommerce.PaymentProviders {
 
     #region Helper methods
 
-    protected ApiInfo MakeApiRequest( IDictionary<string, string> inputFields, string transactionId, PaymentState paymentState, string url ) {
+    protected ApiInfo MakeApiRequest( string orderNumber, IDictionary<string, string> inputFields, string transactionId, PaymentState paymentState, string url ) {
       ApiInfo apiInfo = null;
 
       try {
@@ -317,10 +317,10 @@ namespace TeaCommerce.PaymentProviders {
         if ( xmlResponse.XPathSelectElement( "//ProcessResponse" ) != null && xmlResponse.XPathSelectElement( "//ProcessResponse/ResponseCode" ).Value == "OK" ) {
           apiInfo = new ApiInfo( transactionId, paymentState );
         } else {
-          LoggingService.Instance.Log( "Netaxept - Error making API request - error message: " + xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
+          LoggingService.Instance.Log( "Netaxept(" + orderNumber + ") - Error making API request - error message: " + xmlResponse.XPathSelectElement( "//Error/Message" ).Value );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Netaxept - Make API request" );
+        LoggingService.Instance.Log( exp, "Netaxept(" + orderNumber + ") - Make API request" );
       }
 
       return apiInfo;

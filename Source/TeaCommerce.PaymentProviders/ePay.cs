@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.ServiceModel;
 using System.Web;
+using System.Web.Hosting;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
@@ -36,6 +38,7 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "iframeelement" ] = string.Empty;
         defaultSettings[ "md5securitykey" ] = string.Empty;
         defaultSettings[ "webservicepassword" ] = string.Empty;
+        defaultSettings[ "testMode" ] = "0";
         return defaultSettings;
       }
     }
@@ -50,7 +53,7 @@ namespace TeaCommerce.PaymentProviders {
         Action = "https://ssl.ditonlinebetalingssystem.dk/integration/ewindow/Default.aspx"
       };
 
-      string[] settingsToExclude = new [] { "iframeelement", "md5securitykey", "webservicepassword" };
+      string[] settingsToExclude = new[] { "iframeelement", "md5securitykey", "webservicepassword", "testMode" };
       htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
       //orderid
@@ -154,13 +157,16 @@ namespace TeaCommerce.PaymentProviders {
         request.MustNotBeNull( "request" );
         settings.MustNotBeNull( "settings" );
 
-        //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/ePayTestCallback.txt" ) ) ) ) {
-        //  writer.WriteLine( "QueryString:" );
-        //  foreach ( string k in request.QueryString.Keys ) {
-        //    writer.WriteLine( k + " : " + request.QueryString[ k ] );
-        //  }
-        //  writer.Flush();
-        //}
+        //Write data when testing
+        if ( settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ) {
+          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/epay-callback-data.txt" ) ) ) ) {
+            writer.WriteLine( "QueryString:" );
+            foreach ( string k in request.QueryString.Keys ) {
+              writer.WriteLine( k + " : " + request.QueryString[ k ] );
+            }
+            writer.Flush();
+          }
+        }
 
         string transaction = request.QueryString[ "txnid" ];
         string strAmount = request.QueryString[ "amount" ];
@@ -184,14 +190,14 @@ namespace TeaCommerce.PaymentProviders {
 
           decimal totalAmount = ( decimal.Parse( strAmount, CultureInfo.InvariantCulture ) + decimal.Parse( fee, CultureInfo.InvariantCulture ) );
 
-          bool autoCaptured = settings.ContainsKey( "instantcapture" ) && settings[ "instantcapture" ].Equals( "1" );
+          bool autoCaptured = settings.ContainsKey( "instantcapture" ) && settings[ "instantcapture" ] == "1";
 
           callbackInfo = new CallbackInfo( totalAmount / 100M, transaction, !autoCaptured ? PaymentState.Authorized : PaymentState.Captured, cardid, cardnopostfix );
         } else {
-          LoggingService.Instance.Log( "ePay - MD5Sum security check failed" );
+          LoggingService.Instance.Log( "ePay(" + order.CartNumber + ") - MD5Sum security check failed" );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "ePay - Process callback" );
+        LoggingService.Instance.Log( exp, "ePay(" + order.CartNumber + ") - Process callback" );
       }
 
       return callbackInfo;
@@ -211,10 +217,10 @@ namespace TeaCommerce.PaymentProviders {
         if ( GetEPayServiceClient().gettransaction( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionInformation.TransactionId ), settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref tit, ref ePayResponse ) ) {
           apiInfo = new ApiInfo( tit.transactionid.ToString( CultureInfo.InvariantCulture ), GetPaymentStatus( tit.status, tit.creditedamount ) );
         } else {
-          LoggingService.Instance.Log( "ePay - Error making API request - error code: " + ePayResponse );
+          LoggingService.Instance.Log( "ePay(" + order.OrderNumber + ") - Error making API request - error code: " + ePayResponse );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "ePay - Get status" );
+        LoggingService.Instance.Log( exp, "ePay(" + order.OrderNumber + ") - Get status" );
       }
 
       return apiInfo;
@@ -234,10 +240,10 @@ namespace TeaCommerce.PaymentProviders {
         if ( GetEPayServiceClient().capture( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionInformation.TransactionId ), (int)( order.TotalPrice.WithVat * 100M ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref pbsResponse, ref ePayResponse ) ) {
           apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Captured );
         } else {
-          LoggingService.Instance.Log( "ePay - Error making API request - error code: " + ePayResponse + ", pbs response: " + pbsResponse );
+          LoggingService.Instance.Log( "ePay(" + order.OrderNumber + ") - Error making API request - error code: " + ePayResponse + ", pbs response: " + pbsResponse );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "ePay - Get status" );
+        LoggingService.Instance.Log( exp, "ePay(" + order.OrderNumber + ") - Get status" );
       }
 
       return apiInfo;
@@ -257,10 +263,10 @@ namespace TeaCommerce.PaymentProviders {
         if ( GetEPayServiceClient().credit( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionInformation.TransactionId ), (int)( order.TotalPrice.WithVat * 100M ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref pbsResponse, ref ePayResponse ) ) {
           apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Refunded );
         } else {
-          LoggingService.Instance.Log( "ePay - Error making API request - error code: " + ePayResponse + ", pbs response: " + pbsResponse );
+          LoggingService.Instance.Log( "ePay(" + order.OrderNumber + ") - Error making API request - error code: " + ePayResponse + ", pbs response: " + pbsResponse );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "ePay - Get status" );
+        LoggingService.Instance.Log( exp, "ePay(" + order.OrderNumber + ") - Get status" );
       }
 
       return apiInfo;
@@ -279,10 +285,10 @@ namespace TeaCommerce.PaymentProviders {
         if ( GetEPayServiceClient().delete( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionInformation.TransactionId ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref ePayResponse ) ) {
           apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Cancelled );
         } else {
-          LoggingService.Instance.Log( "ePay - Error making API request - error code: " + ePayResponse );
+          LoggingService.Instance.Log( "ePay(" + order.OrderNumber + ") - Error making API request - error code: " + ePayResponse );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "ePay - Get status" );
+        LoggingService.Instance.Log( exp, "ePay(" + order.OrderNumber + ") - Get status" );
       }
 
       return apiInfo;
@@ -302,6 +308,8 @@ namespace TeaCommerce.PaymentProviders {
           return settingsKey + "<br/><small>1 = overlay; 2 = iframe; 3 = fullscreen</small>";
         case "iframeelement":
           return settingsKey + "<br/><small>Used when window state = 2</small>";
+        case "testMode":
+          return settingsKey + "<br/><small>1 = true; 0 = false</small>";
         default:
           return base.GetLocalizedSettingsKey( settingsKey, culture );
       }

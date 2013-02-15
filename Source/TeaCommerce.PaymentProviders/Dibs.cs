@@ -157,10 +157,10 @@ namespace TeaCommerce.PaymentProviders {
         if ( GetMd5Hash( settings[ "md5k2" ] + GetMd5Hash( md5CheckValue ) ) == authkey ) {
           callbackInfo = new CallbackInfo( totalAmount / 100M, transaction, !autoCaptured ? PaymentState.Authorized : PaymentState.Captured, paytype, cardnomask );
         } else {
-          LoggingService.Instance.Log( "DIBS - MD5Sum security check failed" );
+          LoggingService.Instance.Log( "DIBS(" + order.CartNumber + ") - MD5Sum security check failed" );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "DIBS - Process callback" );
+        LoggingService.Instance.Log( exp, "DIBS(" + order.CartNumber + ") - Process callback" );
       }
 
       return callbackInfo;
@@ -202,11 +202,11 @@ namespace TeaCommerce.PaymentProviders {
 
           apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, paymentState );
         } catch ( WebException ) {
-          LoggingService.Instance.Log( "DIBS - Error making API request - wrong credentials" );
+          LoggingService.Instance.Log( "DIBS(" + order.OrderNumber + ") - Error making API request - wrong credentials" );
         }
 
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "DIBS - Get status" );
+        LoggingService.Instance.Log( exp, "DIBS(" + order.OrderNumber + ") - Get status" );
       }
 
       return apiInfo;
@@ -253,14 +253,14 @@ namespace TeaCommerce.PaymentProviders {
           if ( result == "0" ) {
             apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Captured );
           } else {
-            LoggingService.Instance.Log( "DIBS - Error making API request - error message: " + result );
+            LoggingService.Instance.Log( "DIBS(" + order.OrderNumber + ") - Error making API request - error message: " + result );
           }
         } catch ( WebException ) {
-          LoggingService.Instance.Log( "DIBS - Error making API request - wrong credentials" );
+          LoggingService.Instance.Log( "DIBS(" + order.OrderNumber + ") - Error making API request - wrong credentials" );
         }
 
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "DIBS - Capture payment" );
+        LoggingService.Instance.Log( exp, "DIBS(" + order.OrderNumber + ") - Capture payment" );
       }
 
       return apiInfo;
@@ -315,14 +315,14 @@ namespace TeaCommerce.PaymentProviders {
           if ( result == "0" ) {
             apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Refunded );
           } else {
-            LoggingService.Instance.Log( "DIBS - Error making API request - error message: " + result );
+            LoggingService.Instance.Log( "DIBS(" + order.OrderNumber + ") - Error making API request - error message: " + result );
           }
         } catch ( WebException ) {
-          LoggingService.Instance.Log( "DIBS - Error making API request - wrong credentials" );
+          LoggingService.Instance.Log( "DIBS(" + order.OrderNumber + ") - Error making API request - wrong credentials" );
         }
 
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "DIBS - Refund payment" );
+        LoggingService.Instance.Log( exp, "DIBS(" + order.OrderNumber + ") - Refund payment" );
       }
 
       return apiInfo;
@@ -367,14 +367,14 @@ namespace TeaCommerce.PaymentProviders {
           if ( result == "0" ) {
             apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Cancelled );
           } else {
-            LoggingService.Instance.Log( "DIBS - Error making API request - error message: " + result );
+            LoggingService.Instance.Log( "DIBS(" + order.OrderNumber + ") - Error making API request - error message: " + result );
           }
         } catch ( WebException ) {
-          LoggingService.Instance.Log( "DIBS - Error making API request - wrong credentials" );
+          LoggingService.Instance.Log( "DIBS(" + order.OrderNumber + ") - Error making API request - wrong credentials" );
         }
 
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "DIBS - Refund payment" );
+        LoggingService.Instance.Log( exp, "DIBS(" + order.OrderNumber + ") - Refund payment" );
       }
 
       return apiInfo;
