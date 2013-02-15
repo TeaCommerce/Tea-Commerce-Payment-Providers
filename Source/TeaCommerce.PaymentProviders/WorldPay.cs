@@ -41,9 +41,8 @@ namespace TeaCommerce.PaymentProviders {
     public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
       order.MustNotBeNull( "order" );
       settings.MustNotBeNull( "settings" );
-      settings.MustContainKey( "merchant", "settings" );
-      settings.MustContainKey( "language", "settings" );
-      settings.MustContainKey( "md5secret", "settings" );
+      settings.MustContainKey( "md5Secret", "settings" );
+      settings.MustContainKey( "instId", "settings" );
       settings.MustContainKey( "streetAddressPropertyAlias", "settings" );
       settings.MustContainKey( "cityPropertyAlias", "settings" );
       settings.MustContainKey( "zipCodePropertyAlias", "settings" );
