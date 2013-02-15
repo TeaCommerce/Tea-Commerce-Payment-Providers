@@ -327,7 +327,7 @@ namespace TeaCommerce.PaymentProviders {
           LoggingService.Instance.Log( "Quickpay - Error making API request - error code: " + qpstat + " | error message: " + qpstatmsg );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "QuickPay - MakeApiPostRequest" );
+        LoggingService.Instance.Log( exp, "QuickPay - Make API post request" );
       }
 
       return apiInfo;
