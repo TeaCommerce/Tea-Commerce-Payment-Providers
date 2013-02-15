@@ -49,6 +49,9 @@
     <Compile Include="AuthorizeNet.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Dibs2.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Netaxept.cs">
       <SubType>Code</SubType>
