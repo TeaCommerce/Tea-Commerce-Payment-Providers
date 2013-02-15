@@ -16,7 +16,7 @@ using TeaCommerce.Api.Web.PaymentProviders;
 namespace TeaCommerce.PaymentProviders {
 
   [PaymentProvider( "DIBS" )]
-  public class Dibs2 : APaymentProvider {
+  public class Dibs : APaymentProvider {
 
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-dibs-with-tea-commerce/"; } }
 
