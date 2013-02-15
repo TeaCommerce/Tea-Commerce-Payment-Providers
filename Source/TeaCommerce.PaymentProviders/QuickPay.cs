@@ -13,9 +13,15 @@ using TeaCommerce.Api.Web.PaymentProviders;
 using TeaCommerce.PaymentProviders.Extensions;
 
 namespace TeaCommerce.PaymentProviders {
-
   [PaymentProvider( "QuickPay" )]
   public class QuickPay : APaymentProvider {
+
+    public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-quickpay-wit-tea-commerce/"; } }
+
+    public override bool SupportsRetrievalOfPaymentStatus { get { return true; } }
+    public override bool SupportsCapturingOfPayment { get { return true; } }
+    public override bool SupportsRefundOfPayment { get { return true; } }
+    public override bool SupportsCancellationOfPayment { get { return true; } }
 
     public override IDictionary<string, string> DefaultSettings {
       get {
@@ -31,33 +37,34 @@ namespace TeaCommerce.PaymentProviders {
         return defaultSettings;
       }
     }
-    public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-quickpay-wit-tea-commerce/"; } }
 
-    public override string FormPostUrl { get { return "https://secure.quickpay.dk/form/"; } }
-
-    public override IDictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
       order.MustNotBeNull( "order" );
       settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "merchant", "settings" );
       settings.MustContainKey( "language", "settings" );
       settings.MustContainKey( "md5secret", "settings" );
 
+      PaymentHtmlForm htmlForm = new PaymentHtmlForm();
+      htmlForm.Action = "https://secure.quickpay.dk/form/";
+      string[] settingsToExclude = new[] { "md5secret" };
+      htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
+
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
       inputFields[ "protocol" ] = "4";
       inputFields[ "msgtype" ] = "authorize";
 
-      MoveInputFieldValue( inputFields, settings, "merchant" );
-      MoveInputFieldValue( inputFields, settings, "language" );
-
+      //Order name must be between 4 or 20 chars  
       string orderName = order.CartNumber;
       while ( orderName.Length < 4 )
         orderName = "0" + orderName;
-      inputFields[ "ordernumber" ] = orderName;
+      inputFields[ "ordernumber" ] = orderName.Truncate( 20 );
       inputFields[ "amount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
 
+      //Check that the Iso code exists
       Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
-      if ( !ISO4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
+      if ( !Iso4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
         throw new Exception( "You must specify an ISO 4217 currency code for the " + currency.Name + " currency" );
       }
       inputFields[ "currency" ] = currency.IsoCode;
@@ -66,20 +73,11 @@ namespace TeaCommerce.PaymentProviders {
       inputFields[ "cancelurl" ] = teaCommerceCancelUrl;
       inputFields[ "callbackurl" ] = teaCommerceCallBackUrl;
 
-      MoveInputFieldValue( inputFields, settings, "autocapture" );
-      MoveInputFieldValue( inputFields, settings, "autofee" );
-      MoveInputFieldValue( inputFields, settings, "cardtypelock" );
-      MoveInputFieldValue( inputFields, settings, "description" );
-      MoveInputFieldValue( inputFields, settings, "group" );
-      MoveInputFieldValue( inputFields, settings, "testmode" );
-      MoveInputFieldValue( inputFields, settings, "splitpayment" );
-
       //Quickpay dont support to show order line information to the shopper
 
-      string md5CheckValue = inputFields.Select( i => i.Value ).Join( string.Empty ) + settings[ "md5secret" ];
-      inputFields[ "md5check" ] = GetMD5Hash( md5CheckValue );
+      inputFields[ "md5check" ] = GetMd5Hash( string.Join( "", inputFields.Values ) + settings[ "md5secret" ] );
 
-      return inputFields;
+      return htmlForm;
     }
 
     public override string GetContinueUrl( IDictionary<string, string> settings ) {
@@ -105,7 +103,7 @@ namespace TeaCommerce.PaymentProviders {
         settings.MustNotBeNull( "settings" );
         settings.MustContainKey( "md5secret", "settings" );
 
-        //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/QuickPayTestCallback.txt" ) ) ) ) {
+        //using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/quick-pay-callback-data.txt" ) ) ) ) {
         //  writer.WriteLine( "FORM:" );
         //  foreach ( string k in request.Form.Keys ) {
         //    writer.WriteLine( k + " : " + request.Form[ k ] );
@@ -136,112 +134,139 @@ namespace TeaCommerce.PaymentProviders {
         md5CheckValue += request.Form[ "fee" ];
         md5CheckValue += settings[ "md5secret" ];
 
-        if ( GetMD5Hash( md5CheckValue ).Equals( request.Form[ "md5check" ] ) ) {
+        if ( GetMd5Hash( md5CheckValue ).Equals( request.Form[ "md5check" ] ) ) {
           string qpstat = request.Form[ "qpstat" ];
 
           if ( qpstat.Equals( "000" ) ) {
             decimal amount = decimal.Parse( request.Form[ "amount" ], CultureInfo.InvariantCulture ) / 100M;
             string state = request.Form[ "state" ];
             string transaction = request.Form[ "transaction" ];
-            decimal fee = decimal.Parse( request.Form[ "fee" ], CultureInfo.InvariantCulture ) / 100M;
 
             callbackInfo = new CallbackInfo( amount, transaction, state.Equals( "1" ) ? PaymentState.Authorized : PaymentState.Captured, request.Form[ "cardtype" ], request.Form[ "cardnumber" ] );
           } else {
             string qpstatmsg = request.Form[ "qpstatmsg" ];
-            LoggingService.Instance.Log( "QuickPay - Error making API request<br/>Error code: " + qpstat + "<br/>Error message: " + qpstatmsg + "<br/>See http://quickpay.net/faq/status-codes/ for a description of these" );
+            LoggingService.Instance.Log( "Quickpay - Error making API request - error code: " + qpstat + " | error message: " + qpstatmsg );
           }
 
         } else {
           LoggingService.Instance.Log( "QuickPay - MD5Sum security check failed" );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp );
+        LoggingService.Instance.Log( exp, "QuickPay - Process callback" );
       }
 
       return callbackInfo;
     }
 
     public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
-      order.MustNotBeNull( "order" );
-      settings.MustNotBeNull( "settings" );
-      settings.MustContainKey( "merchant", "settings" );
-      settings.MustContainKey( "md5secret", "settings" );
+      ApiInfo apiInfo = null;
 
-      Dictionary<string, string> inputFields = new Dictionary<string, string>();
+      try {
+        order.MustNotBeNull( "order" );
+        settings.MustNotBeNull( "settings" );
+        settings.MustContainKey( "merchant", "settings" );
+        settings.MustContainKey( "md5secret", "settings" );
 
-      inputFields[ "protocol" ] = "4";
-      inputFields[ "msgtype" ] = "status";
-      inputFields[ "merchant" ] = settings[ "merchant" ];
-      inputFields[ "transaction" ] = order.TransactionInformation.TransactionId;
+        Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
-      string md5secret = settings[ "md5secret" ];
-      string md5CheckValue = inputFields.Select( i => i.Value ).Join( string.Empty ) + md5secret;
-      inputFields[ "md5check" ] = GetMD5Hash( md5CheckValue );
+        inputFields[ "protocol" ] = "4";
+        inputFields[ "msgtype" ] = "status";
+        inputFields[ "merchant" ] = settings[ "merchant" ];
+        inputFields[ "transaction" ] = order.TransactionInformation.TransactionId;
 
-      return MakeApiPostRequest( inputFields, md5secret );
+        string md5Secret = settings[ "md5secret" ];
+        inputFields[ "md5check" ] = GetMd5Hash( string.Join( "", inputFields.Values ) + md5Secret );
+
+        apiInfo = MakeApiPostRequest( inputFields, md5Secret );
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "QuickPay - Get status" );
+      }
+
+      return apiInfo;
     }
 
     public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
-      order.MustNotBeNull( "order" );
-      settings.MustNotBeNull( "settings" );
-      settings.MustContainKey( "merchant", "settings" );
-      settings.MustContainKey( "md5secret", "settings" );
+      ApiInfo apiInfo = null;
 
-      Dictionary<string, string> inputFields = new Dictionary<string, string>();
+      try {
+        order.MustNotBeNull( "order" );
+        settings.MustNotBeNull( "settings" );
+        settings.MustContainKey( "merchant", "settings" );
+        settings.MustContainKey( "md5secret", "settings" );
 
-      inputFields[ "protocol" ] = "4";
-      inputFields[ "msgtype" ] = "capture";
-      inputFields[ "merchant" ] = settings[ "merchant" ];
-      inputFields[ "amount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0" );
-      inputFields[ "finalize" ] = "1";
-      inputFields[ "transaction" ] = order.TransactionInformation.TransactionId;
+        Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
-      string md5secret = settings[ "md5secret" ];
-      string md5CheckValue = inputFields.Select( i => i.Value ).Join( string.Empty ) + md5secret;
-      inputFields[ "md5check" ] = GetMD5Hash( md5CheckValue );
+        inputFields[ "protocol" ] = "4";
+        inputFields[ "msgtype" ] = "capture";
+        inputFields[ "merchant" ] = settings[ "merchant" ];
+        inputFields[ "amount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0" );
+        inputFields[ "finalize" ] = "1";
+        inputFields[ "transaction" ] = order.TransactionInformation.TransactionId;
 
-      return MakeApiPostRequest( inputFields, md5secret );
+        string md5Secret = settings[ "md5secret" ];
+        inputFields[ "md5check" ] = GetMd5Hash( string.Join( "", inputFields.Values ) + md5Secret );
+
+        apiInfo = MakeApiPostRequest( inputFields, md5Secret );
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "QuickPay - Capture payment" );
+      }
+
+      return apiInfo;
     }
 
     public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
-      order.MustNotBeNull( "order" );
-      settings.MustNotBeNull( "settings" );
-      settings.MustContainKey( "merchant", "settings" );
-      settings.MustContainKey( "md5secret", "settings" );
+      ApiInfo apiInfo = null;
 
-      Dictionary<string, string> inputFields = new Dictionary<string, string>();
+      try {
+        order.MustNotBeNull( "order" );
+        settings.MustNotBeNull( "settings" );
+        settings.MustContainKey( "merchant", "settings" );
+        settings.MustContainKey( "md5secret", "settings" );
 
-      inputFields[ "protocol" ] = "4";
-      inputFields[ "msgtype" ] = "refund";
-      inputFields[ "merchant" ] = settings[ "merchant" ];
-      inputFields[ "amount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0" );
-      inputFields[ "transaction" ] = order.TransactionInformation.TransactionId;
+        Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
-      string md5secret = settings[ "md5secret" ];
-      string md5CheckValue = inputFields.Select( i => i.Value ).Join( string.Empty ) + md5secret;
-      inputFields[ "md5check" ] = GetMD5Hash( md5CheckValue );
+        inputFields[ "protocol" ] = "4";
+        inputFields[ "msgtype" ] = "refund";
+        inputFields[ "merchant" ] = settings[ "merchant" ];
+        inputFields[ "amount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0" );
+        inputFields[ "transaction" ] = order.TransactionInformation.TransactionId;
 
-      return MakeApiPostRequest( inputFields, md5secret );
+        string md5Secret = settings[ "md5secret" ];
+        inputFields[ "md5check" ] = GetMd5Hash( string.Join( "", inputFields.Values ) + md5Secret );
+
+        apiInfo = MakeApiPostRequest( inputFields, md5Secret );
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "QuickPay - Refund payment" );
+      }
+
+      return apiInfo;
     }
 
     public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
-      order.MustNotBeNull( "order" );
-      settings.MustNotBeNull( "settings" );
-      settings.MustContainKey( "merchant", "settings" );
-      settings.MustContainKey( "md5secret", "settings" );
+      ApiInfo apiInfo = null;
 
-      Dictionary<string, string> inputFields = new Dictionary<string, string>();
+      try {
+        order.MustNotBeNull( "order" );
+        settings.MustNotBeNull( "settings" );
+        settings.MustContainKey( "merchant", "settings" );
+        settings.MustContainKey( "md5secret", "settings" );
 
-      inputFields[ "protocol" ] = "4";
-      inputFields[ "msgtype" ] = "cancel";
-      inputFields[ "merchant" ] = settings[ "merchant" ];
-      inputFields[ "transaction" ] = order.TransactionInformation.TransactionId;
+        Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
-      string md5secret = settings[ "md5secret" ];
-      string md5CheckValue = inputFields.Select( i => i.Value ).Join( string.Empty ) + md5secret;
-      inputFields[ "md5check" ] = GetMD5Hash( md5CheckValue );
+        inputFields[ "protocol" ] = "4";
+        inputFields[ "msgtype" ] = "cancel";
+        inputFields[ "merchant" ] = settings[ "merchant" ];
+        inputFields[ "transaction" ] = order.TransactionInformation.TransactionId;
 
-      return MakeApiPostRequest( inputFields, md5secret );
+        string md5Secret = settings[ "md5secret" ];
+        inputFields[ "md5check" ] = GetMd5Hash( string.Join( "", inputFields.Values ) + md5Secret );
+
+        apiInfo = MakeApiPostRequest( inputFields, md5Secret );
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "QuickPay - Cancel payment" );
+      }
+
+      return apiInfo;
     }
 
     public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
@@ -261,43 +286,49 @@ namespace TeaCommerce.PaymentProviders {
       }
     }
 
-    protected ApiInfo MakeApiPostRequest( IDictionary<string, string> inputFields, string MD5Secret ) {
-      inputFields.MustNotBeNull( "inputFields" );
+    #region Helper methods
 
+    protected ApiInfo MakeApiPostRequest( IDictionary<string, string> inputFields, string md5Secret ) {
       ApiInfo apiInfo = null;
 
-      XDocument doc = XDocument.Parse( MakePostRequest( "https://secure.quickpay.dk/api/", inputFields ), LoadOptions.PreserveWhitespace );
+      try {
+        inputFields.MustNotBeNull( "inputFields" );
 
-      string state = doc.XPathSelectElement( "//state" ).Value;
-      string qpstat = doc.XPathSelectElement( "//qpstat" ).Value;
-      string qpstatmsg = doc.XPathSelectElement( "//qpstatmsg" ).Value;
-      string transaction = doc.XPathSelectElement( "//transaction" ).Value;
+        XDocument doc = XDocument.Parse( MakePostRequest( "https://secure.quickpay.dk/api/", inputFields ), LoadOptions.PreserveWhitespace );
 
-      if ( qpstat.Equals( "000" ) ) {
-        if ( CheckMD5Sum( doc, MD5Secret ) ) {
+        string state = doc.XPathSelectElement( "//state" ).Value;
+        string qpstat = doc.XPathSelectElement( "//qpstat" ).Value;
+        string qpstatmsg = doc.XPathSelectElement( "//qpstatmsg" ).Value;
+        string transaction = doc.XPathSelectElement( "//transaction" ).Value;
 
-          PaymentState paymentState = PaymentState.Initialized;
-          if ( state.Equals( "1" ) )
-            paymentState = PaymentState.Authorized;
-          else if ( state.Equals( "3" ) )
-            paymentState = PaymentState.Captured;
-          else if ( state.Equals( "5" ) )
-            paymentState = PaymentState.Cancelled;
-          else if ( state.Equals( "7" ) )
-            paymentState = PaymentState.Refunded;
+        if ( qpstat.Equals( "000" ) ) {
+          if ( CheckMd5Sum( doc, md5Secret ) ) {
 
-          apiInfo = new ApiInfo( transaction, paymentState );
+            PaymentState paymentState = PaymentState.Initialized;
+            if ( state.Equals( "1" ) )
+              paymentState = PaymentState.Authorized;
+            else if ( state.Equals( "3" ) )
+              paymentState = PaymentState.Captured;
+            else if ( state.Equals( "5" ) )
+              paymentState = PaymentState.Cancelled;
+            else if ( state.Equals( "7" ) )
+              paymentState = PaymentState.Refunded;
+
+            apiInfo = new ApiInfo( transaction, paymentState );
+          } else {
+            LoggingService.Instance.Log( "Quickpay - MD5Sum security check failed" );
+          }
         } else {
-          apiInfo = new ApiInfo( "Quickpay - MD5Sum security check failed" );
+          LoggingService.Instance.Log( "Quickpay - Error making API request - error code: " + qpstat + " | error message: " + qpstatmsg );
         }
-      } else {
-        apiInfo = new ApiInfo( "Quickpay - " + string.Format( "Error making API request<br/>Error code: {0}<br/>Error message: {1}<br/>See http://quickpay.net/faq/status-codes/ for a description of these", qpstat, qpstatmsg ) );
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "QuickPay - MakeApiPostRequest" );
       }
 
       return apiInfo;
     }
 
-    protected bool CheckMD5Sum( XDocument doc, string MD5Secret ) {
+    private bool CheckMd5Sum( XDocument doc, string md5Secret ) {
       doc.MustNotBeNull( "doc" );
 
       string md5CheckValue = string.Empty;
@@ -320,18 +351,12 @@ namespace TeaCommerce.PaymentProviders {
       md5CheckValue += doc.XPathSelectElement( "//fraudprobability" ).Value;
       md5CheckValue += doc.XPathSelectElement( "//fraudremarks" ).Value;
       md5CheckValue += doc.XPathSelectElement( "//fraudreport" ).Value;
-      md5CheckValue += MD5Secret;
+      md5CheckValue += md5Secret;
 
-      return GetMD5Hash( md5CheckValue ).Equals( doc.XPathSelectElement( "//md5check" ).Value );
+      return GetMd5Hash( md5CheckValue ).Equals( doc.XPathSelectElement( "//md5check" ).Value );
     }
 
-    protected void MoveInputFieldValue( IDictionary<string, string> inputFields, IDictionary<string, string> settings, string key ) {
-      inputFields.MustNotBeNull( "inputFields" );
-      settings.MustNotBeNull( "settings" );
-
-      if ( settings.ContainsKey( key ) && !string.IsNullOrEmpty( settings[ key ] ) )
-        inputFields[ key ] = settings[ key ];
-    }
+    #endregion
 
   }
 }

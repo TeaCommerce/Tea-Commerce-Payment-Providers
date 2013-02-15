@@ -32,16 +32,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.EnterpriseServices" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Services" />
     <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="TeaCommerce.Api">
       <HintPath>..\..\Lib\Tea Commerce\TeaCommerce.Api.dll</HintPath>
@@ -51,23 +46,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AuthorizeNet.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="DIBS.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="ePay.cs" />
-    <Compile Include="Extensions\AssertionsExtensions.cs" />
-    <Compile Include="Extensions\EnumerableExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
-    <Compile Include="Netaxept.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="QuickPay.cs">
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="QuickPay.cs" />
     <Compile Include="Service References\ePayService\Reference.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

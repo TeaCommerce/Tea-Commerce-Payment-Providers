@@ -30,9 +30,8 @@ namespace TeaCommerce.PaymentProviders.Extensions {
 
     public static string Base64Encode( this string str ) {
       try {
-        byte[] byte_data = new byte[ str.Length ];
-        byte_data = Encoding.UTF8.GetBytes( str );
-        string encodedData = Convert.ToBase64String( byte_data );
+        byte[] byteData = Encoding.UTF8.GetBytes( str );
+        string encodedData = Convert.ToBase64String( byteData );
         return encodedData;
       } catch ( Exception e ) {
         throw new Exception( e.Message );
@@ -43,11 +42,11 @@ namespace TeaCommerce.PaymentProviders.Extensions {
       try {
         UTF8Encoding encoder = new UTF8Encoding();
         Decoder utf8Decode = encoder.GetDecoder();
-        byte[] byte_data = Convert.FromBase64String( str );
-        int charCount = utf8Decode.GetCharCount( byte_data, 0, byte_data.Length );
-        char[] decoded_char = new char[ charCount ];
-        utf8Decode.GetChars( byte_data, 0, byte_data.Length, decoded_char, 0 );
-        string result = new String( decoded_char );
+        byte[] byteData = Convert.FromBase64String( str );
+        int charCount = utf8Decode.GetCharCount( byteData, 0, byteData.Length );
+        char[] decodedChar = new char[ charCount ];
+        utf8Decode.GetChars( byteData, 0, byteData.Length, decodedChar, 0 );
+        string result = new String( decodedChar );
         return result;
       } catch ( Exception e ) {
         throw new Exception( e.Message );
