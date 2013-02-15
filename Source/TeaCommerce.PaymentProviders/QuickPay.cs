@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Web;
+using System.Web.Hosting;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using TeaCommerce.Api.Common;
@@ -45,37 +47,37 @@ namespace TeaCommerce.PaymentProviders {
       settings.MustContainKey( "language", "settings" );
       settings.MustContainKey( "md5secret", "settings" );
 
-      PaymentHtmlForm htmlForm = new PaymentHtmlForm();
-      htmlForm.Action = "https://secure.quickpay.dk/form/";
+      PaymentHtmlForm htmlForm = new PaymentHtmlForm {
+        Action = "https://secure.quickpay.dk/form/"
+      };
+
       string[] settingsToExclude = new[] { "md5secret" };
       htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
-      Dictionary<string, string> inputFields = new Dictionary<string, string>();
-
-      inputFields[ "protocol" ] = "4";
-      inputFields[ "msgtype" ] = "authorize";
+      htmlForm.InputFields[ "protocol" ] = "4";
+      htmlForm.InputFields[ "msgtype" ] = "authorize";
 
       //Order name must be between 4 or 20 chars  
       string orderName = order.CartNumber;
       while ( orderName.Length < 4 )
         orderName = "0" + orderName;
-      inputFields[ "ordernumber" ] = orderName.Truncate( 20 );
-      inputFields[ "amount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
+      htmlForm.InputFields[ "ordernumber" ] = orderName.Truncate( 20 );
+      htmlForm.InputFields[ "amount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
 
       //Check that the Iso code exists
       Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
       if ( !Iso4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
         throw new Exception( "You must specify an ISO 4217 currency code for the " + currency.Name + " currency" );
       }
-      inputFields[ "currency" ] = currency.IsoCode;
+      htmlForm.InputFields[ "currency" ] = currency.IsoCode;
 
-      inputFields[ "continueurl" ] = teaCommerceContinueUrl;
-      inputFields[ "cancelurl" ] = teaCommerceCancelUrl;
-      inputFields[ "callbackurl" ] = teaCommerceCallBackUrl;
+      htmlForm.InputFields[ "continueurl" ] = teaCommerceContinueUrl;
+      htmlForm.InputFields[ "cancelurl" ] = teaCommerceCancelUrl;
+      htmlForm.InputFields[ "callbackurl" ] = teaCommerceCallBackUrl;
 
       //Quickpay dont support to show order line information to the shopper
 
-      inputFields[ "md5check" ] = GetMd5Hash( string.Join( "", inputFields.Values ) + settings[ "md5secret" ] );
+      htmlForm.InputFields[ "md5check" ] = GetMd5Hash( string.Join( "", htmlForm.InputFields.Values ) + settings[ "md5secret" ] );
 
       return htmlForm;
     }
@@ -103,13 +105,16 @@ namespace TeaCommerce.PaymentProviders {
         settings.MustNotBeNull( "settings" );
         settings.MustContainKey( "md5secret", "settings" );
 
-        //using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/quick-pay-callback-data.txt" ) ) ) ) {
-        //  writer.WriteLine( "FORM:" );
-        //  foreach ( string k in request.Form.Keys ) {
-        //    writer.WriteLine( k + " : " + request.Form[ k ] );
-        //  }
-        //  writer.Flush();
-        //}
+        //Write data when testing
+        if ( settings.ContainsKey( "testmode" ) && settings[ "testmode" ] == "1" ) {
+          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/quick-pay-callback-data.txt" ) ) ) ) {
+            writer.WriteLine( "Form:" );
+            foreach ( string k in request.Form.Keys ) {
+              writer.WriteLine( k + " : " + request.Form[ k ] );
+            }
+            writer.Flush();
+          }
+        }
 
         string md5CheckValue = string.Empty;
         md5CheckValue += request.Form[ "msgtype" ];
@@ -134,15 +139,15 @@ namespace TeaCommerce.PaymentProviders {
         md5CheckValue += request.Form[ "fee" ];
         md5CheckValue += settings[ "md5secret" ];
 
-        if ( GetMd5Hash( md5CheckValue ).Equals( request.Form[ "md5check" ] ) ) {
+        if ( GetMd5Hash( md5CheckValue ) == request.Form[ "md5check" ] ) {
           string qpstat = request.Form[ "qpstat" ];
 
-          if ( qpstat.Equals( "000" ) ) {
+          if ( qpstat == "000" ) {
             decimal amount = decimal.Parse( request.Form[ "amount" ], CultureInfo.InvariantCulture ) / 100M;
             string state = request.Form[ "state" ];
             string transaction = request.Form[ "transaction" ];
 
-            callbackInfo = new CallbackInfo( amount, transaction, state.Equals( "1" ) ? PaymentState.Authorized : PaymentState.Captured, request.Form[ "cardtype" ], request.Form[ "cardnumber" ] );
+            callbackInfo = new CallbackInfo( amount, transaction, state == "1" ? PaymentState.Authorized : PaymentState.Captured, request.Form[ "cardtype" ], request.Form[ "cardnumber" ] );
           } else {
             string qpstatmsg = request.Form[ "qpstatmsg" ];
             LoggingService.Instance.Log( "Quickpay - Error making API request - error code: " + qpstat + " | error message: " + qpstatmsg );
@@ -301,17 +306,17 @@ namespace TeaCommerce.PaymentProviders {
         string qpstatmsg = doc.XPathSelectElement( "//qpstatmsg" ).Value;
         string transaction = doc.XPathSelectElement( "//transaction" ).Value;
 
-        if ( qpstat.Equals( "000" ) ) {
+        if ( qpstat == "000" ) {
           if ( CheckMd5Sum( doc, md5Secret ) ) {
 
             PaymentState paymentState = PaymentState.Initialized;
-            if ( state.Equals( "1" ) )
+            if ( state == "1" )
               paymentState = PaymentState.Authorized;
-            else if ( state.Equals( "3" ) )
+            else if ( state == "3" )
               paymentState = PaymentState.Captured;
-            else if ( state.Equals( "5" ) )
+            else if ( state == "5" )
               paymentState = PaymentState.Cancelled;
-            else if ( state.Equals( "7" ) )
+            else if ( state == "7" )
               paymentState = PaymentState.Refunded;
 
             apiInfo = new ApiInfo( transaction, paymentState );
@@ -328,7 +333,7 @@ namespace TeaCommerce.PaymentProviders {
       return apiInfo;
     }
 
-    private bool CheckMd5Sum( XDocument doc, string md5Secret ) {
+    protected bool CheckMd5Sum( XDocument doc, string md5Secret ) {
       doc.MustNotBeNull( "doc" );
 
       string md5CheckValue = string.Empty;
@@ -353,7 +358,7 @@ namespace TeaCommerce.PaymentProviders {
       md5CheckValue += doc.XPathSelectElement( "//fraudreport" ).Value;
       md5CheckValue += md5Secret;
 
-      return GetMd5Hash( md5CheckValue ).Equals( doc.XPathSelectElement( "//md5check" ).Value );
+      return GetMd5Hash( md5CheckValue ) == doc.XPathSelectElement( "//md5check" ).Value;
     }
 
     #endregion
