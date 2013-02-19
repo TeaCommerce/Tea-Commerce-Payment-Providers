@@ -172,7 +172,7 @@ namespace TeaCommerce.PaymentProviders {
 
       try {
         try {
-          returnArray returnData = GetWannafindServiceClient( settings ).checkTransaction( int.Parse( order.TransactionInformation.TransactionId ), string.Empty, order.Id.ToString(), string.Empty, string.Empty );
+          returnArray returnData = GetWannafindServiceClient( settings ).checkTransaction( int.Parse( order.TransactionInformation.TransactionId ), string.Empty, order.CartNumber, string.Empty, string.Empty );
 
           PaymentState paymentState = PaymentState.Initialized;
 

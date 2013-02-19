@@ -150,7 +150,7 @@ namespace TeaCommerce.PaymentProviders {
         htmlForm.Action = responseFields[ "NextURL" ];
       } else {
         htmlForm.Action = teaCommerceCancelUrl;
-        LoggingService.Instance.Log( "Sage Pay(" + order.OrderNumber + ") - Generate html form error - status: " + status + " | status details: " + responseFields[ "StatusDetail" ] );
+        LoggingService.Instance.Log( "Sage Pay(" + order.CartNumber + ") - Generate html form error - status: " + status + " | status details: " + responseFields[ "StatusDetail" ] );
       }
 
       return htmlForm;

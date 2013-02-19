@@ -149,8 +149,7 @@ namespace TeaCommerce.PaymentProviders {
 
             callbackInfo = new CallbackInfo( amount, transaction, state == "1" ? PaymentState.Authorized : PaymentState.Captured, request.Form[ "cardtype" ], request.Form[ "cardnumber" ] );
           } else {
-            string qpstatmsg = request.Form[ "qpstatmsg" ];
-            LoggingService.Instance.Log( "Quickpay(" + order.CartNumber + ") - Error making API request - error code: " + qpstat + " | error message: " + qpstatmsg );
+            LoggingService.Instance.Log( "Quickpay(" + order.CartNumber + ") - Error making API request - error code: " + qpstat + " | error message: " + request.Form[ "qpstatmsg" ] );
           }
 
         } else {

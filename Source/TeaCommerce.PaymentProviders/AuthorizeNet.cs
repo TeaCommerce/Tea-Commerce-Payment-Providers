@@ -68,7 +68,7 @@ namespace TeaCommerce.PaymentProviders {
       htmlForm.InputFields[ "x_receipt_link_url" ] = teaCommerceContinueUrl;
       htmlForm.InputFields[ "x_cancel_url" ] = teaCommerceCancelUrl;
 
-      string sequenceNumber = order.Id.ToString();
+      string sequenceNumber = new Random().Next( 0, 1000 ).ToString( CultureInfo.InvariantCulture );
       htmlForm.InputFields[ "x_fp_sequence" ] = sequenceNumber;
 
       string timestamp = ( DateTime.UtcNow - new DateTime( 1970, 1, 1 ) ).TotalSeconds.ToString( "0", CultureInfo.InvariantCulture );
