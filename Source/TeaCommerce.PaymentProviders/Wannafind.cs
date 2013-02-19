@@ -1,220 +1,265 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Web;
-using TeaCommerce.Api.Models;
-using TeaCommerce.Api.PaymentProviders;
-using TeaCommerce.PaymentProviders.wannafindService;
+using System.Web.Hosting;
+using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
+using TeaCommerce.Api.Models;
+using TeaCommerce.Api.Services;
+using TeaCommerce.Api.Web.PaymentProviders;
+using TeaCommerce.PaymentProviders.wannafindService;
 
 namespace TeaCommerce.PaymentProviders {
 
   [PaymentProvider( "Wannafind" )]
   public class Wannafind : APaymentProvider {
 
-    protected const string apiErrorFormatString = "Error making API request - Error code: {0} - see http://www.wannafind.dk/support/downloads/19/ (page 27) for a description of these";
-    protected const string wrongCredentialsError = "Error making API request - Wrong credentials or IP address not allowed";
+    public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-wannafind-with-tea-commerce/"; } }
 
     public override IDictionary<string, string> DefaultSettings {
       get {
-        if ( defaultSettings == null ) {
-          defaultSettings = new Dictionary<string, string>();
-          defaultSettings[ "shopid" ] = string.Empty;
-          defaultSettings[ "lang" ] = "en";
-          defaultSettings[ "accepturl" ] = string.Empty;
-          defaultSettings[ "declineurl" ] = string.Empty;
-          defaultSettings[ "cardtype" ] = string.Empty;
-          defaultSettings[ "md5AuthSecret" ] = string.Empty;
-          defaultSettings[ "md5CallbackSecret" ] = string.Empty;
-          defaultSettings[ "apiUser" ] = string.Empty;
-          defaultSettings[ "apiPassword" ] = string.Empty;
-        }
+        Dictionary<string, string> defaultSettings = new Dictionary<string, string>();
+        defaultSettings[ "shopid" ] = string.Empty;
+        defaultSettings[ "lang" ] = "en";
+        defaultSettings[ "accepturl" ] = string.Empty;
+        defaultSettings[ "declineurl" ] = string.Empty;
+        defaultSettings[ "cardtype" ] = string.Empty;
+        defaultSettings[ "md5AuthSecret" ] = string.Empty;
+        defaultSettings[ "md5CallbackSecret" ] = string.Empty;
+        defaultSettings[ "apiUser" ] = string.Empty;
+        defaultSettings[ "apiPassword" ] = string.Empty;
+        defaultSettings[ "testmode" ] = "0";
         return defaultSettings;
       }
     }
 
-    public override string FormPostUrl { get { return "https://betaling.wannafind.dk/paymentwindow.php"; } }
-    public override string FormAttributes { get { return @" id=""wannafind"" name=""wannafind"" target=""wannafind_paymentwindow"""; } }
-    public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-wannafind-with-tea-commerce/"; } }
+    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+      order.MustNotBeNull( "order" );
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "merchant", "settings" );
 
-    public override IDictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
-      List<string> settingsToExclude = new string[] { "md5AuthSecret", "md5CallbackSecret", "apiUser", "apiPassword" }.ToList();
-      Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
+      PaymentHtmlForm htmlForm = new PaymentHtmlForm {
+        Action = "https://betaling.wannafind.dk/paymentwindow.php",
+        Attributes = { { "id", "wannafind" }, { "name", "wannafind" }, { "target", "wannafind_paymentwindow" } },
+        JavaScriptFunction = "openPaymenWindow();"
+      };
+
+      string[] settingsToExclude = new[] { "md5AuthSecret", "md5CallbackSecret", "apiUser", "apiPassword", "testmode" };
+      htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
+
 
       //orderid
-      inputFields[ "orderid" ] = order.Id.ToString();
+      htmlForm.InputFields[ "orderid" ] = order.CartNumber;
 
       //currency
-      string currency = ISO4217CurrencyCodes[ order.CurrencyISOCode ];
-      inputFields[ "currency" ] = currency;
+      //Check that the Iso code exists
+      Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
+      if ( !Iso4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
+        throw new Exception( "You must specify an ISO 4217 currency code for the " + currency.Name + " currency" );
+      }
+      string currencyStr = Iso4217CurrencyCodes[ currency.IsoCode ];
+      htmlForm.InputFields[ "currency" ] = currencyStr;
 
       //amount
       string amount = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
-      inputFields[ "amount" ] = amount;
+      htmlForm.InputFields[ "amount" ] = amount;
 
-      inputFields[ "accepturl" ] = teaCommerceContinueUrl;
-      inputFields[ "declineurl" ] = teaCommerceCancelUrl;
-      inputFields[ "callbackurl" ] = teaCommerceCallBackUrl;
+      htmlForm.InputFields[ "accepturl" ] = teaCommerceContinueUrl;
+      htmlForm.InputFields[ "declineurl" ] = teaCommerceCancelUrl;
+      htmlForm.InputFields[ "callbackurl" ] = teaCommerceCallBackUrl;
 
       //authtype
-      inputFields[ "authtype" ] = "auth";
+      htmlForm.InputFields[ "authtype" ] = "auth";
 
       //paytype
-      inputFields[ "paytype" ] = "creditcard";
+      htmlForm.InputFields[ "paytype" ] = "creditcard";
 
       //cardtype
       string cardType = string.Empty;
-      if ( inputFields.ContainsKey( "cardtype" ) ) {
-        cardType = inputFields[ "cardtype" ];
+      if ( htmlForm.InputFields.ContainsKey( "cardtype" ) ) {
+        cardType = htmlForm.InputFields[ "cardtype" ];
         if ( string.IsNullOrEmpty( cardType ) )
-          inputFields.Remove( "cardtype" );
+          htmlForm.InputFields.Remove( "cardtype" );
       }
 
       //uniqueorderid
-      inputFields[ "uniqueorderid" ] = "true";
+      htmlForm.InputFields[ "uniqueorderid" ] = "true";
 
       //cardnomask
-      inputFields[ "cardnomask" ] = "true";
+      htmlForm.InputFields[ "cardnomask" ] = "true";
 
       //md5securitykey
       if ( settings.ContainsKey( "md5AuthSecret" ) && !string.IsNullOrEmpty( settings[ "md5AuthSecret" ] ) )
-        inputFields[ "checkmd5" ] = GetMD5Hash( currency + order.Id + amount + cardType + settings[ "md5AuthSecret" ] );
+        htmlForm.InputFields[ "checkmd5" ] = GetMd5Hash( currencyStr + order.CartNumber + amount + cardType + settings[ "md5AuthSecret" ] );
 
       //wannafind dont support to show order line information to the shopper
 
-      return inputFields;
-    }
-
-    public override string SubmitJavascriptFunction( IDictionary<string, string> inputFields, IDictionary<string, string> settings ) {
-      return @"openPaymenWindow();";
+      return htmlForm;
     }
 
     public override string GetContinueUrl( IDictionary<string, string> settings ) {
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "accepturl", "settings" );
+
       return settings[ "accepturl" ];
     }
 
     public override string GetCancelUrl( IDictionary<string, string> settings ) {
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "declineurl", "settings" );
+
       return settings[ "declineurl" ];
     }
 
     public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
-      //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/wannafindTestCallback.txt" ) ) ) ) {
-      //  writer.WriteLine( "QueryString:" );
-      //  foreach ( string k in request.QueryString.Keys ) {
-      //    writer.WriteLine( k + " : " + request.QueryString[ k ] );
-      //  }
-      //  writer.Flush();
-      //}
+      CallbackInfo callbackInfo = null;
 
-      string errorMessage = string.Empty;
+      try {
+        order.MustNotBeNull( "order" );
+        request.MustNotBeNull( "request" );
+        settings.MustNotBeNull( "settings" );
+        settings.MustContainKey( "md5CallbackSecret", "settings" );
 
-      string orderId = request.QueryString[ "orderid" ];
-      string currency = request.QueryString[ "currency" ];
-      string amount = request.QueryString[ "amount" ];
-      string cardType = settings.ContainsKey( "cardtype" ) ? settings[ "cardtype" ] : string.Empty;
+        //Write data when testing
+        if ( settings.ContainsKey( "testmode" ) && settings[ "testmode" ] == "1" ) {
+          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/wannafind-callback-data.txt" ) ) ) ) {
+            writer.WriteLine( "Query string:" );
+            foreach ( string k in request.QueryString.Keys ) {
+              writer.WriteLine( k + " : " + request.QueryString[ k ] );
+            }
+            writer.Flush();
+          }
+        }
 
-      string md5CheckValue = GetMD5Hash( orderId + currency + cardType + amount + settings[ "md5CallbackSecret" ] ); ;
+        string orderId = request.QueryString[ "orderid" ];
+        string currency = request.QueryString[ "currency" ];
+        string amount = request.QueryString[ "amount" ];
+        string cardType = settings.ContainsKey( "cardtype" ) ? settings[ "cardtype" ] : string.Empty;
 
-      if ( md5CheckValue.Equals( request.QueryString[ "checkmd5callback" ] ) ) {
+        string md5CheckValue = GetMd5Hash( orderId + currency + cardType + amount + settings[ "md5CallbackSecret" ] );
 
-        string transaction = request.QueryString[ "transacknum" ];
-        string cardtype = request.QueryString[ "cardtype" ];
-        string cardnomask = request.QueryString[ "cardnomask" ];
+        if ( md5CheckValue.Equals( request.QueryString[ "checkmd5callback" ] ) ) {
 
-        decimal totalAmount = decimal.Parse( amount, CultureInfo.InvariantCulture );
+          string transaction = request.QueryString[ "transacknum" ];
+          string cardtype = request.QueryString[ "cardtype" ];
+          string cardnomask = request.QueryString[ "cardnomask" ];
 
-        //Wannafind cant give us info about auto capturing
-        return new CallbackInfo( totalAmount / 100M, transaction, PaymentState.Authorized, cardtype, cardnomask );
-      } else
-        errorMessage = "Tea Commerce - Wannafind - MD5Sum security check failed";
+          decimal totalAmount = decimal.Parse( amount, CultureInfo.InvariantCulture );
 
-      LoggingService.Instance.Log( errorMessage );
-      return new CallbackInfo( errorMessage );
+          //Wannafind cant give us info about auto capturing
+          callbackInfo = new CallbackInfo( totalAmount / 100M, transaction, PaymentState.Authorized, cardtype, cardnomask );
+        } else {
+          LoggingService.Instance.Log( "Wannafind(" + order.CartNumber + ") - MD5Sum security check failed" );
+        }
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "Wannafind(" + order.CartNumber + ") - Process callback" );
+      }
+
+      return callbackInfo;
     }
 
     public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
-      string errorMessage = string.Empty;
+      ApiInfo apiInfo = null;
 
       try {
-        returnArray returnData = GetWannafindServiceClient( settings ).checkTransaction( int.Parse( order.TransactionInformation.TransactionId ), string.Empty, order.Id.ToString(), string.Empty, string.Empty );
+        try {
+          returnArray returnData = GetWannafindServiceClient( settings ).checkTransaction( int.Parse( order.TransactionInformation.TransactionId ), string.Empty, order.Id.ToString(), string.Empty, string.Empty );
 
-        PaymentState paymentState = PaymentState.Initiated;
+          PaymentState paymentState = PaymentState.Initialized;
 
-        switch ( returnData.returncode ) {
-          case 5:
-            paymentState = PaymentState.Authorized;
-            break;
-          case 6:
-            paymentState = PaymentState.Captured;
-            break;
-          case 7:
-            paymentState = PaymentState.Cancelled;
-            break;
-          case 8:
-            paymentState = PaymentState.Refunded;
-            break;
+          switch ( returnData.returncode ) {
+            case 5:
+              paymentState = PaymentState.Authorized;
+              break;
+            case 6:
+              paymentState = PaymentState.Captured;
+              break;
+            case 7:
+              paymentState = PaymentState.Cancelled;
+              break;
+            case 8:
+              paymentState = PaymentState.Refunded;
+              break;
+          }
+
+          apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, paymentState );
+
+        } catch ( WebException ) {
+          LoggingService.Instance.Log( "Wannafind(" + order.OrderNumber + ") - Error making API request - Wrong credentials or IP address not allowed" );
         }
-
-        return new ApiInfo( order.TransactionInformation.TransactionId, paymentState );
-      } catch ( WebException ) {
-        errorMessage = "Tea Commerce - Wannafind - " + wrongCredentialsError;
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "Wannafind(" + order.OrderNumber + ") - Get status" );
       }
 
-      LoggingService.Instance.Log( errorMessage );
-      return new ApiInfo( errorMessage );
+      return apiInfo;
     }
 
     public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
-      string errorMessage = string.Empty;
+      ApiInfo apiInfo = null;
 
       try {
-        //When capturing of the complete amount - send 0 as parameter for amount
-        int returnCode = GetWannafindServiceClient( settings ).captureTransaction( int.Parse( order.TransactionInformation.TransactionId ), 0 );
-        if ( returnCode == 0 )
-          return new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Captured );
-        else
-          errorMessage = "Tea Commerce - Wannafind - " + string.Format( apiErrorFormatString, returnCode );
-      } catch ( WebException ) {
-        errorMessage = "Tea Commerce - Wannafind - " + wrongCredentialsError;
+        try {
+          //When capturing of the complete amount - send 0 as parameter for amount
+          int returnCode = GetWannafindServiceClient( settings ).captureTransaction( int.Parse( order.TransactionInformation.TransactionId ), 0 );
+          if ( returnCode == 0 ) {
+            apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Captured );
+          } else {
+            LoggingService.Instance.Log( "Wannafind(" + order.OrderNumber + ") - Error making API request - Error code: " + returnCode );
+          }
+        } catch ( WebException ) {
+          LoggingService.Instance.Log( "Wannafind(" + order.OrderNumber + ") - Error making API request - Wrong credentials or IP address not allowed" );
+        }
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "Wannafind(" + order.OrderNumber + ") - Capture payment" );
       }
 
-      LoggingService.Instance.Log( errorMessage );
-      return new ApiInfo( errorMessage );
+      return apiInfo;
     }
 
     public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
-      string errorMessage = string.Empty;
+      ApiInfo apiInfo = null;
 
       try {
-        int returnCode = GetWannafindServiceClient( settings ).creditTransaction( int.Parse( order.TransactionInformation.TransactionId ), (int)( order.TotalPrice.WithVat * 100M ) );
-        if ( returnCode == 0 )
-          return new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Refunded );
-        else
-          errorMessage = "Tea Commerce - Wannafind - " + string.Format( apiErrorFormatString, returnCode );
-      } catch ( WebException ) {
-        errorMessage = "Tea Commerce - Wannafind - " + wrongCredentialsError;
+        try {
+          int returnCode = GetWannafindServiceClient( settings ).creditTransaction( int.Parse( order.TransactionInformation.TransactionId ), (int)( order.TotalPrice.WithVat * 100M ) );
+          if ( returnCode == 0 ) {
+            apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Refunded );
+          } else {
+            LoggingService.Instance.Log( "Wannafind(" + order.OrderNumber + ") - Error making API request - Error code: " + returnCode );
+          }
+        } catch ( WebException ) {
+          LoggingService.Instance.Log( "Wannafind(" + order.OrderNumber + ") - Error making API request - Wrong credentials or IP address not allowed" );
+        }
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "Wannafind(" + order.OrderNumber + ") - Refund payment" );
       }
 
-      LoggingService.Instance.Log( errorMessage );
-      return new ApiInfo( errorMessage );
+      return apiInfo;
     }
 
     public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
-      string errorMessage = string.Empty;
+      ApiInfo apiInfo = null;
 
       try {
-        int returnCode = GetWannafindServiceClient( settings ).cancelTransaction( int.Parse( order.TransactionInformation.TransactionId ) );
-        if ( returnCode == 0 )
-          return new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Cancelled );
-        else
-          errorMessage = "Tea Commerce - Wannafind - " + string.Format( apiErrorFormatString, returnCode );
-      } catch ( WebException ) {
-        errorMessage = "Tea Commerce - Wannafind - " + wrongCredentialsError;
+        try {
+          int returnCode = GetWannafindServiceClient( settings ).cancelTransaction( int.Parse( order.TransactionInformation.TransactionId ) );
+          if ( returnCode == 0 ) {
+            apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Cancelled );
+          } else {
+            LoggingService.Instance.Log( "Wannafind(" + order.OrderNumber + ") - Error making API request - Error code: " + returnCode );
+          }
+        } catch ( WebException ) {
+          LoggingService.Instance.Log( "Wannafind(" + order.OrderNumber + ") - Error making API request - Wrong credentials or IP address not allowed" );
+        }
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "Wannafind(" + order.OrderNumber + ") - Cancel payment" );
       }
 
-      LoggingService.Instance.Log( errorMessage );
-      return new ApiInfo( errorMessage );
+      return apiInfo;
     }
 
     public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
@@ -225,16 +270,27 @@ namespace TeaCommerce.PaymentProviders {
           return settingsKey + "<br/><small>e.g. /cancel/</small>";
         case "cardtype":
           return settingsKey + "<br/><small>e.g. VISA,MC</small>";
+        case "testmode":
+          return settingsKey + "<br/><small>1 = true; 0 = false</small>";
         default:
           return base.GetLocalizedSettingsKey( settingsKey, culture );
       }
     }
 
+    #region Helper methods
+
     protected pgwapi GetWannafindServiceClient( IDictionary<string, string> settings ) {
-      pgwapi paymentGateWayApi = new pgwapi();
-      paymentGateWayApi.Credentials = new NetworkCredential( settings[ "apiUser" ], settings[ "apiPassword" ] );
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "apiUser", "settings" );
+      settings.MustContainKey( "apiPassword", "settings" );
+
+      pgwapi paymentGateWayApi = new pgwapi {
+        Credentials = new NetworkCredential( settings[ "apiUser" ], settings[ "apiPassword" ] )
+      };
       return paymentGateWayApi;
     }
+
+    #endregion
 
   }
 }

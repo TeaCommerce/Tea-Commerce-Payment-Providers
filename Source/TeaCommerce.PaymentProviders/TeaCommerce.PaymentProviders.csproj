@@ -64,6 +64,7 @@
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
     <Compile Include="TwoCheckOut.cs" />
+    <Compile Include="Wannafind.cs" />
     <Compile Include="Web References\AuthorizeNetService\Reference.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
