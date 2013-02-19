@@ -20,6 +20,11 @@ namespace TeaCommerce.PaymentProviders {
 
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-wannafind-with-tea-commerce/"; } }
 
+    public override bool SupportsRetrievalOfPaymentStatus { get { return true; } }
+    public override bool SupportsCapturingOfPayment { get { return true; } }
+    public override bool SupportsRefundOfPayment { get { return true; } }
+    public override bool SupportsCancellationOfPayment { get { return true; } }
+
     public override IDictionary<string, string> DefaultSettings {
       get {
         Dictionary<string, string> defaultSettings = new Dictionary<string, string>();
