@@ -1,14 +1,18 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web;
+using System.Web.Hosting;
 using System.Xml.Linq;
 using System.Xml.XPath;
+using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Models;
-using TeaCommerce.Api.PaymentProviders;
-using TeaCommerce.PaymentProviders.Extensions;
+using TeaCommerce.Api.Services;
+using TeaCommerce.Api.Web.PaymentProviders;
 using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
@@ -16,189 +20,237 @@ namespace TeaCommerce.PaymentProviders {
   [PaymentProvider( "Ogone" )]
   public class Ogone : APaymentProvider {
 
-    protected const string apiErrorFormatString = "Error making API request - Error code: {0} - {1}";
+    public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-ogone-with-tea-commerce/"; } }
 
-    protected string formPostUrl;
-    public override string FormPostUrl { get { return formPostUrl; } }
+    public override bool SupportsRetrievalOfPaymentStatus { get { return true; } }
+    public override bool SupportsCapturingOfPayment { get { return true; } }
+    public override bool SupportsRefundOfPayment { get { return true; } }
+    public override bool SupportsCancellationOfPayment { get { return true; } }
+
     public override bool FinalizeAtContinueUrl { get { return true; } }
 
     public override IDictionary<string, string> DefaultSettings {
       get {
-        if ( defaultSettings == null ) {
-          defaultSettings = new Dictionary<string, string>();
-          defaultSettings[ "PSPID" ] = string.Empty;
-          defaultSettings[ "LANGUAGE" ] = "en_US";
-          defaultSettings[ "ACCEPTURL" ] = string.Empty;
-          defaultSettings[ "CANCELURL" ] = string.Empty;
-          defaultSettings[ "BACKURL" ] = string.Empty;
-          defaultSettings[ "PMLIST" ] = string.Empty;
-          defaultSettings[ "SHAINPASSPHRASE" ] = string.Empty;
-          defaultSettings[ "SHAOUTPASSPHRASE" ] = string.Empty;
-          defaultSettings[ "APIUSERID" ] = string.Empty;
-          defaultSettings[ "APIPASSWORD" ] = string.Empty;
-          defaultSettings[ "TESTMODE" ] = "0";
-        }
+        Dictionary<string, string> defaultSettings = new Dictionary<string, string>();
+        defaultSettings[ "PSPID" ] = string.Empty;
+        defaultSettings[ "LANGUAGE" ] = "en_US";
+        defaultSettings[ "ACCEPTURL" ] = string.Empty;
+        defaultSettings[ "CANCELURL" ] = string.Empty;
+        defaultSettings[ "BACKURL" ] = string.Empty;
+        defaultSettings[ "PMLIST" ] = string.Empty;
+        defaultSettings[ "SHAINPASSPHRASE" ] = string.Empty;
+        defaultSettings[ "SHAOUTPASSPHRASE" ] = string.Empty;
+        defaultSettings[ "APIUSERID" ] = string.Empty;
+        defaultSettings[ "APIPASSWORD" ] = string.Empty;
+        defaultSettings[ "TESTMODE" ] = "0";
         return defaultSettings;
       }
     }
 
-    public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-ogone-with-tea-commerce/"; } }
+    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+      order.MustNotBeNull( "order" );
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "SHAINPASSPHRASE", "settings" );
 
-    public override IDictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallbackUrl, IDictionary<string, string> settings ) {
-      List<string> settingsToExclude = new string[] { "SHAINPASSPHRASE", "SHAOUTPASSPHRASE", "APIUSERID", "APIPASSWORD", "TESTMODE" }.ToList();
-      Dictionary<string, string> inputFields = settings.Where( i => !string.IsNullOrEmpty( i.Value ) && !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key.ToUpperInvariant(), i => i.Value );
+      PaymentHtmlForm htmlForm = new PaymentHtmlForm {
+        Action = GetMethodUrl( "GENERATEFORM", settings )
+      };
 
-      inputFields[ "ORDERID" ] = order.CartNumber;
-      inputFields[ "AMOUNT" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
-      inputFields[ "CURRENCY" ] = order.CurrencyISOCode;
-      inputFields[ "CN" ] = order.PaymentInformation.FirstName + " " + order.PaymentInformation.LastName;
-      inputFields[ "EMAIL" ] = order.PaymentInformation.Email;
-      inputFields[ "ACCEPTURL" ] = teaCommerceContinueUrl;
-      inputFields[ "DECLINEURL" ] = teaCommerceCancelUrl;
-      inputFields[ "EXCEPTIONURL" ] = teaCommerceCancelUrl;
-      inputFields[ "CANCELURL" ] = teaCommerceCancelUrl;
+      string[] settingsToExclude = new[] { "SHAINPASSPHRASE", "SHAOUTPASSPHRASE", "APIUSERID", "APIPASSWORD", "TESTMODE" };
+      htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) && !string.IsNullOrEmpty( i.Value ) ).ToDictionary( i => i.Key.ToUpperInvariant(), i => i.Value );
+
+      htmlForm.InputFields[ "ORDERID" ] = order.CartNumber;
+      htmlForm.InputFields[ "AMOUNT" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
+
+      //Check that the Iso code exists
+      Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
+      if ( !Iso4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
+        throw new Exception( "You must specify an ISO 4217 currency code for the " + currency.Name + " currency" );
+      }
+      htmlForm.InputFields[ "CURRENCY" ] = currency.IsoCode;
+
+      htmlForm.InputFields[ "CN" ] = order.PaymentInformation.FirstName + " " + order.PaymentInformation.LastName;
+      htmlForm.InputFields[ "EMAIL" ] = order.PaymentInformation.Email;
+      htmlForm.InputFields[ "ACCEPTURL" ] = teaCommerceContinueUrl;
+      htmlForm.InputFields[ "DECLINEURL" ] = teaCommerceCancelUrl;
+      htmlForm.InputFields[ "EXCEPTIONURL" ] = teaCommerceCancelUrl;
+      htmlForm.InputFields[ "CANCELURL" ] = teaCommerceCancelUrl;
 
       //Ogone dont support to show order line information to the shopper
 
-      string strToHash = inputFields.OrderBy( i => i.Key ).Select( i => i.Key + "=" + i.Value + settings[ "SHAINPASSPHRASE" ] ).Join( "" );
-      inputFields[ "SHASIGN" ] = ConvertToHexString( new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ) );
+      string strToHash = string.Join( "", htmlForm.InputFields.OrderBy( i => i.Key ).Select( i => i.Key + "=" + i.Value + settings[ "SHAINPASSPHRASE" ] ) );
+      htmlForm.InputFields[ "SHASIGN" ] = ConvertToHexString( new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ) );
 
-      formPostUrl = GetMethodUrl( "GENERATEFORM", settings );
-
-      return inputFields;
+      return htmlForm;
     }
 
     public override string GetContinueUrl( IDictionary<string, string> settings ) {
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "ACCEPTURL", "settings" );
+
       return settings[ "ACCEPTURL" ];
     }
 
     public override string GetCancelUrl( IDictionary<string, string> settings ) {
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "CANCELURL", "settings" );
+
       return settings[ "CANCELURL" ];
     }
 
     public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
-      //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/OgoneTestCallback.txt" ) ) ) ) {
-      //  writer.WriteLine( "QUERYSTRING:" );
-      //  foreach ( string k in request.QueryString.Keys ) {
-      //    writer.WriteLine( k + " : " + request.QueryString[ k ] );
-      //  }
-      //  writer.Flush();
-      //}
+      CallbackInfo callbackInfo = null;
 
-      string errorMessage = string.Empty;
-      Dictionary<string, string> inputFields = new Dictionary<string, string>();
+      try {
+        order.MustNotBeNull( "order" );
+        request.MustNotBeNull( "request" );
+        settings.MustNotBeNull( "settings" );
+        settings.MustContainKey( "SHAOUTPASSPHRASE", "settings" );
 
-      string SHASign = request.QueryString[ "SHASIGN" ];
-      string strAmount = request.QueryString[ "AMOUNT" ];
-      string transaction = request.QueryString[ "PAYID" ];
-      string status = request.QueryString[ "STATUS" ];
-      string cardType = request.QueryString[ "BRAND" ];
-      string cardNo = request.QueryString[ "CARDNO" ];
+        //Write data when testing
+        if ( settings.ContainsKey( "TESTMODE" ) && settings[ "TESTMODE" ] == "1" ) {
+          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/ogone-callback-data.txt" ) ) ) ) {
+            writer.WriteLine( "Query string:" );
+            foreach ( string k in request.QueryString.Keys ) {
+              writer.WriteLine( k + " : " + request.QueryString[ k ] );
+            }
+            writer.Flush();
+          }
+        }
 
-      foreach ( string key in request.QueryString.Keys ) {
-        if ( !key.Equals( "SHASIGN" ) )
-          inputFields[ key ] = request.QueryString[ key ];
+        Dictionary<string, string> inputFields = new Dictionary<string, string>();
+
+        string shaSign = request.QueryString[ "SHASIGN" ];
+        string strAmount = request.QueryString[ "AMOUNT" ];
+        string transaction = request.QueryString[ "PAYID" ];
+        string status = request.QueryString[ "STATUS" ];
+        string cardType = request.QueryString[ "BRAND" ];
+        string cardNo = request.QueryString[ "CARDNO" ];
+
+        foreach ( string key in request.QueryString.Keys ) {
+          if ( !key.Equals( "SHASIGN" ) )
+            inputFields[ key ] = request.QueryString[ key ];
+        }
+
+        string strToHash = string.Join( "", inputFields.OrderBy( i => i.Key ).Select( i => i.Key.ToUpperInvariant() + "=" + i.Value + settings[ "SHAOUTPASSPHRASE" ] ) );
+        string digest = ConvertToHexString( new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ) );
+
+        if ( digest.Equals( shaSign ) ) {
+          callbackInfo = new CallbackInfo( decimal.Parse( strAmount, CultureInfo.InvariantCulture ), transaction, status == "5" || status == "51" ? PaymentState.Authorized : PaymentState.Captured, cardType, cardNo );
+        } else {
+          LoggingService.Instance.Log( "Ogone(" + order.CartNumber + ") - SHASIGN check isn't valid - Calculated digest: " + digest + " - Ogone SHASIGN: " + shaSign );
+        }
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "Ogone(" + order.CartNumber + ") - Process callback" );
       }
 
-      string strToHash = inputFields.OrderBy( i => i.Key ).Select( i => i.Key.ToUpperInvariant() + "=" + i.Value + settings[ "SHAOUTPASSPHRASE" ] ).Join( "" );
-      string digest = ConvertToHexString( new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ) );
-
-      if ( digest.Equals( SHASign ) ) {
-        return new CallbackInfo( decimal.Parse( strAmount, CultureInfo.InvariantCulture ), transaction, status.Equals( "5" ) || status.Equals( "51" ) ? PaymentState.Authorized : PaymentState.Captured, cardType, cardNo );
-      } else
-        errorMessage = string.Format( "Tea Commerce - Ogone - SHASIGN check isn't valid - Calculated digest: {0} - Ogone SHASIGN: {1}", digest, SHASign );
-
-      LoggingService.Instance.Log( errorMessage );
-      return new CallbackInfo( errorMessage );
+      return callbackInfo;
     }
 
     public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
-      string errorMessage = string.Empty;
+      ApiInfo apiInfo = null;
 
-      XDocument doc = GetStatusInternal( order, settings );
-      string status = doc.XPathSelectElement( "//ncresponse" ).Attribute( "STATUS" ).Value;
+      try {
+        XDocument doc = GetStatusInternal( order, settings );
+        string status = doc.XPathSelectElement( "//ncresponse" ).Attribute( "STATUS" ).Value;
 
-      PaymentState paymentState = PaymentState.Error;
-      switch ( status ) {
-        case "5":
-        case "51":
-          paymentState = PaymentState.Authorized;
-          break;
-        case "9":
-        case "91":
-          paymentState = PaymentState.Captured;
-          break;
-        case "6":
-        case "61":
-          paymentState = PaymentState.Cancelled;
-          break;
-        case "7":
-        case "71":
-        case "8":
-        case "81":
-          paymentState = PaymentState.Refunded;
-          break;
+        PaymentState paymentState = PaymentState.Error;
+        switch ( status ) {
+          case "5":
+          case "51":
+            paymentState = PaymentState.Authorized;
+            break;
+          case "9":
+          case "91":
+            paymentState = PaymentState.Captured;
+            break;
+          case "6":
+          case "61":
+            paymentState = PaymentState.Cancelled;
+            break;
+          case "7":
+          case "71":
+          case "8":
+          case "81":
+            paymentState = PaymentState.Refunded;
+            break;
+        }
+
+        if ( paymentState != PaymentState.Error ) {
+          apiInfo = new ApiInfo( doc.XPathSelectElement( "//ncresponse" ).Attribute( "PAYID" ).Value, paymentState );
+        } else {
+          LoggingService.Instance.Log( "Ogone - Error making API request - error code: " + doc.XPathSelectElement( "//ncresponse" ).Attribute( "NCERROR" ).Value + " - " + doc.XPathSelectElement( "//ncresponse" ).Attribute( "NCERRORPLUS" ).Value );
+        }
+
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "Ogone(" + order.OrderNumber + ") - Get status" );
       }
 
-      if ( paymentState != PaymentState.Error )
-        return new ApiInfo( doc.XPathSelectElement( "//ncresponse" ).Attribute( "PAYID" ).Value, paymentState );
-      else
-        errorMessage = "Tea Commerce - Ogone - " + string.Format( apiErrorFormatString, doc.XPathSelectElement( "//ncresponse" ).Attribute( "NCERROR" ).Value, doc.XPathSelectElement( "//ncresponse" ).Attribute( "NCERRORPLUS" ).Value );
-
-      LoggingService.Instance.Log( errorMessage );
-      return new ApiInfo( errorMessage );
+      return apiInfo;
     }
 
     public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
-      string errorMessage = string.Empty;
+      ApiInfo apiInfo = null;
 
-      XDocument doc = MakeApiRequest( "CAPTURE", "SAS", order, settings );
-      string status = doc.XPathSelectElement( "//ncresponse" ).Attribute( "STATUS" ).Value;
+      try {
+        XDocument doc = MakeApiRequest( "CAPTURE", "SAS", order, settings );
+        string status = doc.XPathSelectElement( "//ncresponse" ).Attribute( "STATUS" ).Value;
 
-      if ( status.Equals( "9" ) || status.Equals( "91" ) )
-        return new ApiInfo( doc.XPathSelectElement( "//ncresponse" ).Attribute( "PAYID" ).Value, PaymentState.Captured );
-      else
-        errorMessage = "Tea Commerce - Ogone - " + string.Format( apiErrorFormatString, doc.XPathSelectElement( "//ncresponse" ).Attribute( "NCERROR" ).Value, doc.XPathSelectElement( "//ncresponse" ).Attribute( "NCERRORPLUS" ).Value );
+        if ( status == "9" || status == "91" ) {
+          apiInfo = new ApiInfo( doc.XPathSelectElement( "//ncresponse" ).Attribute( "PAYID" ).Value, PaymentState.Captured );
+        } else {
+          LoggingService.Instance.Log( "Ogone - Error making API request - error code: " + doc.XPathSelectElement( "//ncresponse" ).Attribute( "NCERROR" ).Value + " - " + doc.XPathSelectElement( "//ncresponse" ).Attribute( "NCERRORPLUS" ).Value );
+        }
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "Ogone(" + order.OrderNumber + ") - Capture payment" );
+      }
 
-      LoggingService.Instance.Log( errorMessage );
-      return new ApiInfo( errorMessage );
+      return apiInfo;
     }
 
     public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
-      string errorMessage = string.Empty;
+      ApiInfo apiInfo = null;
 
-      XDocument statusDoc = GetStatusInternal( order, settings );
-      string statusStatus = statusDoc.XPathSelectElement( "//ncresponse" ).Attribute( "STATUS" ).Value;
+      try {
+        XDocument statusDoc = GetStatusInternal( order, settings );
+        string statusStatus = statusDoc.XPathSelectElement( "//ncresponse" ).Attribute( "STATUS" ).Value;
 
-      if ( !statusStatus.Equals( "91" ) ) {
-        XDocument doc = MakeApiRequest( "REFUND", "RFS", order, settings );
-        string status = doc.XPathSelectElement( "//ncresponse" ).Attribute( "STATUS" ).Value;
+        if ( statusStatus != "91" ) {
+          XDocument doc = MakeApiRequest( "REFUND", "RFS", order, settings );
+          string status = doc.XPathSelectElement( "//ncresponse" ).Attribute( "STATUS" ).Value;
 
-        if ( status.Equals( "7" ) || status.Equals( "71" ) || status.Equals( "8" ) || status.Equals( "81" ) )
-          return new ApiInfo( doc.XPathSelectElement( "//ncresponse" ).Attribute( "PAYID" ).Value, PaymentState.Refunded );
-        else
-          errorMessage = "Tea Commerce - Ogone - " + string.Format( apiErrorFormatString, doc.XPathSelectElement( "//ncresponse" ).Attribute( "NCERROR" ).Value, doc.XPathSelectElement( "//ncresponse" ).Attribute( "NCERRORPLUS" ).Value );
-      } else
-        errorMessage = "Tea Commerce - Ogone - Error making API request - Can't refund a transaction with status 91 - please try again in 5 minutes";
+          if ( status == "7" || status == "71" || status == "8" || status == "81" ) {
+            apiInfo = new ApiInfo( doc.XPathSelectElement( "//ncresponse" ).Attribute( "PAYID" ).Value, PaymentState.Refunded );
+          } else {
+            LoggingService.Instance.Log( "Ogone - Error making API request - error code: " + doc.XPathSelectElement( "//ncresponse" ).Attribute( "NCERROR" ).Value + " - " + doc.XPathSelectElement( "//ncresponse" ).Attribute( "NCERRORPLUS" ).Value );
+          }
+        } else {
+          LoggingService.Instance.Log( "Ogone - Error making API request - can't refund a transaction with status 91 - please try again in 5 minutes" );
+        }
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "Ogone(" + order.OrderNumber + ") - Refund payment" );
+      }
 
-      LoggingService.Instance.Log( errorMessage );
-      return new ApiInfo( errorMessage );
+      return apiInfo;
     }
 
     public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
-      string errorMessage = string.Empty;
-      Dictionary<string, string> inputFields = new Dictionary<string, string>();
+      ApiInfo apiInfo = null;
 
-      XDocument doc = MakeApiRequest( "CANCEL", "DES", order, settings );
-      string status = doc.XPathSelectElement( "//ncresponse" ).Attribute( "STATUS" ).Value;
+      try {
+        XDocument doc = MakeApiRequest( "CANCEL", "DES", order, settings );
+        string status = doc.XPathSelectElement( "//ncresponse" ).Attribute( "STATUS" ).Value;
 
-      if ( status.Equals( "6" ) || status.Equals( "61" ) )
-        return new ApiInfo( doc.XPathSelectElement( "//ncresponse" ).Attribute( "PAYID" ).Value, PaymentState.Cancelled );
-      else
-        errorMessage = "Tea Commerce - Ogone - " + string.Format( apiErrorFormatString, doc.XPathSelectElement( "//ncresponse" ).Attribute( "NCERROR" ).Value, doc.XPathSelectElement( "//ncresponse" ).Attribute( "NCERRORPLUS" ).Value );
+        if ( status == "6" || status == "61" ) {
+          apiInfo = new ApiInfo( doc.XPathSelectElement( "//ncresponse" ).Attribute( "PAYID" ).Value, PaymentState.Cancelled );
+        } else {
+          LoggingService.Instance.Log( "Ogone - Error making API request - error code: " + doc.XPathSelectElement( "//ncresponse" ).Attribute( "NCERROR" ).Value + " - " + doc.XPathSelectElement( "//ncresponse" ).Attribute( "NCERRORPLUS" ).Value );
+        }
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "Ogone(" + order.OrderNumber + ") - Cancel payment" );
+      }
 
-      LoggingService.Instance.Log( errorMessage );
-      return new ApiInfo( errorMessage );
+      return apiInfo;
     }
 
     public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
@@ -216,11 +268,20 @@ namespace TeaCommerce.PaymentProviders {
       }
     }
 
+    #region Helper methods
+
     protected XDocument GetStatusInternal( Order order, IDictionary<string, string> settings ) {
       return MakeApiRequest( "STATUS", string.Empty, order, settings );
     }
 
     protected XDocument MakeApiRequest( string methodName, string operation, Order order, IDictionary<string, string> settings ) {
+      order.MustNotBeNull( "order" );
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "PSPID", "settings" );
+      settings.MustContainKey( "APIUSERID", "settings" );
+      settings.MustContainKey( "APIPASSWORD", "settings" );
+      settings.MustContainKey( "SHAINPASSPHRASE", "settings" );
+
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
       inputFields[ "PSPID" ] = settings[ "PSPID" ];
@@ -232,7 +293,7 @@ namespace TeaCommerce.PaymentProviders {
         inputFields[ "OPERATION" ] = operation;
       }
 
-      string strToHash = inputFields.OrderBy( i => i.Key ).Select( i => i.Key.ToUpperInvariant() + "=" + i.Value + settings[ "SHAINPASSPHRASE" ] ).Join( "" );
+      string strToHash = string.Join( "", inputFields.OrderBy( i => i.Key ).Select( i => i.Key.ToUpperInvariant() + "=" + i.Value + settings[ "SHAINPASSPHRASE" ] ) );
       inputFields[ "SHASIGN" ] = ConvertToHexString( new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ) );
 
       string response = MakePostRequest( GetMethodUrl( methodName, settings ), inputFields );
@@ -240,7 +301,7 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     protected string GetMethodUrl( string type, IDictionary<string, string> settings ) {
-      string environment = settings[ "TESTMODE" ].Equals( "0" ) ? "prod" : "test";
+      string environment = settings.ContainsKey( "TESTMODE" ) && settings[ "TESTMODE" ].Equals( "1" ) ? "test" : "prod";
 
       switch ( type.ToUpperInvariant() ) {
         case "GENERATEFORM":
@@ -255,6 +316,8 @@ namespace TeaCommerce.PaymentProviders {
 
       return string.Empty;
     }
+
+    #endregion
 
   }
 }

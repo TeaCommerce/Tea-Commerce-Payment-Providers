@@ -142,7 +142,7 @@ namespace TeaCommerce.PaymentProviders {
       IDictionary<string, string> responseFields = GetFields( MakePostRequest( GetMethodUrl( "PURCHASE", settings ), inputFields ) );
       string status = responseFields[ "Status" ];
 
-      if ( status.Equals( "OK" ) || status.Equals( "OK REPEATED" ) ) {
+      if ( status == "OK" || status == "OK REPEATED" ) {
         order.Properties.AddOrUpdate( new CustomProperty( "securityKey", responseFields[ "SecurityKey" ] ) { ServerSideOnly = true } );
         order.Properties.AddOrUpdate( new CustomProperty( "teaCommerceContinueUrl", teaCommerceContinueUrl ) { ServerSideOnly = true } );
         order.Properties.AddOrUpdate( new CustomProperty( "teaCommerceCancelUrl", teaCommerceCancelUrl ) { ServerSideOnly = true } );
@@ -219,14 +219,14 @@ namespace TeaCommerce.PaymentProviders {
         string calcedMd5Hash = GetMd5Hash( md5CheckValue ).ToUpperInvariant();
         string vpsSignature = request.Form[ "VPSSignature" ];
 
-        if ( calcedMd5Hash.Equals( vpsSignature ) ) {
+        if ( calcedMd5Hash == vpsSignature ) {
 
           Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
-          if ( status.Equals( "OK" ) || status.Equals( "AUTHENTICATED" ) || status.Equals( "REGISTERED" ) ) {
-            callbackInfo = new CallbackInfo( order.TotalPrice.WithVat, transaction, !request.Form[ "TxType" ].Equals( "PAYMENT" ) ? PaymentState.Authorized : PaymentState.Captured, cardType, last4Digits );
+          if ( status == "OK" || status == "AUTHENTICATED" || status == "REGISTERED" ) {
+            callbackInfo = new CallbackInfo( order.TotalPrice.WithVat, transaction, request.Form[ "TxType" ] != "PAYMENT" ? PaymentState.Authorized : PaymentState.Captured, cardType, last4Digits );
 
-            if ( status.Equals( "OK" ) ) {
+            if ( status == "OK" ) {
               order.Properties.AddOrUpdate( new CustomProperty( "TxAuthNo", txAuthNo ) { ServerSideOnly = true } );
             }
             order.Properties.AddOrUpdate( new CustomProperty( "VendorTxCode", vendorTxCode ) { ServerSideOnly = true } );
@@ -239,7 +239,7 @@ namespace TeaCommerce.PaymentProviders {
           } else {
             LoggingService.Instance.Log( "Sage Pay(" + order.CartNumber + ") - Error  in callback - status: " + status + " | status details: " + request.Form[ "StatusDetail" ] );
 
-            if ( status.Equals( "ERROR" ) )
+            if ( status == "ERROR" )
               inputFields[ "Status" ] = "INVALID";
             else
               inputFields[ "Status" ] = "OK";
@@ -285,7 +285,7 @@ namespace TeaCommerce.PaymentProviders {
 
         IDictionary<string, string> responseFields = GetFields( MakePostRequest( GetMethodUrl( "AUTHORISE", settings ), inputFields ) );
 
-        if ( responseFields[ "Status" ].Equals( "OK" ) ) {
+        if ( responseFields[ "Status" ] == "OK" ) {
           order.Properties.AddOrUpdate( new CustomProperty( "vendorTxCode", vendorTxCode.ToString() ) { ServerSideOnly = true } );
           order.Properties.AddOrUpdate( new CustomProperty( "txAuthNo", responseFields[ "TxAuthNo" ] ) { ServerSideOnly = true } );
           order.Properties.AddOrUpdate( new CustomProperty( "securityKey", responseFields[ "SecurityKey" ] ) { ServerSideOnly = true } );
@@ -335,7 +335,7 @@ namespace TeaCommerce.PaymentProviders {
 
         IDictionary<string, string> responseFields = GetFields( MakePostRequest( GetMethodUrl( "REFUND", settings ), inputFields ) );
 
-        if ( responseFields[ "Status" ].Equals( "OK" ) ) {
+        if ( responseFields[ "Status" ] == "OK" ) {
           order.Properties.AddOrUpdate( new CustomProperty( "VendorTxCode", vendorTxCode.ToString() ) { ServerSideOnly = true } );
           order.Properties.AddOrUpdate( new CustomProperty( "TxAuthNo", responseFields[ "TxAuthNo" ] ) { ServerSideOnly = true } );
           order.Save();
@@ -370,7 +370,7 @@ namespace TeaCommerce.PaymentProviders {
 
         IDictionary<string, string> responseFields = GetFields( MakePostRequest( GetMethodUrl( "CANCEL", settings ), inputFields ) );
 
-        if ( responseFields[ "Status" ].Equals( "OK" ) ) {
+        if ( responseFields[ "Status" ] == "OK" ) {
           apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Cancelled );
         } else {
           LoggingService.Instance.Log( "Quickpay(" + order.OrderNumber + ") - Error making API request: " + responseFields[ "StatusDetail" ] );

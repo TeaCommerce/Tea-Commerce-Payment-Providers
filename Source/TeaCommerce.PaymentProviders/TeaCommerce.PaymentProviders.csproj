@@ -55,6 +55,7 @@
     <Compile Include="Netaxept.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Ogone.cs" />
     <Compile Include="Payer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuickPay.cs" />
