@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Web;
+using System.Web.Hosting;
 using System.Xml.Linq;
+using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Models;
-using TeaCommerce.Api.PaymentProviders;
+using TeaCommerce.Api.Services;
+using TeaCommerce.Api.Web.PaymentProviders;
 using TeaCommerce.PaymentProviders.Extensions;
 using TeaCommerce.Api.Infrastructure.Logging;
 
@@ -14,47 +18,43 @@ namespace TeaCommerce.PaymentProviders {
   [PaymentProvider( "Payer" )]
   public class Payer : APaymentProvider {
 
-    public override bool SupportsRetrievalOfPaymentStatus { get { return false; } }
-    public override bool SupportsCancellationOfPayment { get { return false; } }
-    public override bool SupportsCapturingOfPayment { get { return false; } }
-    public override bool SupportsRefundOfPayment { get { return false; } }
+    public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-payer-with-tea-commerce/"; } }
 
     public override IDictionary<string, string> DefaultSettings {
       get {
-        if ( defaultSettings == null ) {
-          defaultSettings = new Dictionary<string, string>();
-          defaultSettings[ "payer_agentid" ] = string.Empty;
-          defaultSettings[ "language" ] = "us";
-          defaultSettings[ "success_redirect_url" ] = string.Empty;
-          defaultSettings[ "redirect_back_to_shop_url" ] = string.Empty;
-          defaultSettings[ "payment_methods" ] = "auto";
-          defaultSettings[ "md5Key1" ] = string.Empty;
-          defaultSettings[ "md5Key2" ] = string.Empty;
-          defaultSettings[ "test_mode" ] = "false";
-          defaultSettings[ "productNumberPropertyAlias" ] = "productNumber";
-          defaultSettings[ "productNamePropertyAlias" ] = "productName";
-          defaultSettings[ "shippingMethodProductNumber" ] = "1000";
-          defaultSettings[ "shippingMethodFormatString" ] = "Shipping fee ({0})";
-          defaultSettings[ "paymentMethodProductNumber" ] = "2000";
-          defaultSettings[ "paymentMethodFormatString" ] = "Payment fee ({0})";
-        }
+        Dictionary<string, string> defaultSettings = new Dictionary<string, string>();
+        defaultSettings[ "payer_agentid" ] = string.Empty;
+        defaultSettings[ "language" ] = "us";
+        defaultSettings[ "success_redirect_url" ] = string.Empty;
+        defaultSettings[ "redirect_back_to_shop_url" ] = string.Empty;
+        defaultSettings[ "payment_methods" ] = "auto";
+        defaultSettings[ "md5Key1" ] = string.Empty;
+        defaultSettings[ "md5Key2" ] = string.Empty;
+        defaultSettings[ "test_mode" ] = "false";
         return defaultSettings;
       }
     }
 
-    public override string FormPostUrl { get { return "https://secure.pay-read.se/PostAPI_V1/InitPayFlow"; } }
-    public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-payer-with-tea-commerce/"; } }
+    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+      order.MustNotBeNull( "order" );
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "payer_agentid", "settings" );
+      settings.MustContainKey( "language", "settings" );
+      settings.MustContainKey( "payment_methods", "settings" );
+      settings.MustContainKey( "md5Key1", "settings" );
+      settings.MustContainKey( "md5Key2", "settings" );
 
-    public override IDictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
       HttpServerUtility server = HttpContext.Current.Server;
 
-      Dictionary<string, string> inputFields = new Dictionary<string, string>();
+      PaymentHtmlForm htmlForm = new PaymentHtmlForm {
+        Action = "https://secure.pay-read.se/PostAPI_V1/InitPayFlow"
+      };
 
       //Shop id
-      inputFields[ "payer_agentid" ] = server.HtmlEncode( settings[ "payer_agentid" ] );
+      htmlForm.InputFields[ "payer_agentid" ] = server.HtmlEncode( settings[ "payer_agentid" ] );
 
       //API version
-      inputFields[ "payer_xml_writer" ] = "payread_php_0_2_v08";
+      htmlForm.InputFields[ "payer_xml_writer" ] = "payread_php_0_2_v08";
 
       XNamespace ns = "http://www.w3.org/2001/XMLSchema-instance";
       XElement payerData = new XElement( "payread_post_api_0_2",
@@ -91,13 +91,10 @@ namespace TeaCommerce.PaymentProviders {
       XElement purchaseList = new XElement( "purchase_list" );
       int lineCounter = 1;
       foreach ( OrderLine orderLine in order.OrderLines ) {
-        OrderLineProperty productNameProp = orderLine.Properties.SingleOrDefault( op => op.Alias.Equals( settings[ "productNamePropertyAlias" ] ) );
-        OrderLineProperty productNumberProp = orderLine.Properties.SingleOrDefault( op => op.Alias.Equals( settings[ "productNumberPropertyAlias" ] ) );
-
         purchaseList.Add( new XElement( "freeform_purchase",
-          new XElement( "line_number", lineCounter.ToString() ),
-          new XElement( "description", server.HtmlEncode( productNameProp != null ? productNameProp.Value : string.Empty ) ),
-          new XElement( "item_number", server.HtmlEncode( productNumberProp != null ? productNumberProp.Value : string.Empty ) ),
+          new XElement( "line_number", lineCounter ),
+          new XElement( "description", server.HtmlEncode( orderLine.Name ) ),
+          new XElement( "item_number", server.HtmlEncode( orderLine.Sku ) ),
           new XElement( "price_including_vat", server.HtmlEncode( orderLine.TotalPrice.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "vat_percentage", server.HtmlEncode( ( orderLine.VatRate * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "quantity", server.HtmlEncode( orderLine.Quantity.ToString( CultureInfo.InvariantCulture ) ) )
@@ -106,11 +103,12 @@ namespace TeaCommerce.PaymentProviders {
       }
 
       //Shipping fee
-      if ( order.ShipmentInformation.TotalPrice.WithVat != 0 ) {
+      if ( order.ShipmentInformation.ShippingMethodId != null ) {
+        ShippingMethod shippingMethod = ShippingMethodService.Instance.Get( order.StoreId, order.ShipmentInformation.ShippingMethodId.Value );
         purchaseList.Add( new XElement( "freeform_purchase",
-          new XElement( "line_number", lineCounter.ToString() ),
-          new XElement( "description", server.HtmlEncode( string.Format( settings[ "shippingMethodFormatString" ], order.ShippingMethod.Name ) ) ),
-          new XElement( "item_number", server.HtmlEncode( settings[ "shippingMethodProductNumber" ] ) ),
+          new XElement( "line_number", lineCounter ),
+          new XElement( "description", server.HtmlEncode( shippingMethod.Name ) ),
+          new XElement( "item_number", server.HtmlEncode( shippingMethod.Sku ) ),
           new XElement( "price_including_vat", server.HtmlEncode( order.ShipmentInformation.TotalPrice.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "vat_percentage", server.HtmlEncode( ( order.ShipmentInformation.VatRate * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "quantity", "1" )
@@ -119,20 +117,25 @@ namespace TeaCommerce.PaymentProviders {
       }
 
       //Payment fee
-      if ( order.PaymentInformation.TotalPrice.WithVat != 0 ) {
+      if ( order.PaymentInformation.PaymentMethodId != null ) {
+        PaymentMethod paymentMethod = PaymentMethodService.Instance.Get( order.StoreId, order.PaymentInformation.PaymentMethodId.Value );
         purchaseList.Add( new XElement( "freeform_purchase",
-          new XElement( "line_number", lineCounter.ToString() ),
-          new XElement( "description", server.HtmlEncode( string.Format( settings[ "paymentMethodFormatString" ], order.PaymentMethod.Name ) ) ),
-          new XElement( "item_number", server.HtmlEncode( settings[ "paymentMethodProductNumber" ] ) ),
+          new XElement( "line_number", lineCounter ),
+          new XElement( "description", server.HtmlEncode( paymentMethod.Name ) ),
+          new XElement( "item_number", server.HtmlEncode( paymentMethod.Sku ) ),
           new XElement( "price_including_vat", server.HtmlEncode( order.PaymentInformation.TotalPrice.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "vat_percentage", server.HtmlEncode( ( order.PaymentInformation.VatRate * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "quantity", "1" )
         ) );
-        lineCounter++;
       }
 
+      //Check that the Iso code exists
+      Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
+      if ( !Iso4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
+        throw new Exception( "You must specify an ISO 4217 currency code for the " + currency.Name + " currency" );
+      }
       payerData.Add( new XElement( "purchase",
-        new XElement( "currency", server.HtmlEncode( order.Currency.ISOCode ) ),
+        new XElement( "currency", server.HtmlEncode( currency.IsoCode ) ),
         new XElement( "reference_id", server.HtmlEncode( order.CartNumber ) ),
         purchaseList
       ) );
@@ -148,12 +151,12 @@ namespace TeaCommerce.PaymentProviders {
       //Database overrides
       payerData.Add( new XElement( "database_overrides",
         new XElement( "accepted_payment_methods",
-          settings[ "payment_methods" ].Split( new string[] { "," }, StringSplitOptions.RemoveEmptyEntries ).Select( i =>
+          settings[ "payment_methods" ].Split( new[] { "," }, StringSplitOptions.RemoveEmptyEntries ).Select( i =>
             new XElement( "payment_method", server.HtmlEncode( i ) )
           )
         ),
-        new XElement( "debug_mode", server.HtmlEncode( settings[ "test_mode" ] == "true" ? "verbose" : "silent" ) ),
-        new XElement( "test_mode", server.HtmlEncode( settings[ "test_mode" ] ) ),
+        new XElement( "debug_mode", server.HtmlEncode( settings.ContainsKey( "settings" ) && settings[ "test_mode" ] == "true" ? "verbose" : "silent" ) ),
+        new XElement( "test_mode", server.HtmlEncode( settings.ContainsKey( "settings" ) ? settings[ "test_mode" ] : "false" ) ),
         new XElement( "language", server.HtmlEncode( settings[ "language" ] ) )
       ) );
 
@@ -163,77 +166,79 @@ namespace TeaCommerce.PaymentProviders {
         payerData
       );
 
-      inputFields[ "payer_data" ] = xmlDocument.ToString().Base64Encode();
+      htmlForm.InputFields[ "payer_data" ] = xmlDocument.ToString().Base64Encode();
+      htmlForm.InputFields[ "payer_checksum" ] = GetMd5Hash( settings[ "md5Key1" ] + htmlForm.InputFields[ "payer_data" ] + settings[ "md5Key2" ] );
 
-      inputFields[ "payer_checksum" ] = GetMD5Hash( settings[ "md5Key1" ] + inputFields[ "payer_data" ] + settings[ "md5Key2" ] );
-
-      return inputFields;
+      return htmlForm;
     }
 
     public override string GetContinueUrl( IDictionary<string, string> settings ) {
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "success_redirect_url", "settings" );
+
       return settings[ "success_redirect_url" ];
     }
 
     public override string GetCancelUrl( IDictionary<string, string> settings ) {
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "redirect_back_to_shop_url", "settings" );
+
       return settings[ "redirect_back_to_shop_url" ];
     }
 
     public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
-      //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/PayerTestCallback.txt" ) ) ) ) {
-      //  writer.WriteLine( "QueryString:" );
-      //  foreach ( string k in request.QueryString.Keys ) {
-      //    writer.WriteLine( k + " : " + request.QueryString[ k ] );
-      //  }
-      //  writer.Flush();
-      //}
+      CallbackInfo callbackInfo = null;
 
-      string errorMessage = string.Empty;
+      try {
+        order.MustNotBeNull( "order" );
+        request.MustNotBeNull( "request" );
+        settings.MustNotBeNull( "settings" );
+        settings.MustContainKey( "md5Key1", "settings" );
+        settings.MustContainKey( "md5Key2", "settings" );
 
-      //Check for payer IP addresses
-      string remoteServerIPAddress = request.ServerVariables[ "REMOTE_ADDR" ];
-
-      if ( remoteServerIPAddress == "217.151.207.84" || remoteServerIPAddress == "79.136.103.5" || remoteServerIPAddress == "79.136.103.9" || remoteServerIPAddress == "94.140.57.180" || remoteServerIPAddress == "94.140.57.181" || remoteServerIPAddress == "94.140.57.184" || remoteServerIPAddress == "192.168.100.1" ) {
-
-        string url = request.Url.Scheme + "://" + request.Url.Host + request.ServerVariables[ "REQUEST_URI" ];
-        string urlExceptMD5Sum = url.Substring( 0, url.IndexOf( "&md5sum" ) );
-
-        string md5CheckValue = GetMD5Hash( settings[ "md5Key1" ] + urlExceptMD5Sum + settings[ "md5Key2" ] ).ToUpperInvariant();
-
-        if ( md5CheckValue == request.QueryString[ "md5sum" ] ) {
-          HttpContext.Current.Response.Output.Write( "TRUE" );
-
-          string transaction = request.QueryString[ "payread_payment_id" ];
-          string paymentType = request.QueryString[ "payer_payment_type" ];
-          string callbackType = request.QueryString[ "payer_callback_type" ];
-          PaymentState paymentState = callbackType == "auth" ? PaymentState.Authorized : PaymentState.Captured;
-
-          return new CallbackInfo( order.TotalPrice.WithVat, transaction, paymentState, paymentType );
-        } else {
-          errorMessage = "Tea Commerce - Payer - MD5Sum security check failed";
+        //Write data when testing
+        if ( settings.ContainsKey( "test_mode" ) && settings[ "test_mode" ] == "true" ) {
+          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/payer-callback-data.txt" ) ) ) ) {
+            writer.WriteLine( "Query string:" );
+            foreach ( string k in request.QueryString.Keys ) {
+              writer.WriteLine( k + " : " + request.QueryString[ k ] );
+            }
+            writer.Flush();
+          }
         }
-      } else {
-        errorMessage = "Tea Commerce - Payer - IP security check failed - IP: " + remoteServerIPAddress;
+
+        //Check for payer IP addresses
+        string remoteServerIpAddress = request.ServerVariables[ "REMOTE_ADDR" ];
+
+        if ( remoteServerIpAddress == "217.151.207.84" || remoteServerIpAddress == "79.136.103.5" || remoteServerIpAddress == "79.136.103.9" || remoteServerIpAddress == "94.140.57.180" || remoteServerIpAddress == "94.140.57.181" || remoteServerIpAddress == "94.140.57.184" || remoteServerIpAddress == "192.168.100.1" ) {
+
+          string url = request.Url.Scheme + "://" + request.Url.Host + request.ServerVariables[ "REQUEST_URI" ];
+          string urlExceptMd5Sum = url.Substring( 0, url.IndexOf("&md5sum", StringComparison.Ordinal) );
+
+          string md5CheckValue = GetMd5Hash( settings[ "md5Key1" ] + urlExceptMd5Sum + settings[ "md5Key2" ] ).ToUpperInvariant();
+
+          if ( md5CheckValue == request.QueryString[ "md5sum" ] ) {
+            HttpContext.Current.Response.Output.Write( "TRUE" );
+
+            string transaction = request.QueryString[ "payread_payment_id" ];
+            string paymentType = request.QueryString[ "payer_payment_type" ];
+            string callbackType = request.QueryString[ "payer_callback_type" ];
+            PaymentState paymentState = callbackType == "auth" ? PaymentState.Authorized : PaymentState.Captured;
+
+            callbackInfo = new CallbackInfo( order.TotalPrice.WithVat, transaction, paymentState, paymentType );
+          } else {
+            LoggingService.Instance.Log( "Payer(" + order.CartNumber + ") - MD5Sum security check failed" );
+          }
+        } else {
+          LoggingService.Instance.Log( "Payer(" + order.CartNumber + ") - IP security check failed - IP: " + remoteServerIpAddress );
+        }
+
+        HttpContext.Current.Response.Output.Write( "FALSE" );
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "QuickPay(" + order.CartNumber + ") - Process callback" );
       }
 
-      HttpContext.Current.Response.Output.Write( "FALSE" );
-      LoggingService.Instance.Log( errorMessage );
-      return new CallbackInfo( errorMessage );
-    }
-
-    public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
-      throw new NotImplementedException();
-    }
-
-    public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
-      throw new NotImplementedException();
-    }
-
-    public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
-      throw new NotImplementedException();
-    }
-
-    public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
-      throw new NotImplementedException();
+      return callbackInfo;
     }
 
     public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {

@@ -55,6 +55,7 @@
     <Compile Include="Netaxept.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Payer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuickPay.cs" />
     <Compile Include="Service References\ePayService\Reference.cs">
