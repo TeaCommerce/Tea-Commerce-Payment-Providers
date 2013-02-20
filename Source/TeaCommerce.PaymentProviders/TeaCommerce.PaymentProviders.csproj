@@ -58,6 +58,7 @@
     <Compile Include="Ogone.cs" />
     <Compile Include="Payer.cs" />
     <Compile Include="PayEx.cs" />
+    <Compile Include="PayPal.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuickPay.cs" />
     <Compile Include="SagePay.cs" />
