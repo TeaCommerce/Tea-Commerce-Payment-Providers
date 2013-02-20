@@ -22,8 +22,6 @@ namespace TeaCommerce.PaymentProviders {
     public override bool SupportsRefundOfPayment { get { return true; } }
     public override bool SupportsCancellationOfPayment { get { return true; } }
 
-    //protected const string apiErrorFormatString = "Error making API request - Error code: {0} - see https://cms.paypal.com/us/cgi-bin/?cmd=_render-content&content_ID=developer/e_howto_api_nvp_errorcodes for a description of these";
-
     public override IDictionary<string, string> DefaultSettings {
       get {
         Dictionary<string, string> defaultSettings = new Dictionary<string, string>();
@@ -39,8 +37,6 @@ namespace TeaCommerce.PaymentProviders {
         return defaultSettings;
       }
     }
-
-    //protected string APIPostUrl { get { return !isSandbox ? "https://api-3t.paypal.com/nvp" : "https://api-3t.sandbox.paypal.com/nvp"; } }
 
     public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
       order.MustNotBeNull( "order" );
