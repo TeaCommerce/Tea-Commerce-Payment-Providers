@@ -230,7 +230,7 @@ namespace TeaCommerce.PaymentProviders {
 
       try {
         try {
-          int returnCode = GetWannafindServiceClient( settings ).creditTransaction( int.Parse( order.TransactionInformation.TransactionId ), (int)( order.TotalPrice.WithVat * 100M ) );
+          int returnCode = GetWannafindServiceClient( settings ).creditTransaction( int.Parse( order.TransactionInformation.TransactionId ), (int)( order.TransactionInformation.AmountAuthorized.Value * 100M ) );
           if ( returnCode == 0 ) {
             apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Refunded );
           } else {

@@ -289,7 +289,7 @@ namespace TeaCommerce.PaymentProviders {
       inputFields[ "PSWD" ] = settings[ "APIPASSWORD" ];
       inputFields[ "PAYID" ] = order.TransactionInformation.TransactionId;
       if ( !methodName.Equals( "STATUS" ) ) {
-        inputFields[ "AMOUNT" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
+        inputFields[ "AMOUNT" ] = ( order.TransactionInformation.AmountAuthorized.Value * 100M ).ToString( "0", CultureInfo.InvariantCulture );
         inputFields[ "OPERATION" ] = operation;
       }
 

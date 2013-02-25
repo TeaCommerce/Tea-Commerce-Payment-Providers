@@ -212,7 +212,7 @@ namespace TeaCommerce.PaymentProviders {
 
         long accountNumber = long.Parse( settings[ "accountNumber" ] );
         int transactionNumber = int.Parse( order.TransactionInformation.TransactionId );
-        int amount = (int)Math.Round( order.TotalPrice.WithVat * 100M, 0 );
+        int amount = (int)Math.Round( order.TransactionInformation.AmountAuthorized.Value * 100M, 0 );
         string orderId = order.CartNumber;
         int vatAmount = (int)Math.Round( order.VatRate * 100M * 100M, 0 );
         string additionalValues = string.Empty;
@@ -245,7 +245,7 @@ namespace TeaCommerce.PaymentProviders {
 
         long accountNumber = long.Parse( settings[ "accountNumber" ] );
         int transactionNumber = int.Parse( order.TransactionInformation.TransactionId );
-        int amount = (int)Math.Round( order.TotalPrice.WithVat * 100M, 0 );
+        int amount = (int)Math.Round( order.TransactionInformation.AmountAuthorized.Value * 100M, 0 );
         string orderId = order.CartNumber;
         int vatAmount = (int)Math.Round( order.VatRate * 100M, 0 );
         string additionalValues = string.Empty;

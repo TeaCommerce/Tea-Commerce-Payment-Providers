@@ -203,7 +203,7 @@ namespace TeaCommerce.PaymentProviders {
         inputFields[ "protocol" ] = "4";
         inputFields[ "msgtype" ] = "capture";
         inputFields[ "merchant" ] = settings[ "merchant" ];
-        inputFields[ "amount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0" );
+        inputFields[ "amount" ] = ( order.TransactionInformation.AmountAuthorized.Value * 100M ).ToString( "0" );
         inputFields[ "finalize" ] = "1";
         inputFields[ "transaction" ] = order.TransactionInformation.TransactionId;
 
@@ -232,7 +232,7 @@ namespace TeaCommerce.PaymentProviders {
         inputFields[ "protocol" ] = "4";
         inputFields[ "msgtype" ] = "refund";
         inputFields[ "merchant" ] = settings[ "merchant" ];
-        inputFields[ "amount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0" );
+        inputFields[ "amount" ] = ( order.TransactionInformation.AmountAuthorized.Value * 100M ).ToString( "0" );
         inputFields[ "transaction" ] = order.TransactionInformation.TransactionId;
 
         string md5Secret = settings[ "md5secret" ];

@@ -237,7 +237,7 @@ namespace TeaCommerce.PaymentProviders {
         int pbsResponse = 0;
         int ePayResponse = 0;
 
-        if ( GetEPayServiceClient().capture( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionInformation.TransactionId ), (int)( order.TotalPrice.WithVat * 100M ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref pbsResponse, ref ePayResponse ) ) {
+        if ( GetEPayServiceClient().capture( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionInformation.TransactionId ), (int)( order.TransactionInformation.AmountAuthorized.Value * 100M ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref pbsResponse, ref ePayResponse ) ) {
           apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Captured );
         } else {
           LoggingService.Instance.Log( "ePay(" + order.OrderNumber + ") - Error making API request - error code: " + ePayResponse + ", pbs response: " + pbsResponse );
@@ -260,7 +260,7 @@ namespace TeaCommerce.PaymentProviders {
         int pbsResponse = 0;
         int ePayResponse = 0;
 
-        if ( GetEPayServiceClient().credit( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionInformation.TransactionId ), (int)( order.TotalPrice.WithVat * 100M ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref pbsResponse, ref ePayResponse ) ) {
+        if ( GetEPayServiceClient().credit( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionInformation.TransactionId ), (int)( order.TransactionInformation.AmountAuthorized.Value * 100M ), string.Empty, settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref pbsResponse, ref ePayResponse ) ) {
           apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Refunded );
         } else {
           LoggingService.Instance.Log( "ePay(" + order.OrderNumber + ") - Error making API request - error code: " + ePayResponse + ", pbs response: " + pbsResponse );

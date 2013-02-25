@@ -276,7 +276,7 @@ namespace TeaCommerce.PaymentProviders {
         inputFields[ "TxType" ] = "AUTHORISE";
         inputFields[ "Vendor" ] = settings[ "Vendor" ];
         inputFields[ "VendorTxCode" ] = vendorTxCode.ToString();
-        inputFields[ "Amount" ] = order.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
+        inputFields[ "Amount" ] = order.TransactionInformation.AmountAuthorized.Value.ToString( "0.00", CultureInfo.InvariantCulture );
         inputFields[ "Description" ] = settings[ "Description" ].Truncate( 100 );
         inputFields[ "RelatedVPSTxId" ] = order.TransactionInformation.TransactionId;
         inputFields[ "RelatedVendorTxCode" ] = order.CartNumber;
@@ -319,7 +319,7 @@ namespace TeaCommerce.PaymentProviders {
         inputFields[ "TxType" ] = "REFUND";
         inputFields[ "Vendor" ] = settings[ "Vendor" ];
         inputFields[ "VendorTxCode" ] = vendorTxCode.ToString();
-        inputFields[ "Amount" ] = order.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
+        inputFields[ "Amount" ] = order.TransactionInformation.AmountAuthorized.Value.ToString( "0.00", CultureInfo.InvariantCulture );
         //Check that the Iso code exists
         Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
         if ( !Iso4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {

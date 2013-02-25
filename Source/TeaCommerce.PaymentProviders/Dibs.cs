@@ -227,7 +227,7 @@ namespace TeaCommerce.PaymentProviders {
         string merchant = settings[ "merchant" ];
         inputFields[ "merchant" ] = merchant;
 
-        string strAmount = ( order.TotalPrice.WithVat * 100M ).ToString( "0" );
+        string strAmount = ( order.TransactionInformation.AmountAuthorized.Value * 100M ).ToString( "0" );
         inputFields[ "amount" ] = strAmount;
 
         inputFields[ "orderid" ] = order.CartNumber;
@@ -283,7 +283,7 @@ namespace TeaCommerce.PaymentProviders {
         string merchant = settings[ "merchant" ];
         inputFields[ "merchant" ] = merchant;
 
-        string strAmount = ( order.TotalPrice.WithVat * 100M ).ToString( "0" );
+        string strAmount = ( order.TransactionInformation.AmountAuthorized.Value * 100M ).ToString( "0" );
         inputFields[ "amount" ] = strAmount;
 
         inputFields[ "orderid" ] = order.CartNumber;

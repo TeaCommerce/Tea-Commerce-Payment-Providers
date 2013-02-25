@@ -208,7 +208,7 @@ namespace TeaCommerce.PaymentProviders {
         IDictionary<string, string> inputFields = PrepareApiPostRequest( "DoCapture", settings );
 
         inputFields.Add( "AUTHORIZATIONID", order.TransactionInformation.TransactionId );
-        inputFields.Add( "AMT", order.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture ) );
+        inputFields.Add( "AMT", order.TransactionInformation.AmountAuthorized.Value.ToString( "0.00", CultureInfo.InvariantCulture ) );
         Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
         if ( !Iso4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
           throw new Exception( "You must specify an ISO 4217 currency code for the " + currency.Name + " currency" );

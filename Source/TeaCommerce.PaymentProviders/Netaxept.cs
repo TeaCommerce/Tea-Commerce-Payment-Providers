@@ -230,7 +230,7 @@ namespace TeaCommerce.PaymentProviders {
         inputFields[ "token" ] = settings[ "token" ];
         inputFields[ "operation" ] = "CAPTURE";
         inputFields[ "transactionId" ] = order.TransactionInformation.TransactionId;
-        inputFields[ "transactionAmount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
+        inputFields[ "transactionAmount" ] = ( order.TransactionInformation.AmountAuthorized.Value * 100M ).ToString( "0", CultureInfo.InvariantCulture );
 
         apiInfo = MakeApiRequest( order.OrderNumber, inputFields, order.TransactionInformation.TransactionId, PaymentState.Captured, settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ? "https://epayment-test.bbs.no/Netaxept/Process.aspx" : "https://epayment.bbs.no/Netaxept/Process.aspx" );
       } catch ( Exception exp ) {
@@ -254,7 +254,7 @@ namespace TeaCommerce.PaymentProviders {
         inputFields[ "token" ] = settings[ "token" ];
         inputFields[ "operation" ] = "CREDIT";
         inputFields[ "transactionId" ] = order.TransactionInformation.TransactionId;
-        inputFields[ "transactionAmount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
+        inputFields[ "transactionAmount" ] = ( order.TransactionInformation.AmountAuthorized.Value * 100M ).ToString( "0", CultureInfo.InvariantCulture );
 
         apiInfo = MakeApiRequest( order.OrderNumber, inputFields, order.TransactionInformation.TransactionId, PaymentState.Refunded, settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ? "https://epayment-test.bbs.no/Netaxept/Process.aspx" : "https://epayment.bbs.no/Netaxept/Process.aspx" );
       } catch ( Exception exp ) {
