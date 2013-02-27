@@ -85,6 +85,7 @@ namespace TeaCommerce.PaymentProviders {
 
       if ( errorCode.Equals( "OK" ) ) {
         order.Properties.AddOrUpdate( new CustomProperty( "orderRef", xmlDoc.XPathSelectElement( "//orderRef" ).Value ) { ServerSideOnly = true } );
+        order.Save();
         htmlForm.Action = xmlDoc.XPathSelectElement( "//redirectUrl" ).Value;
       } else {
         htmlForm.Action = teaCommerceCancelUrl;
