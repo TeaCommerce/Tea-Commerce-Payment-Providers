@@ -1,212 +1,250 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Web;
-using TeaCommerce.Data;
-using TeaCommerce.Data.Payment;
+using System.Web.Hosting;
+using TeaCommerce.Api.Common;
+using TeaCommerce.Api.Models;
+using TeaCommerce.Api.Services;
+using TeaCommerce.Api.Web.PaymentProviders;
 using TeaCommerce.PaymentProviders.Extensions;
-using umbraco.BusinessLogic;
+using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders {
+
+  [PaymentProvider( "2CheckOut" )]
   public class TwoCheckOut : APaymentProvider {
 
-    protected const string defaultParameterValue = "";
+    public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-2checkout-with-tea-commerce/"; } }
 
-    public override bool AllowsGetStatus { get { return false; } }
-    public override bool AllowsCancelPayment { get { return false; } }
-    public override bool AllowsCapturePayment { get { return false; } }
-    public override bool AllowsRefundPayment { get { return false; } }
+    public override bool FinalizeAtContinueUrl { get { return true; } }
 
-    public override Dictionary<string, string> DefaultSettings {
+    public override IDictionary<string, string> DefaultSettings {
       get {
-        if ( defaultSettings == null ) {
-          defaultSettings = new Dictionary<string, string>();
-          defaultSettings[ "sid" ] = string.Empty;
-          defaultSettings[ "lang" ] = "en";
-          defaultSettings[ "x_receipt_link_url" ] = string.Empty;
-          defaultSettings[ "secretWord" ] = string.Empty;
-          defaultSettings[ "productNumberPropertyAlias" ] = "productNumber";
-          defaultSettings[ "productNamePropertyAlias" ] = "productName";
-          defaultSettings[ "shippingMethodProductNumber" ] = "1000";
-          defaultSettings[ "shippingMethodFormatString" ] = "Shipping fee ({0})";
-          defaultSettings[ "paymentMethodProductNumber" ] = "2000";
-          defaultSettings[ "paymentMethodFormatString" ] = "Payment fee ({0})";
-          defaultSettings[ "streetAddressPropertyAlias" ] = "streetAddress";
-          defaultSettings[ "cityPropertyAlias" ] = "city";
-          defaultSettings[ "statePropertyAlias" ] = "state";
-          defaultSettings[ "zipCodePropertyAlias" ] = "zipCode";
-          defaultSettings[ "phonePropertyAlias" ] = "phone";
-          defaultSettings[ "phoneExtensionPropertyAlias" ] = "phoneExtension";
-          defaultSettings[ "demo" ] = "N";
-        }
+        Dictionary<string, string> defaultSettings = new Dictionary<string, string>();
+        defaultSettings[ "sid" ] = string.Empty;
+        defaultSettings[ "lang" ] = "en";
+        defaultSettings[ "x_receipt_link_url" ] = string.Empty;
+        defaultSettings[ "secretWord" ] = string.Empty;
+        defaultSettings[ "streetAddressPropertyAlias" ] = "streetAddress";
+        defaultSettings[ "cityPropertyAlias" ] = "city";
+        defaultSettings[ "zipCodePropertyAlias" ] = "zipCode";
+        defaultSettings[ "phonePropertyAlias" ] = "phone";
+        defaultSettings[ "phoneExtensionPropertyAlias" ] = "phoneExtension";
+        defaultSettings[ "demo" ] = "N";
         return defaultSettings;
       }
     }
 
-    public override string FormPostUrl { get { return "https://www.2checkout.com/checkout/spurchase"; } }
-    public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-2checkout-with-tea-commerce/"; } }
-    public override bool FinalizeAtContinueUrl { get { return true; } }
+    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+      order.MustNotBeNull( "order" );
+      settings.MustNotBeNull( "settings" );
 
-    public override Dictionary<string, string> GenerateForm( Data.Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
-      List<string> settingsToExclude = new string[] { "secretWord", "productNumberPropertyAlias", "productNamePropertyAlias", "shippingMethodProductNumber", "shippingMethodFormatString", "paymentMethodProductNumber", "paymentMethodFormatString", "streetAddressPropertyAlias", "cityPropertyAlias", "statePropertyAlias", "zipCodePropertyAlias", "phonePropertyAlias", "phoneExtensionPropertyAlias" }.ToList();
-      Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
+      PaymentHtmlForm htmlForm = new PaymentHtmlForm {
+        Action = "https://www.2checkout.com/checkout/spurchase"
+      };
+
+      string[] settingsToExclude = new[] { "secretWord", "streetAddressPropertyAlias", "cityPropertyAlias", "zipCodePropertyAlias", "phonePropertyAlias", "phoneExtensionPropertyAlias", "shipping_firstNamePropertyAlias", "shipping_lastNamePropertyAlias", "shipping_streetAddressPropertyAlias", "shipping_cityPropertyAlias", "shipping_zipCodePropertyAlias" };
+      htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
       //cartId
-      inputFields[ "cart_order_id" ] = order.Name;
+      htmlForm.InputFields[ "cart_order_id" ] = order.CartNumber;
 
       //amount
-      string amount = order.TotalPrice.ToString( "0.00", CultureInfo.InvariantCulture );
-      inputFields[ "total" ] = amount;
+      htmlForm.InputFields[ "total" ] = order.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
 
-      inputFields[ "x_receipt_link_url" ] = teaCommerceContinueUrl;
+      htmlForm.InputFields[ "x_receipt_link_url" ] = teaCommerceContinueUrl;
 
       //card_holder_name
-      inputFields[ "card_holder_name" ] = order.FirstName + " " + order.LastName;
+      htmlForm.InputFields[ "card_holder_name" ] = order.PaymentInformation.FirstName + " " + order.PaymentInformation.LastName;
 
       //street_address
-      OrderProperty streetAddressProperty = settings.ContainsKey( "streetAddressPropertyAlias" ) ? order.Properties.FirstOrDefault( i => i.Alias.Equals( settings[ "streetAddressPropertyAlias" ] ) ) : null;
-      inputFields[ "street_address" ] = streetAddressProperty != null && !string.IsNullOrEmpty( streetAddressProperty.Value ) ? streetAddressProperty.Value : defaultParameterValue;
+      if ( settings.ContainsKey( "streetAddressPropertyAlias" ) ) {
+        htmlForm.InputFields[ "street_address" ] = order.Properties[ settings[ "streetAddressPropertyAlias" ] ];
+      }
 
       //city
-      OrderProperty cityPropertyAlias = settings.ContainsKey( "cityPropertyAlias" ) ? order.Properties.FirstOrDefault( i => i.Alias.Equals( settings[ "cityPropertyAlias" ] ) ) : null;
-      inputFields[ "city" ] = cityPropertyAlias != null && !string.IsNullOrEmpty( cityPropertyAlias.Value ) ? cityPropertyAlias.Value : defaultParameterValue;
+      if ( settings.ContainsKey( "cityPropertyAlias" ) ) {
+        htmlForm.InputFields[ "city" ] = order.Properties[ settings[ "cityPropertyAlias" ] ];
+      }
 
       //state
-      OrderProperty statePropertyAlias = settings.ContainsKey( "statePropertyAlias" ) ? order.Properties.FirstOrDefault( i => i.Alias.Equals( settings[ "statePropertyAlias" ] ) ) : null;
-      inputFields[ "state" ] = statePropertyAlias != null && !string.IsNullOrEmpty( statePropertyAlias.Value ) ? statePropertyAlias.Value : defaultParameterValue;
+      if ( order.PaymentInformation.CountryRegionId != null ) {
+        CountryRegion countryRegion = CountryRegionService.Instance.Get( order.StoreId, order.PaymentInformation.CountryRegionId.Value );
+        htmlForm.InputFields[ "state" ] = countryRegion.Name;
+      }
 
       //zip
-      OrderProperty zipCodePropertyAlias = settings.ContainsKey( "zipCodePropertyAlias" ) ? order.Properties.FirstOrDefault( i => i.Alias.Equals( settings[ "zipCodePropertyAlias" ] ) ) : null;
-      inputFields[ "zip" ] = zipCodePropertyAlias != null && !string.IsNullOrEmpty( zipCodePropertyAlias.Value ) ? zipCodePropertyAlias.Value : defaultParameterValue;
+      if ( settings.ContainsKey( "zipCodePropertyAlias" ) ) {
+        htmlForm.InputFields[ "zip" ] = order.Properties[ settings[ "zipCodePropertyAlias" ] ];
+      }
 
       //country
-      inputFields[ "country" ] = order.Country.CountryCode;
+      htmlForm.InputFields[ "country" ] = CountryService.Instance.Get( order.StoreId, order.PaymentInformation.CountryId ).Name;
 
       //email
-      inputFields[ "email" ] = order.Email;
+      htmlForm.InputFields[ "email" ] = order.PaymentInformation.Email;
 
       //phone
-      OrderProperty phonePropertyAlias = settings.ContainsKey( "phonePropertyAlias" ) ? order.Properties.FirstOrDefault( i => i.Alias.Equals( settings[ "phonePropertyAlias" ] ) ) : null;
-      inputFields[ "phone" ] = phonePropertyAlias != null && !string.IsNullOrEmpty( phonePropertyAlias.Value ) ? phonePropertyAlias.Value : defaultParameterValue;
+      if ( settings.ContainsKey( "phonePropertyAlias" ) ) {
+        htmlForm.InputFields[ "phone" ] = order.Properties[ settings[ "phonePropertyAlias" ] ];
+      }
 
       //phone_extension
-      OrderProperty phoneExtensionPropertyAlias = settings.ContainsKey( "phoneExtensionPropertyAlias" ) ? order.Properties.FirstOrDefault( i => i.Alias.Equals( settings[ "phoneExtensionPropertyAlias" ] ) ) : null;
-      inputFields[ "phone_extension" ] = phoneExtensionPropertyAlias != null && !string.IsNullOrEmpty( phoneExtensionPropertyAlias.Value ) ? phoneExtensionPropertyAlias.Value : defaultParameterValue;
+      if ( settings.ContainsKey( "phoneExtensionPropertyAlias" ) ) {
+        htmlForm.InputFields[ "phone_extension" ] = order.Properties[ settings[ "phoneExtensionPropertyAlias" ] ];
+      }
+
+      //shipping name
+      if ( settings.ContainsKey( "shipping_firstNamePropertyAlias" ) && settings.ContainsKey( "shipping_lastNamePropertyAlias" ) ) {
+        htmlForm.InputFields[ "ship_name" ] = order.Properties[ settings[ "shipping_firstNamePropertyAlias" ] ] + " " + order.Properties[ settings[ "shipping_lastNamePropertyAlias" ] ];
+      }
+
+      //shipping street_address
+      if ( settings.ContainsKey( "shipping_streetAddressPropertyAlias" ) ) {
+        htmlForm.InputFields[ "ship_street_address" ] = order.Properties[ settings[ "shipping_streetAddressPropertyAlias" ] ];
+      }
+
+      //shipping city
+      if ( settings.ContainsKey( "shipping_cityPropertyAlias" ) ) {
+        htmlForm.InputFields[ "ship_city" ] = order.Properties[ settings[ "shipping_cityPropertyAlias" ] ];
+      }
+
+      //shipping state
+      if ( order.ShipmentInformation.CountryRegionId != null ) {
+        htmlForm.InputFields[ "ship_state" ] = CountryRegionService.Instance.Get( order.StoreId, order.ShipmentInformation.CountryRegionId.Value ).Name;
+      }
+
+      //shipping zip
+      if ( settings.ContainsKey( "shipping_zipCodePropertyAlias" ) ) {
+        htmlForm.InputFields[ "ship_zip" ] = order.Properties[ settings[ "shipping_zipCodePropertyAlias" ] ];
+      }
+
+      //shipping country
+      if ( order.ShipmentInformation.CountryId != null ) {
+        htmlForm.InputFields[ "ship_country" ] = CountryService.Instance.Get( order.StoreId, order.ShipmentInformation.CountryId.Value ).Name;
+      }
 
       //fixed
-      inputFields[ "fixed" ] = "Y";
+      htmlForm.InputFields[ "fixed" ] = "Y";
 
       //skip_landing
-      inputFields[ "skip_landing" ] = "1";
+      htmlForm.InputFields[ "skip_landing" ] = "1";
 
       //Testing
-      if ( inputFields.ContainsKey( "demo" ) && inputFields[ "demo" ] != "Y" )
-        inputFields.Remove( "demo" );
+      if ( htmlForm.InputFields.ContainsKey( "demo" ) && htmlForm.InputFields[ "demo" ] != "Y" )
+        htmlForm.InputFields.Remove( "demo" );
 
       //fixed
-      inputFields[ "id_type" ] = "1";
+      htmlForm.InputFields[ "id_type" ] = "1";
 
       int itemIndex = 1;
       //Lines are added in reverse order of the UI
 
       //Payment fee
-      if ( order.PaymentFee != 0 ) {
-        inputFields[ "c_prod_" + itemIndex ] = settings[ "paymentMethodProductNumber" ] + ",1";
-        inputFields[ "c_name_" + itemIndex ] = string.Format( settings[ "paymentMethodFormatString" ], order.PaymentMethod.Name ).Truncate( 128 );
-        inputFields[ "c_description_" + itemIndex ] = string.Empty;
-        inputFields[ "c_price_" + itemIndex ] = order.PaymentFee.ToString( "0.00", CultureInfo.InvariantCulture );
+      if ( order.PaymentInformation.PaymentMethodId != null ) {
+        PaymentMethod paymentMethod = PaymentMethodService.Instance.Get( order.StoreId, order.PaymentInformation.PaymentMethodId.Value );
+        htmlForm.InputFields[ "c_prod_" + itemIndex ] = paymentMethod.Sku + ",1";
+        htmlForm.InputFields[ "c_name_" + itemIndex ] = paymentMethod.Name.Truncate( 128 );
+        htmlForm.InputFields[ "c_description_" + itemIndex ] = string.Empty;
+        htmlForm.InputFields[ "c_price_" + itemIndex ] = order.PaymentInformation.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
         itemIndex++;
       }
 
       //Shipping fee
-      if ( order.ShippingFee != 0 ) {
-        inputFields[ "c_prod_" + itemIndex ] = settings[ "shippingMethodProductNumber" ] + ",1";
-        inputFields[ "c_name_" + itemIndex ] = string.Format( settings[ "shippingMethodFormatString" ], order.ShippingMethod.Name ).Truncate( 128 );
-        inputFields[ "c_description_" + itemIndex ] = string.Empty;
-        inputFields[ "c_price_" + itemIndex ] = order.ShippingFee.ToString( "0.00", CultureInfo.InvariantCulture );
+      if ( order.ShipmentInformation.ShippingMethodId != null ) {
+        ShippingMethod shippingMethod = ShippingMethodService.Instance.Get( order.StoreId, order.ShipmentInformation.ShippingMethodId.Value );
+        htmlForm.InputFields[ "c_prod_" + itemIndex ] = shippingMethod.Sku + ",1";
+        htmlForm.InputFields[ "c_name_" + itemIndex ] = shippingMethod.Name.Truncate( 128 );
+        htmlForm.InputFields[ "c_description_" + itemIndex ] = string.Empty;
+        htmlForm.InputFields[ "c_price_" + itemIndex ] = order.ShipmentInformation.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
         itemIndex++;
       }
 
       //Order line information
-      List<OrderLine> orderLines = order.OrderLines.ToList();
-      OrderLine orderLine;
+      for ( int i = order.OrderLines.Count - 1; i >= 0; i-- ) {
+        OrderLine orderLine = order.OrderLines[ i ];
 
-      for ( int i = orderLines.Count - 1; i >= 0; i-- ) {
-        orderLine = orderLines[ i ];
-        OrderLineProperty productNameProp = orderLine.Properties.SingleOrDefault( op => op.Alias.Equals( settings[ "productNamePropertyAlias" ] ) );
-        OrderLineProperty productNumberProp = orderLine.Properties.SingleOrDefault( op => op.Alias.Equals( settings[ "productNumberPropertyAlias" ] ) );
-
-        inputFields[ "c_prod_" + itemIndex ] = productNumberProp.Value + "," + orderLine.Quantity.ToString();
-        inputFields[ "c_name_" + itemIndex ] = productNameProp.Value.Truncate( 128 );
-        inputFields[ "c_description_" + itemIndex ] = string.Empty;
-        inputFields[ "c_price_" + itemIndex ] = orderLine.UnitPrice.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "c_prod_" + itemIndex ] = orderLine.Sku + "," + orderLine.Quantity;
+        htmlForm.InputFields[ "c_name_" + itemIndex ] = orderLine.Name.Truncate( 128 );
+        htmlForm.InputFields[ "c_description_" + itemIndex ] = string.Empty;
+        htmlForm.InputFields[ "c_price_" + itemIndex ] = orderLine.UnitPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
 
         itemIndex++;
       }
 
-      return inputFields;
+      return htmlForm;
     }
 
-    public override string GetContinueUrl( Dictionary<string, string> settings ) {
+    public override string GetContinueUrl( IDictionary<string, string> settings ) {
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "x_receipt_link_url", "settings" );
+
       return settings[ "x_receipt_link_url" ];
     }
 
-    public override string GetCancelUrl( Dictionary<string, string> settings ) {
-      return string.Empty;
+    public override string GetCancelUrl( IDictionary<string, string> settings ) {
+      return "";
     }
 
-    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, Dictionary<string, string> settings ) {
-      //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/2CheckOutTestCallback.txt" ) ) ) ) {
-      //  writer.WriteLine( "QueryString:" );
-      //  foreach ( string k in request.QueryString.Keys ) {
-      //    writer.WriteLine( k + " : " + request.QueryString[ k ] );
-      //  }
-      //  writer.Flush();
-      //}
+    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
+      CallbackInfo callbackInfo = null;
 
-      string errorMessage = string.Empty;
+      try {
+        order.MustNotBeNull( "order" );
+        request.MustNotBeNull( "request" );
+        settings.MustNotBeNull( "settings" );
+        settings.MustContainKey( "secretWord", "settings" );
 
-      string accountNumber = request.QueryString[ "sid" ];
-      string transaction = request.QueryString[ "order_number" ];
-      string strAmount = request.QueryString[ "total" ];
-      string key = request.QueryString[ "key" ];
+        //Write data when testing
+        if ( settings.ContainsKey( "demo" ) && settings[ "demo" ] == "Y" ) {
+          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/2checkout-callback-data.txt" ) ) ) ) {
+            writer.WriteLine( "Query string:" );
+            foreach ( string k in request.QueryString.Keys ) {
+              writer.WriteLine( k + " : " + request.QueryString[ k ] );
+            }
+            writer.Flush();
+          }
+        }
 
-      string md5CheckValue = string.Empty;
-      md5CheckValue += settings[ "secretWord" ];
-      md5CheckValue += accountNumber;
-      md5CheckValue += settings[ "demo" ] != "Y" ? transaction : "1";
-      md5CheckValue += strAmount;
+        string accountNumber = request.QueryString[ "sid" ];
+        string transaction = request.QueryString[ "order_number" ];
+        string strAmount = request.QueryString[ "total" ];
+        string key = request.QueryString[ "key" ];
 
-      string calculatedMD5 = GetMD5Hash( md5CheckValue ).ToUpperInvariant();
+        string md5CheckValue = string.Empty;
+        md5CheckValue += settings[ "secretWord" ];
+        md5CheckValue += accountNumber;
+        md5CheckValue += settings.ContainsKey( "demo" ) && settings[ "demo" ] == "Y" ? "1" : transaction;
+        md5CheckValue += strAmount;
 
-      if ( calculatedMD5 == key ) {
-        string orderName = request.QueryString[ "cart_order_id" ];
-        decimal totalAmount = decimal.Parse( strAmount, CultureInfo.InvariantCulture );
-        PaymentStatus paymentStatus = PaymentStatus.Authorized;
+        string calculatedMd5 = GetMd5Hash( md5CheckValue ).ToUpperInvariant();
 
-        return new CallbackInfo( orderName, totalAmount, transaction, paymentStatus, string.Empty, string.Empty );
-      } else
-        errorMessage = "Tea Commerce - 2CheckOut - MD5Sum security check failed - key: " + key + " - calculatedMD5: " + calculatedMD5;
+        if ( calculatedMd5 == key ) {
+          decimal totalAmount = decimal.Parse( strAmount, CultureInfo.InvariantCulture );
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new CallbackInfo( errorMessage );
+          callbackInfo = new CallbackInfo( totalAmount, transaction, PaymentState.Authorized );
+        } else {
+          LoggingService.Instance.Log( "2CheckOut(" + order.CartNumber + ") - MD5Sum security check failed - key: " + key + " - calculatedMD5: " + calculatedMd5 );
+        }
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "2CheckOut(" + order.CartNumber + ") - Process callback" );
+      }
+
+      return callbackInfo;
     }
 
-    public override APIInfo GetStatus( Order order, Dictionary<string, string> settings ) {
-      throw new NotImplementedException();
-    }
-
-    public override APIInfo CapturePayment( Order order, Dictionary<string, string> settings ) {
-      throw new NotImplementedException();
-    }
-
-    public override APIInfo RefundPayment( Order order, Dictionary<string, string> settings ) {
-      throw new NotImplementedException();
-    }
-
-    public override APIInfo CancelPayment( Order order, Dictionary<string, string> settings ) {
-      throw new NotImplementedException();
+    public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
+      switch ( settingsKey ) {
+        case "x_receipt_link_url":
+          return settingsKey + "<br/><small>e.g. /continue/</small>";
+        case "demo":
+          return settingsKey + "<br/><small>Y = true; N = false</small>";
+        default:
+          return base.GetLocalizedSettingsKey( settingsKey, culture );
+      }
     }
 
   }

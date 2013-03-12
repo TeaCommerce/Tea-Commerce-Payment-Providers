@@ -1,279 +1,352 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Web;
-using TeaCommerce.Data;
-using TeaCommerce.Data.Payment;
-using umbraco.BusinessLogic;
+using System.Web.Hosting;
+using TeaCommerce.Api.Common;
+using TeaCommerce.Api.Models;
+using TeaCommerce.Api.Infrastructure.Logging;
+using TeaCommerce.Api.Services;
+using TeaCommerce.Api.Web.PaymentProviders;
 
 namespace TeaCommerce.PaymentProviders {
 
+  [PaymentProvider( "PayPal" )]
   public class PayPal : APaymentProvider {
 
-    public override Dictionary<string, string> DefaultSettings {
+    public override bool SupportsRetrievalOfPaymentStatus { get { return true; } }
+    public override bool SupportsCapturingOfPayment { get { return true; } }
+    public override bool SupportsRefundOfPayment { get { return true; } }
+    public override bool SupportsCancellationOfPayment { get { return true; } }
+
+    public override IDictionary<string, string> DefaultSettings {
       get {
-        if ( defaultSettings == null ) {
-          defaultSettings = new Dictionary<string, string>();
-          defaultSettings[ "business" ] = string.Empty;
-          defaultSettings[ "lc" ] = "US";
-          defaultSettings[ "return" ] = string.Empty;
-          defaultSettings[ "cancel_return" ] = string.Empty;
-          defaultSettings[ "paymentaction" ] = "authorization";
-          defaultSettings[ "USER" ] = string.Empty;
-          defaultSettings[ "PWD" ] = string.Empty;
-          defaultSettings[ "SIGNATURE" ] = string.Empty;
-          defaultSettings[ "isSandbox" ] = "0";
-          defaultSettings[ "productNumberPropertyAlias" ] = "productNumber";
-          defaultSettings[ "productNamePropertyAlias" ] = "productName";
-          defaultSettings[ "shippingMethodFormatString" ] = "Shipping fee ({0})";
-          defaultSettings[ "paymentMethodFormatString" ] = "Payment fee ({0})";
-        }
+        Dictionary<string, string> defaultSettings = new Dictionary<string, string>();
+        defaultSettings[ "business" ] = string.Empty;
+        defaultSettings[ "lc" ] = "US";
+        defaultSettings[ "return" ] = string.Empty;
+        defaultSettings[ "cancel_return" ] = string.Empty;
+        defaultSettings[ "paymentaction" ] = "authorization";
+        defaultSettings[ "USER" ] = string.Empty;
+        defaultSettings[ "PWD" ] = string.Empty;
+        defaultSettings[ "SIGNATURE" ] = string.Empty;
+        defaultSettings[ "isSandbox" ] = "0";
         return defaultSettings;
       }
     }
 
-    protected bool isSandbox;
+    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+      order.MustNotBeNull( "order" );
+      settings.MustNotBeNull( "settings" );
 
-    public override string FormPostUrl { get { return !isSandbox ? "https://www.paypal.com/cgi-bin/webscr" : "https://www.sandbox.paypal.com/cgi-bin/webscr"; } }
-    protected string APIPostUrl { get { return !isSandbox ? "https://api-3t.paypal.com/nvp" : "https://api-3t.sandbox.paypal.com/nvp"; } }
+      PaymentHtmlForm htmlForm = new PaymentHtmlForm {
+        Action = settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://www.sandbox.paypal.com/cgi-bin/webscr" : "https://www.paypal.com/cgi-bin/webscr"
+      };
 
-    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
-      isSandbox = settings[ "isSandbox" ] == "1";
-      List<string> settingsToExclude = new string[] { "USER", "PWD", "SIGNATURE", "isSandbox", "productNumberPropertyAlias", "productNamePropertyAlias", "shippingMethodFormatString", "paymentMethodFormatString" }.ToList();
-      Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
+      string[] settingsToExclude = new[] { "USER", "PWD", "SIGNATURE", "isSandbox" };
+      htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
-      inputFields[ "cmd" ] = "_cart";
-      inputFields[ "upload" ] = "1";
-      inputFields[ "currency_code" ] = order.CurrencyISOCode;
+      htmlForm.InputFields[ "cmd" ] = "_cart";
+      htmlForm.InputFields[ "upload" ] = "1";
 
-      inputFields[ "invoice" ] = order.Name;
-      inputFields[ "no_shipping" ] = "1";
+      //Check that the Iso code exists
+      Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
+      if ( !Iso4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
+        throw new Exception( "You must specify an ISO 4217 currency code for the " + currency.Name + " currency" );
+      }
+      htmlForm.InputFields[ "currency_code" ] = currency.IsoCode;
 
-      inputFields[ "return" ] = teaCommerceContinueUrl;
-      inputFields[ "rm" ] = "2";
-      inputFields[ "cancel_return" ] = teaCommerceCancelUrl;
-      inputFields[ "notify_url" ] = teaCommerceCallBackUrl;
+      htmlForm.InputFields[ "invoice" ] = order.CartNumber;
+      htmlForm.InputFields[ "no_shipping" ] = "1";
+
+      htmlForm.InputFields[ "return" ] = teaCommerceContinueUrl;
+      htmlForm.InputFields[ "rm" ] = "2";
+      htmlForm.InputFields[ "cancel_return" ] = teaCommerceCancelUrl;
+      htmlForm.InputFields[ "notify_url" ] = teaCommerceCallBackUrl;
 
       #region Order line information
 
-      if ( !string.IsNullOrEmpty( settings[ "productNamePropertyAlias" ] ) ) {
+      int itemIndex = 1;
 
-        List<OrderLine> orderLines = order.OrderLines.ToList();
-        OrderLine orderLine;
-        int itemIndex = 1;
+      foreach ( OrderLine orderLine in order.OrderLines ) {
+        htmlForm.InputFields[ "item_name_" + itemIndex ] = orderLine.Name;
+        htmlForm.InputFields[ "item_number_" + itemIndex ] = orderLine.Sku;
+        htmlForm.InputFields[ "amount_" + itemIndex ] = orderLine.UnitPrice.Value.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "tax_" + itemIndex ] = orderLine.UnitPrice.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "quantity_" + itemIndex ] = orderLine.Quantity.ToString( CultureInfo.InvariantCulture );
 
-        for ( int i = 0; i < orderLines.Count; i++ ) {
-          orderLine = orderLines[ i ];
-          OrderLineProperty productNameProp = orderLine.Properties.SingleOrDefault( op => op.Alias.Equals( settings[ "productNamePropertyAlias" ] ) );
-          OrderLineProperty productNumberProp = orderLine.Properties.SingleOrDefault( op => op.Alias.Equals( settings[ "productNumberPropertyAlias" ] ) );
+        itemIndex++;
+      }
 
-          inputFields[ "item_name_" + itemIndex ] = productNameProp != null ? productNameProp.Value : string.Empty;
-          if ( productNumberProp != null )
-            inputFields[ "item_number_" + itemIndex ] = productNumberProp.Value;
-          inputFields[ "amount_" + itemIndex ] = orderLine.UnitPriceWithoutVAT.ToString( "0.00", CultureInfo.InvariantCulture );
-          inputFields[ "tax_" + itemIndex ] = orderLine.UnitVAT.ToString( "0.00", CultureInfo.InvariantCulture );
-          inputFields[ "quantity_" + itemIndex ] = orderLine.Quantity.ToString();
+      if ( order.ShipmentInformation.ShippingMethodId != null ) {
+        ShippingMethod shippingMethod = ShippingMethodService.Instance.Get( order.StoreId, order.ShipmentInformation.ShippingMethodId.Value );
+        htmlForm.InputFields[ "item_name_" + itemIndex ] = shippingMethod.Name;
+        htmlForm.InputFields[ "amount_" + itemIndex ] = order.ShipmentInformation.TotalPrice.Value.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "tax_" + itemIndex ] = order.ShipmentInformation.TotalPrice.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
+        itemIndex++;
+      }
 
-          itemIndex++;
-        }
-
-        if ( order.ShippingFee != 0 ) {
-          inputFields[ "item_name_" + itemIndex ] = string.Format( settings[ "shippingMethodFormatString" ], order.ShippingMethod.Name );
-          inputFields[ "amount_" + itemIndex ] = order.ShippingFeeWithoutVAT.ToString( "0.00", CultureInfo.InvariantCulture );
-          inputFields[ "tax_" + itemIndex ] = order.ShippingFeeVAT.ToString( "0.00", CultureInfo.InvariantCulture );
-          itemIndex++;
-        }
-
-        if ( order.PaymentFee != 0 ) {
-          inputFields[ "item_name_" + itemIndex ] = string.Format( settings[ "paymentMethodFormatString" ], order.PaymentMethod.Name );
-          inputFields[ "amount_" + itemIndex ] = order.PaymentFeeWithoutVAT.ToString( "0.00", CultureInfo.InvariantCulture );
-          inputFields[ "tax_" + itemIndex ] = order.PaymentFeeVAT.ToString( "0.00", CultureInfo.InvariantCulture );
-        }
+      if ( order.PaymentInformation.PaymentMethodId != null ) {
+        PaymentMethod paymentMethod = PaymentMethodService.Instance.Get( order.StoreId, order.PaymentInformation.PaymentMethodId.Value );
+        htmlForm.InputFields[ "item_name_" + itemIndex ] = paymentMethod.Name;
+        htmlForm.InputFields[ "amount_" + itemIndex ] = order.PaymentInformation.TotalPrice.Value.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "tax_" + itemIndex ] = order.PaymentInformation.TotalPrice.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
       }
 
       #endregion
 
-      return inputFields;
+      return htmlForm;
     }
 
-    public override string GetContinueUrl( Dictionary<string, string> settings ) {
+    public override string GetContinueUrl( IDictionary<string, string> settings ) {
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "return", "settings" );
+
       return settings[ "return" ];
     }
 
-    public override string GetCancelUrl( Dictionary<string, string> settings ) {
+    public override string GetCancelUrl( IDictionary<string, string> settings ) {
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "cancel_return", "settings" );
+
       return settings[ "cancel_return" ];
     }
 
-    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, Dictionary<string, string> settings ) {
-      //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/PayPalTestCallback.txt" ) ) ) ) {
-      //  writer.WriteLine( "FORM:" );
-      //  foreach ( string k in request.Form.Keys ) {
-      //    writer.WriteLine( k + " : " + request.Form[ k ] );
-      //  }
-      //  writer.Flush();
-      //}
+    public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
+      CallbackInfo callbackInfo = null;
 
-      string errorMessage = string.Empty;
-      isSandbox = settings[ "isSandbox" ] == "1";
+      try {
+        order.MustNotBeNull( "order" );
+        request.MustNotBeNull( "request" );
+        settings.MustNotBeNull( "settings" );
+        settings.MustContainKey( "business", "settings" );
 
-      //Verify callback
-      string response = MakePostRequest( FormPostUrl, Encoding.ASCII.GetString( request.BinaryRead( request.ContentLength ) ) + "&cmd=_notify-validate" );
-
-      //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/PayPalTestCallback2.txt" ) ) ) ) {
-      //  writer.WriteLine( response );
-      //  writer.Flush();
-      //}
-
-      if ( response.Equals( "VERIFIED" ) ) {
-
-        string receiverId = request.Form[ "receiver_id" ];
-        string receiverEmail = request.Form[ "receiver_email" ];
-        string transaction = request.Form[ "txn_id" ];
-        string transactionEntity = request.Form[ "transaction_entity" ];
-        decimal amount = decimal.Parse( request.Form[ "mc_gross" ], CultureInfo.InvariantCulture );
-        string state = request.Form[ "payment_status" ];
-        string orderName = request.Form[ "invoice" ];
-
-        string businessSetting = settings[ "business" ];
-
-        //Check if the business email is the same in the callback
-        if ( !string.IsNullOrEmpty( transaction ) && ( ( !string.IsNullOrEmpty( receiverId ) && businessSetting.Equals( receiverId ) ) || ( !string.IsNullOrEmpty( receiverEmail ) && businessSetting.Equals( receiverEmail ) ) ) ) {
-
-          //Pending
-          if ( state.Equals( "Pending" ) ) {
-
-            if ( request.Form[ "pending_reason" ].Equals( "authorization" ) ) {
-              if ( request.Form[ "transaction_entity" ].Equals( "auth" ) ) {
-                return new CallbackInfo( orderName, amount, transaction, PaymentStatus.Authorized, null, null );
-              }
-            } else if ( request.Form[ "pending_reason" ].Equals( "multi_currency" ) ) {
-              return new CallbackInfo( orderName, amount, transaction, PaymentStatus.PendingExternalSystem, null, null );
+        //Write data when testing
+        if ( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ) {
+          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/paypal-callback-data.txt" ) ) ) ) {
+            writer.WriteLine( "Form:" );
+            foreach ( string k in request.Form.Keys ) {
+              writer.WriteLine( k + " : " + request.Form[ k ] );
             }
+            writer.Flush();
+          }
+        }
 
-            //Completed - auto capture
-          } else if ( state.Equals( "Completed" ) )
-            return new CallbackInfo( orderName, amount, transaction, PaymentStatus.Captured, null, null );
+        //Verify callback
+        string response = MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://www.sandbox.paypal.com/cgi-bin/webscr" : "https://www.paypal.com/cgi-bin/webscr", Encoding.ASCII.GetString( request.BinaryRead( request.ContentLength ) ) + "&cmd=_notify-validate" );
 
-        } else
-          errorMessage = "Tea Commerce - Paypal - Business isn't identical - settings: " + businessSetting + " - request-receiverId: " + receiverId + " - request-receiverEmail: " + receiverEmail;
-      } else
-        errorMessage = "Tea Commerce - Paypal - Couldn't verify response - " + response;
+        if ( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ) {
+          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/paypal-callback-data-2.txt" ) ) ) ) {
+            writer.WriteLine( response );
+            writer.Flush();
+          }
+        }
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new CallbackInfo( errorMessage );
+        if ( response == "VERIFIED" ) {
+
+          string receiverId = request.Form[ "receiver_id" ];
+          string receiverEmail = request.Form[ "receiver_email" ];
+          string transaction = request.Form[ "txn_id" ];
+          decimal amount = decimal.Parse( request.Form[ "mc_gross" ], CultureInfo.InvariantCulture );
+          string state = request.Form[ "payment_status" ];
+
+          string businessSetting = settings[ "business" ];
+
+          //Check if the business email is the same in the callback
+          if ( !string.IsNullOrEmpty( transaction ) && ( ( !string.IsNullOrEmpty( receiverId ) && businessSetting == receiverId ) || ( !string.IsNullOrEmpty( receiverEmail ) && businessSetting == receiverEmail ) ) ) {
+
+            //Pending
+            if ( state == "Pending" ) {
+
+              if ( request.Form[ "pending_reason" ] == "authorization" ) {
+                if ( request.Form[ "transaction_entity" ] == "auth" ) {
+                  callbackInfo = new CallbackInfo( amount, transaction, PaymentState.Authorized );
+                }
+              } else if ( request.Form[ "pending_reason" ] == "multi_currency" ) {
+                callbackInfo = new CallbackInfo( amount, transaction, PaymentState.PendingExternalSystem );
+              }
+
+              //Completed - auto capture
+            } else if ( state == "Completed" ) {
+              callbackInfo = new CallbackInfo( amount, transaction, PaymentState.Captured );
+            }
+          } else {
+            LoggingService.Instance.Log( "PayPal(" + order.CartNumber + ") - Business isn't identical - settings: " + businessSetting + " | request-receiverId: " + receiverId + " | request-receiverEmail: " + receiverEmail );
+          }
+        } else {
+          LoggingService.Instance.Log( "PayPal(" + order.CartNumber + ") - Couldn't verify response: " + response );
+        }
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "PayPal(" + order.CartNumber + ") - Process callback" );
+      }
+
+      return callbackInfo;
     }
 
-    public override APIInfo GetStatus( Order order, Dictionary<string, string> settings ) {
-      return InternalGetStatus( order.TransactionPaymentTransactionId, settings );
+    public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
+      ApiInfo apiInfo = null;
+
+      try {
+        apiInfo = InternalGetStatus( order.OrderNumber, order.TransactionInformation.TransactionId, settings );
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "PayPal(" + order.OrderNumber + ") - Get status" );
+      }
+
+      return apiInfo;
     }
 
-    public override APIInfo CapturePayment( Order order, Dictionary<string, string> settings ) {
-      isSandbox = settings[ "isSandbox" ] == "1";
+    public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
+      ApiInfo apiInfo = null;
 
-      string errorMessage = string.Empty;
-      Dictionary<string, string> inputFields = PrepareAPIPostRequest( "DoCapture", settings );
+      try {
+        order.MustNotBeNull( "order" );
+        settings.MustNotBeNull( "settings" );
 
-      inputFields.Add( "AUTHORIZATIONID", order.TransactionPaymentTransactionId );
-      inputFields.Add( "AMT", order.TotalPrice.ToString( "0.00", CultureInfo.InvariantCulture ) );
-      inputFields.Add( "CURRENCYCODE", order.CurrencyISOCode );
-      inputFields.Add( "COMPLETETYPE", "Complete" );
+        IDictionary<string, string> inputFields = PrepareApiPostRequest( "DoCapture", settings );
 
-      Dictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( APIPostUrl, inputFields ) );
-      if ( responseKvp[ "ACK" ].Equals( "Success" ) || responseKvp[ "ACK" ].Equals( "SuccessWithWarning" ) ) {
-        return InternalGetStatus( responseKvp[ "TRANSACTIONID" ], settings );
-      } else
-        errorMessage = "Tea Commerce - PayPal - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_PayPal_error" ), responseKvp[ "L_ERRORCODE0" ] );
+        inputFields.Add( "AUTHORIZATIONID", order.TransactionInformation.TransactionId );
+        inputFields.Add( "AMT", order.TransactionInformation.AmountAuthorized.Value.ToString( "0.00", CultureInfo.InvariantCulture ) );
+        Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
+        if ( !Iso4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
+          throw new Exception( "You must specify an ISO 4217 currency code for the " + currency.Name + " currency" );
+        }
+        inputFields.Add( "CURRENCYCODE", currency.IsoCode );
+        inputFields.Add( "COMPLETETYPE", "Complete" );
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+        IDictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://api-3t.sandbox.paypal.com/nvp" : "https://api-3t.paypal.com/nvp", inputFields ) );
+        if ( responseKvp[ "ACK" ] == "Success" || responseKvp[ "ACK" ] == "SuccessWithWarning" ) {
+          apiInfo = InternalGetStatus( order.OrderNumber, responseKvp[ "TRANSACTIONID" ], settings );
+        } else {
+          LoggingService.Instance.Log( "PayPal(" + order.OrderNumber + ") - Error making API request - error code: " + responseKvp[ "L_ERRORCODE0" ] );
+        }
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "PayPal(" + order.OrderNumber + ") - Refund payment" );
+      }
+
+      return apiInfo;
     }
 
-    public override APIInfo RefundPayment( Order order, Dictionary<string, string> settings ) {
-      isSandbox = settings[ "isSandbox" ] == "1";
+    public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
+      ApiInfo apiInfo = null;
 
-      string errorMessage = string.Empty;
-      Dictionary<string, string> inputFields = PrepareAPIPostRequest( "RefundTransaction", settings );
+      try {
+        order.MustNotBeNull( "order" );
+        settings.MustNotBeNull( "settings" );
 
-      inputFields.Add( "TRANSACTIONID", order.TransactionPaymentTransactionId );
+        IDictionary<string, string> inputFields = PrepareApiPostRequest( "RefundTransaction", settings );
 
-      Dictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( APIPostUrl, inputFields ) );
-      if ( responseKvp[ "ACK" ].Equals( "Success" ) || responseKvp[ "ACK" ].Equals( "SuccessWithWarning" ) ) {
-        return InternalGetStatus( responseKvp[ "REFUNDTRANSACTIONID" ], settings );
-      } else
-        errorMessage = "Tea Commerce - PayPal - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_PayPal_error" ), responseKvp[ "L_ERRORCODE0" ] );
+        inputFields.Add( "TRANSACTIONID", order.TransactionInformation.TransactionId );
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+        IDictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://api-3t.sandbox.paypal.com/nvp" : "https://api-3t.paypal.com/nvp", inputFields ) );
+        if ( responseKvp[ "ACK" ] == "Success" || responseKvp[ "ACK" ] == "SuccessWithWarning" ) {
+          apiInfo = InternalGetStatus( order.OrderNumber, responseKvp[ "REFUNDTRANSACTIONID" ], settings );
+        } else {
+          LoggingService.Instance.Log( "PayPal(" + order.OrderNumber + ") - Error making API request - error code: " + responseKvp[ "L_ERRORCODE0" ] );
+        }
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "PayPal(" + order.OrderNumber + ") - Refund payment" );
+      }
+
+      return apiInfo;
     }
 
-    public override APIInfo CancelPayment( Order order, Dictionary<string, string> settings ) {
-      isSandbox = settings[ "isSandbox" ] == "1";
+    public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
+      ApiInfo apiInfo = null;
 
-      string errorMessage = string.Empty;
-      Dictionary<string, string> inputFields = PrepareAPIPostRequest( "DoVoid", settings );
+      try {
+        order.MustNotBeNull( "order" );
+        settings.MustNotBeNull( "settings" );
 
-      inputFields.Add( "AUTHORIZATIONID", order.TransactionPaymentTransactionId );
+        IDictionary<string, string> inputFields = PrepareApiPostRequest( "DoVoid", settings );
 
-      Dictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( APIPostUrl, inputFields ) );
-      if ( responseKvp[ "ACK" ].Equals( "Success" ) || responseKvp[ "ACK" ].Equals( "SuccessWithWarning" ) ) {
-        return InternalGetStatus( responseKvp[ "AUTHORIZATIONID" ], settings );
-      } else
-        errorMessage = "Tea Commerce - PayPal - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_PayPal_error" ), responseKvp[ "L_ERRORCODE0" ] );
+        inputFields.Add( "AUTHORIZATIONID", order.TransactionInformation.TransactionId );
 
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+        IDictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://api-3t.sandbox.paypal.com/nvp" : "https://api-3t.paypal.com/nvp", inputFields ) );
+        if ( responseKvp[ "ACK" ] == "Success" || responseKvp[ "ACK" ] == "SuccessWithWarning" ) {
+          apiInfo = InternalGetStatus( order.OrderNumber, responseKvp[ "AUTHORIZATIONID" ], settings );
+        } else {
+          LoggingService.Instance.Log( "PayPal(" + order.OrderNumber + ") - Error making API request - error code: " + responseKvp[ "L_ERRORCODE0" ] );
+        }
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "PayPal(" + order.OrderNumber + ") - Cancel payment" );
+      }
+
+      return apiInfo;
     }
 
-    protected APIInfo InternalGetStatus( string transactionId, Dictionary<string, string> settings ) {
-      isSandbox = settings[ "isSandbox" ] == "1";
+    public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
+      switch ( settingsKey ) {
+        case "return":
+          return settingsKey + "<br/><small>e.g. /continue/</small>";
+        case "cancel_return":
+          return settingsKey + "<br/><small>e.g. /cancel/</small>";
+        case "paymentaction":
+          return settingsKey + "<br/><small>e.g. sale or authorization</small>";
+        case "isSandbox":
+          return settingsKey + "<br/><small>1 = true; 0 = false</small>";
+        default:
+          return base.GetLocalizedSettingsKey( settingsKey, culture );
+      }
+    }
 
-      string errorMessage = string.Empty;
-      Dictionary<string, string> inputFields = PrepareAPIPostRequest( "GetTransactionDetails", settings );
+    #region Helper methods
+
+    protected ApiInfo InternalGetStatus( string orderNumber, string transactionId, IDictionary<string, string> settings ) {
+      ApiInfo apiInfo = null;
+
+      IDictionary<string, string> inputFields = PrepareApiPostRequest( "GetTransactionDetails", settings );
 
       inputFields.Add( "TRANSACTIONID", transactionId );
 
-      Dictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( APIPostUrl, inputFields ) );
-      if ( responseKvp[ "ACK" ].Equals( "Success" ) || responseKvp[ "ACK" ].Equals( "SuccessWithWarning" ) ) {
+      IDictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://api-3t.sandbox.paypal.com/nvp" : "https://api-3t.paypal.com/nvp", inputFields ) );
+      if ( responseKvp[ "ACK" ] == "Success" || responseKvp[ "ACK" ] == "SuccessWithWarning" ) {
 
         string paymentStatusResponse = responseKvp[ "PAYMENTSTATUS" ];
 
         //If the transaction is a refund
-        if ( responseKvp.ContainsKey( "TRANSACTIONTYPE" ) && responseKvp.ContainsKey( "PARENTTRANSACTIONID" ) && responseKvp[ "TRANSACTIONTYPE" ].Equals( "sendmoney" ) )
-          return InternalGetStatus( responseKvp[ "PARENTTRANSACTIONID" ], settings );
+        if ( responseKvp.ContainsKey( "TRANSACTIONTYPE" ) && responseKvp.ContainsKey( "PARENTTRANSACTIONID" ) &&
+             responseKvp[ "TRANSACTIONTYPE" ] == "sendmoney" ) {
+          apiInfo = InternalGetStatus( orderNumber, responseKvp[ "PARENTTRANSACTIONID" ], settings );
+        } else {
+          PaymentState paymentState = PaymentState.Initialized;
+          if ( paymentStatusResponse == "Pending" ) {
+            paymentState = responseKvp[ "PENDINGREASON" ] == "authorization" ? PaymentState.Authorized : PaymentState.PendingExternalSystem;
+          } else if ( paymentStatusResponse == "Completed" )
+            paymentState = PaymentState.Captured;
+          else if ( paymentStatusResponse == "Voided" )
+            paymentState = PaymentState.Cancelled;
+          else if ( paymentStatusResponse == "Refunded" )
+            paymentState = PaymentState.Refunded;
 
-        PaymentStatus paymentStatus = PaymentStatus.Initial;
-        if ( paymentStatusResponse.Equals( "Pending" ) ) {
-          if ( responseKvp[ "PENDINGREASON" ].Equals( "authorization" ) )
-            paymentStatus = PaymentStatus.Authorized;
-          else
-            paymentStatus = PaymentStatus.PendingExternalSystem;
-        } else if ( paymentStatusResponse.Equals( "Completed" ) )
-          paymentStatus = PaymentStatus.Captured;
-        else if ( paymentStatusResponse.Equals( "Voided" ) )
-          paymentStatus = PaymentStatus.Cancelled;
-        else if ( paymentStatusResponse.Equals( "Refunded" ) )
-          paymentStatus = PaymentStatus.Refunded;
+          apiInfo = new ApiInfo( transactionId, paymentState );
+        }
+      } else {
+        LoggingService.Instance.Log( "PayPal(" + orderNumber + ") - Error making API request - error code: " + responseKvp[ "L_ERRORCODE0" ] );
+      }
 
-        return new APIInfo( transactionId, paymentStatus );
-      } else
-        errorMessage = "Tea Commerce - PayPal - " + string.Format( umbraco.ui.Text( "teaCommerce", "paymentProvider_PayPal_error" ), responseKvp[ "L_ERRORCODE0" ] );
-
-      Log.Add( LogTypes.Error, -1, errorMessage );
-      return new APIInfo( errorMessage );
+      return apiInfo;
     }
 
-    protected Dictionary<string, string> PrepareAPIPostRequest( string methodName, Dictionary<string, string> settings ) {
-      Dictionary<string, string> inputFields = new Dictionary<string, string>();
-      inputFields.Add( "USER", settings[ "USER" ] );
-      inputFields.Add( "PWD", settings[ "PWD" ] );
-      inputFields.Add( "SIGNATURE", settings[ "SIGNATURE" ] );
-      inputFields.Add( "VERSION", "98.0" );
-      inputFields.Add( "METHOD", methodName );
+    protected IDictionary<string, string> PrepareApiPostRequest( string methodName, IDictionary<string, string> settings ) {
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "USER", "settings" );
+      settings.MustContainKey( "PWD", "settings" );
+      settings.MustContainKey( "SIGNATURE", "settings" );
+
+      Dictionary<string, string> inputFields = new Dictionary<string, string> {
+        {"USER", settings[ "USER" ]},
+        {"PWD", settings[ "PWD" ]},
+        {"SIGNATURE", settings[ "SIGNATURE" ]},
+        {"VERSION", "98.0"},
+        {"METHOD", methodName}
+      };
       return inputFields;
     }
 
-    protected Dictionary<string, string> GetApiResponseKvp( string response ) {
+    protected IDictionary<string, string> GetApiResponseKvp( string response ) {
       HttpServerUtility server = HttpContext.Current.Server;
       return ( from item in response.Split( '&' )
                let kvp = item.Split( '=' )
@@ -282,6 +355,8 @@ namespace TeaCommerce.PaymentProviders {
                  Value = server.UrlDecode( kvp[ 1 ] )
                } ).ToDictionary( i => i.Key, i => i.Value );
     }
+
+    #endregion
 
   }
 }
