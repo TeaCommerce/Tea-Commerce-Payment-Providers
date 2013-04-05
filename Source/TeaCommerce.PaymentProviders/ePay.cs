@@ -243,7 +243,7 @@ namespace TeaCommerce.PaymentProviders {
           LoggingService.Instance.Log( "ePay(" + order.OrderNumber + ") - Error making API request - error code: " + ePayResponse + ", pbs response: " + pbsResponse );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "ePay(" + order.OrderNumber + ") - Get status" );
+        LoggingService.Instance.Log( exp, "ePay(" + order.OrderNumber + ") - Capture payment" );
       }
 
       return apiInfo;
@@ -266,7 +266,7 @@ namespace TeaCommerce.PaymentProviders {
           LoggingService.Instance.Log( "ePay(" + order.OrderNumber + ") - Error making API request - error code: " + ePayResponse + ", pbs response: " + pbsResponse );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "ePay(" + order.OrderNumber + ") - Get status" );
+        LoggingService.Instance.Log( exp, "ePay(" + order.OrderNumber + ") - Refund payment" );
       }
 
       return apiInfo;
@@ -288,7 +288,7 @@ namespace TeaCommerce.PaymentProviders {
           LoggingService.Instance.Log( "ePay(" + order.OrderNumber + ") - Error making API request - error code: " + ePayResponse );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "ePay(" + order.OrderNumber + ") - Get status" );
+        LoggingService.Instance.Log( exp, "ePay(" + order.OrderNumber + ") - Cancel payment" );
       }
 
       return apiInfo;

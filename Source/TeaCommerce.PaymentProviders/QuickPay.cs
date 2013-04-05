@@ -54,7 +54,7 @@ namespace TeaCommerce.PaymentProviders {
       string[] settingsToExclude = new[] { "md5secret" };
       htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
-      htmlForm.InputFields[ "protocol" ] = "4";
+      htmlForm.InputFields[ "protocol" ] = "7";
       htmlForm.InputFields[ "msgtype" ] = "authorize";
 
       //Order name must be between 4 or 20 chars  
@@ -77,7 +77,16 @@ namespace TeaCommerce.PaymentProviders {
 
       //Quickpay dont support to show order line information to the shopper
 
-      htmlForm.InputFields[ "md5check" ] = GetMd5Hash( string.Join( "", htmlForm.InputFields.Values ) + settings[ "md5secret" ] );
+      //Md5 check sum
+      string[] md5CheckSumKeys = { "protocol", "msgtype", "merchant", "language", "ordernumber", "amount", "currency", "continueurl", "cancelurl", "callbackurl", "autocapture", "autofee", "cardtypelock", "description", "group", "testmode", "splitpayment", "forcemobile", "deadline", "cardhash" };
+      string md5CheckSumValues = "";
+      foreach ( string key in md5CheckSumKeys ) {
+        if ( htmlForm.InputFields.ContainsKey( key ) ) {
+          md5CheckSumValues += htmlForm.InputFields[ key ];
+        }
+      }
+
+      htmlForm.InputFields[ "md5check" ] = GetMd5Hash( md5CheckSumValues + settings[ "md5secret" ] );
 
       return htmlForm;
     }
@@ -132,6 +141,9 @@ namespace TeaCommerce.PaymentProviders {
         md5CheckValue += request.Form[ "transaction" ];
         md5CheckValue += request.Form[ "cardtype" ];
         md5CheckValue += request.Form[ "cardnumber" ];
+        md5CheckValue += request.Form[ "cardhash" ];
+        md5CheckValue += request.Form[ "cardexpire" ];
+        md5CheckValue += request.Form[ "acquirer" ];
         md5CheckValue += request.Form[ "splitpayment" ];
         md5CheckValue += request.Form[ "fraudprobability" ];
         md5CheckValue += request.Form[ "fraudremarks" ];
@@ -173,7 +185,7 @@ namespace TeaCommerce.PaymentProviders {
 
         Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
-        inputFields[ "protocol" ] = "4";
+        inputFields[ "protocol" ] = "7";
         inputFields[ "msgtype" ] = "status";
         inputFields[ "merchant" ] = settings[ "merchant" ];
         inputFields[ "transaction" ] = order.TransactionInformation.TransactionId;
@@ -200,7 +212,7 @@ namespace TeaCommerce.PaymentProviders {
 
         Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
-        inputFields[ "protocol" ] = "4";
+        inputFields[ "protocol" ] = "7";
         inputFields[ "msgtype" ] = "capture";
         inputFields[ "merchant" ] = settings[ "merchant" ];
         inputFields[ "amount" ] = ( order.TransactionInformation.AmountAuthorized.Value * 100M ).ToString( "0" );
@@ -229,7 +241,7 @@ namespace TeaCommerce.PaymentProviders {
 
         Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
-        inputFields[ "protocol" ] = "4";
+        inputFields[ "protocol" ] = "7";
         inputFields[ "msgtype" ] = "refund";
         inputFields[ "merchant" ] = settings[ "merchant" ];
         inputFields[ "amount" ] = ( order.TransactionInformation.AmountAuthorized.Value * 100M ).ToString( "0" );
@@ -257,7 +269,7 @@ namespace TeaCommerce.PaymentProviders {
 
         Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
-        inputFields[ "protocol" ] = "4";
+        inputFields[ "protocol" ] = "7";
         inputFields[ "msgtype" ] = "cancel";
         inputFields[ "merchant" ] = settings[ "merchant" ];
         inputFields[ "transaction" ] = order.TransactionInformation.TransactionId;
