@@ -61,8 +61,8 @@ namespace TeaCommerce.PaymentProviders {
       string zipCode = order.Properties[ settings[ "zipCodePropertyAlias" ] ];
 
       streetAddress.MustNotBeNullOrEmpty( "streetAddress" );
-      streetAddress.MustNotBeNullOrEmpty( "city" );
-      streetAddress.MustNotBeNullOrEmpty( "zipCode" );
+      city.MustNotBeNullOrEmpty( "city" );
+      zipCode.MustNotBeNullOrEmpty( "zipCode" );
 
       string shippingFirstName = settings.ContainsKey( "shipping_firstNamePropertyAlias" ) ? order.Properties[ settings[ "shipping_firstNamePropertyAlias" ] ] : "";
       if ( string.IsNullOrEmpty( shippingFirstName ) ) {
@@ -125,13 +125,14 @@ namespace TeaCommerce.PaymentProviders {
       inputFields[ "DeliveryAddress1" ] = shippingStreetAddress.Truncate( 100 );
       inputFields[ "DeliveryCity" ] = shippingCity.Truncate( 40 );
       inputFields[ "DeliveryPostCode" ] = shippingZipCode.Truncate( 10 );
-      if ( order.ShipmentInformation.CountryId != null ) {
-        country = CountryService.Instance.Get( order.StoreId, order.ShipmentInformation.CountryId.Value );
-        inputFields[ "DeliveryCountry" ] = country.RegionCode;
-        if ( country.RegionCode.ToUpperInvariant() == "US" && order.ShipmentInformation.CountryRegionId != null ) {
-          CountryRegion countryRegion = CountryRegionService.Instance.Get( order.StoreId, order.ShipmentInformation.CountryRegionId.Value );
-          inputFields[ "DeliveryState" ] = countryRegion.RegionCode.Truncate( 2 );
-        }
+
+      country = CountryService.Instance.Get( order.StoreId, order.ShipmentInformation.CountryId ?? order.PaymentInformation.CountryId );
+      inputFields[ "DeliveryCountry" ] = country.RegionCode;
+
+      long? shippingCountryRegionId = order.ShipmentInformation.CountryId != null ? order.ShipmentInformation.CountryRegionId : order.PaymentInformation.CountryRegionId;
+      if ( country.RegionCode.ToUpperInvariant() == "US" && shippingCountryRegionId != null ) {
+        CountryRegion countryRegion = CountryRegionService.Instance.Get( order.StoreId, shippingCountryRegionId.Value );
+        inputFields[ "DeliveryState" ] = countryRegion.RegionCode.Truncate( 2 );
       }
       if ( settings.ContainsKey( "shipping_phonePropertyAlias" ) ) {
         inputFields[ "DeliveryPhone" ] = order.Properties[ settings[ "shipping_phonePropertyAlias" ] ].Truncate( 20 );
