@@ -228,9 +228,9 @@ namespace TeaCommerce.PaymentProviders {
             callbackInfo = new CallbackInfo( order.TotalPrice.WithVat, transaction, request.Form[ "TxType" ] != "PAYMENT" ? PaymentState.Authorized : PaymentState.Captured, cardType, last4Digits );
 
             if ( status == "OK" ) {
-              order.Properties.AddOrUpdate( new CustomProperty( "TxAuthNo", txAuthNo ) { ServerSideOnly = true } );
+              order.Properties.AddOrUpdate( new CustomProperty( "txAuthNo", txAuthNo ) { ServerSideOnly = true } );
             }
-            order.Properties.AddOrUpdate( new CustomProperty( "VendorTxCode", vendorTxCode ) { ServerSideOnly = true } );
+            order.Properties.AddOrUpdate( new CustomProperty( "vendorTxCode", vendorTxCode ) { ServerSideOnly = true } );
             order.Save();
 
             inputFields[ "Status" ] = "OK";
@@ -294,7 +294,7 @@ namespace TeaCommerce.PaymentProviders {
 
           apiInfo = new ApiInfo( responseFields[ "VPSTxId" ], PaymentState.Captured );
         } else {
-          LoggingService.Instance.Log( "Quickpay(" + order.OrderNumber + ") - Error making API request: " + responseFields[ "StatusDetail" ] );
+          LoggingService.Instance.Log( "Sage pay(" + order.OrderNumber + ") - Error making API request: " + responseFields[ "StatusDetail" ] );
         }
       } catch ( Exception exp ) {
         LoggingService.Instance.Log( exp, "Sage pay(" + order.OrderNumber + ") - Cancel payment" );
@@ -337,13 +337,13 @@ namespace TeaCommerce.PaymentProviders {
         IDictionary<string, string> responseFields = GetFields( MakePostRequest( GetMethodUrl( "REFUND", settings ), inputFields ) );
 
         if ( responseFields[ "Status" ] == "OK" ) {
-          order.Properties.AddOrUpdate( new CustomProperty( "VendorTxCode", vendorTxCode.ToString() ) { ServerSideOnly = true } );
-          order.Properties.AddOrUpdate( new CustomProperty( "TxAuthNo", responseFields[ "TxAuthNo" ] ) { ServerSideOnly = true } );
+          order.Properties.AddOrUpdate( new CustomProperty( "vendorTxCode", vendorTxCode.ToString() ) { ServerSideOnly = true } );
+          order.Properties.AddOrUpdate( new CustomProperty( "txAuthNo", responseFields[ "TxAuthNo" ] ) { ServerSideOnly = true } );
           order.Save();
 
           apiInfo = new ApiInfo( responseFields[ "VPSTxId" ], PaymentState.Refunded );
         } else {
-          LoggingService.Instance.Log( "Quickpay(" + order.OrderNumber + ") - Error making API request: " + responseFields[ "StatusDetail" ] );
+          LoggingService.Instance.Log( "Sage pay(" + order.OrderNumber + ") - Error making API request: " + responseFields[ "StatusDetail" ] );
         }
       } catch ( Exception exp ) {
         LoggingService.Instance.Log( exp, "Sage pay(" + order.OrderNumber + ") - Refund payment" );
@@ -374,7 +374,7 @@ namespace TeaCommerce.PaymentProviders {
         if ( responseFields[ "Status" ] == "OK" ) {
           apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Cancelled );
         } else {
-          LoggingService.Instance.Log( "Quickpay(" + order.OrderNumber + ") - Error making API request: " + responseFields[ "StatusDetail" ] );
+          LoggingService.Instance.Log( "Sage pay(" + order.OrderNumber + ") - Error making API request: " + responseFields[ "StatusDetail" ] );
         }
       } catch ( Exception exp ) {
         LoggingService.Instance.Log( exp, "Sage pay(" + order.OrderNumber + ") - Cancel payment" );
