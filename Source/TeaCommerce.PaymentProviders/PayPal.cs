@@ -67,7 +67,7 @@ namespace TeaCommerce.PaymentProviders {
       htmlForm.InputFields[ "cancel_return" ] = teaCommerceCancelUrl;
       htmlForm.InputFields[ "notify_url" ] = teaCommerceCallBackUrl;
 
-      #region Order line information
+      #region Order line information + shipping + payment
 
       int itemIndex = 1;
 
@@ -84,6 +84,9 @@ namespace TeaCommerce.PaymentProviders {
       if ( order.ShipmentInformation.ShippingMethodId != null ) {
         ShippingMethod shippingMethod = ShippingMethodService.Instance.Get( order.StoreId, order.ShipmentInformation.ShippingMethodId.Value );
         htmlForm.InputFields[ "item_name_" + itemIndex ] = shippingMethod.Name;
+        if ( !string.IsNullOrEmpty( shippingMethod.Sku ) ) {
+          htmlForm.InputFields[ "item_number_" + itemIndex ] = shippingMethod.Sku;
+        }
         htmlForm.InputFields[ "amount_" + itemIndex ] = order.ShipmentInformation.TotalPrice.Value.ToString( "0.00", CultureInfo.InvariantCulture );
         htmlForm.InputFields[ "tax_" + itemIndex ] = order.ShipmentInformation.TotalPrice.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
         itemIndex++;
@@ -92,6 +95,9 @@ namespace TeaCommerce.PaymentProviders {
       if ( order.PaymentInformation.PaymentMethodId != null ) {
         PaymentMethod paymentMethod = PaymentMethodService.Instance.Get( order.StoreId, order.PaymentInformation.PaymentMethodId.Value );
         htmlForm.InputFields[ "item_name_" + itemIndex ] = paymentMethod.Name;
+        if ( !string.IsNullOrEmpty( paymentMethod.Sku ) ) {
+          htmlForm.InputFields[ "item_number_" + itemIndex ] = paymentMethod.Sku;
+        }
         htmlForm.InputFields[ "amount_" + itemIndex ] = order.PaymentInformation.TotalPrice.Value.ToString( "0.00", CultureInfo.InvariantCulture );
         htmlForm.InputFields[ "tax_" + itemIndex ] = order.PaymentInformation.TotalPrice.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
       }
