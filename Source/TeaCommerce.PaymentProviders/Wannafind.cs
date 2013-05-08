@@ -56,9 +56,8 @@ namespace TeaCommerce.PaymentProviders {
       string[] settingsToExclude = new[] { "md5AuthSecret", "md5CallbackSecret", "apiUser", "apiPassword", "testmode" };
       htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
-
       //orderid
-      htmlForm.InputFields[ "orderid" ] = order.CartNumber;
+      htmlForm.InputFields[ "orderid" ] = order.CartNumber.Replace( StoreService.Instance.Get( order.StoreId ).CartNumberPrefix, "" );
 
       //currency
       //Check that the Iso code exists
