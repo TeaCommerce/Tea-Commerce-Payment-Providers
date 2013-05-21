@@ -24,39 +24,28 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "USER.PWD" ] = string.Empty;
         defaultSettings[ "TRANSACTION.CHANNEL" ] = string.Empty;
         defaultSettings[ "FRONTEND.LANGUAGE" ] = "en";
-
         defaultSettings[ "FRONTEND.RESPONSE_URL" ] = string.Empty;
         defaultSettings[ "FRONTEND.CANCEL_URL" ] = string.Empty;
-
-        defaultSettings[ "PAYMENT.CODE" ] = "CC.DB";
-        defaultSettings[ "FRONTEND.MODE" ] = string.Empty;
-
-        defaultSettings[ "TRANSACTION.MODE" ] = "INTEGRATOR_TEST";
-
-        defaultSettings[ "FRONTEND.JSCRIPT_PATH" ] = string.Empty;
 
         defaultSettings[ "zipCodePropertyAlias" ] = string.Empty;
         defaultSettings[ "cityPropertyAlias" ] = string.Empty;
         defaultSettings[ "streetAddressPropertyAlias" ] = string.Empty;
 
-        defaultSettings[ "testMode" ] = "1";
+        defaultSettings[ "TRANSACTION.MODE" ] = "LIVE";
 
         return defaultSettings;
       }
     }
 
-    public override bool FinalizeAtContinueUrl { get { return true; } }
-    public override bool RedirectAtContinueUrl { get { return false; } }
-
     public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
 
       order.MustNotBeNull( "order" );
-      settings.MustNotBeNull( "FRONTEND.CANCEL_URL" );
-      settings.MustNotBeNull( "FRONTEND.RESPONSE_URL" );
+      settings.MustNotBeNull( "SECURITY.SENDER" );
+      settings.MustNotBeNull( "USER.LOGIN" );
+      settings.MustNotBeNull( "USER.PWD" );
+      settings.MustNotBeNull( "TRANSACTION.CHANNEL" );
 
-      PaymentHtmlForm htmlForm = new PaymentHtmlForm {
-        Action = string.Empty
-      };
+      PaymentHtmlForm htmlForm = new PaymentHtmlForm();
 
       string[] settingsToExclude = new[] { "" };
       Dictionary<string, string> initialData = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
@@ -64,17 +53,17 @@ namespace TeaCommerce.PaymentProviders {
       // mandatory settings
       initialData[ "REQUEST.VERSION" ] = "1.0";
       initialData[ "FRONTEND.ENABLED" ] = "true";
-      initialData[ "FRONTEND.POPUP" ] = "true";
+      initialData[ "FRONTEND.POPUP" ] = "true"; //TODO: skal det indstilles i BIP?
+      //defaultSettings[ "PAYMENT.CODE" ] = "CC.DB"; TODO: lav denne
 
       //orderid
       initialData[ "IDENTIFICATION.TRANSACTIONID" ] = order.CartNumber;
-      initialData[ "FRONTEND.MODE" ] = string.IsNullOrEmpty( settings[ "FRONTEND.MODE" ] ) ? "WPF_LIGHT" : settings[ "FRONTEND.MODE" ];
 
       // currency related settings
       initialData[ "PRESENTATION.CURRENCY" ] = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId ).IsoCode;
       initialData[ "PRESENTATION.AMOUNT" ] = ( order.TotalPrice.WithVat ).ToString( "0", CultureInfo.InvariantCulture );
 
-      initialData[ "FRONTEND.RESPONSE_URL" ] = teaCommerceContinueUrl;
+      initialData[ "FRONTEND.RESPONSE_URL" ] = teaCommerceCallBackUrl;
 
       // fill out fields
       initialData[ "NAME.GIVEN" ] = order.PaymentInformation.FirstName;
@@ -87,15 +76,14 @@ namespace TeaCommerce.PaymentProviders {
 
       Dictionary<string, string> responseKvps = new Dictionary<string, string>();
 
-      foreach ( string kvp in MakePostRequest( settings[ "testMode" ] == "0" ? "https://ctpe.net/frontend/payment.prc" : "https://test.ctpe.net/frontend/payment.prc", initialData ).Split( '&' ) ) {
-        string[] kvpTokens = kvp.Split( '=' );
+      foreach ( string[] kvpTokens in MakePostRequest( settings[ "TRANSACTION.MODE" ] == "LIVE" ? "https://ctpe.net/frontend/payment.prc" : "https://test.ctpe.net/frontend/payment.prc", initialData ).Split( '&' ).Select( kvp => kvp.Split( '=' ) ) ) {
         responseKvps[ kvpTokens[ 0 ] ] = kvpTokens[ 1 ];
       }
 
       if ( responseKvps[ "POST.VALIDATION" ].Equals( "ACK" ) ) {
         htmlForm.Action = HttpContext.Current.Server.UrlDecode( responseKvps[ "FRONTEND.REDIRECT_URL" ] );
       } else {
-        throw new Exception( "Axcess - Generate html failed - check the order data" );
+        throw new Exception( "Axcess - Generate html failed - check the order data" );//TODO: hvor har vi fejl data besked
       }
 
       return htmlForm;
@@ -138,6 +126,7 @@ namespace TeaCommerce.PaymentProviders {
         LoggingService.Instance.Log( exp, "Axcess(" + order.CartNumber + ") - Process callback" );
       }
 
+      //TODO: calc HASH of response - page 25 in 3.2.2
       HttpContext.Current.Response.Clear();
       if ( request[ "PROCESSING.RESULT" ].Equals( "ACK" ) ) {
         callbackInfo = new CallbackInfo( order.TotalPrice.WithVat, request[ "IDENTIFICATION.UNIQUEID" ], PaymentState.Authorized );
@@ -151,14 +140,14 @@ namespace TeaCommerce.PaymentProviders {
 
     public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
       switch ( settingsKey ) {
-        case "accepturl":
+        case "FRONTEND.RESPONSE_URL":
           return settingsKey + "<br/><small>e.g. /continue/</small>";
-        case "cancelurl":
+        case "FRONTEND.CANCEL_URL":
           return settingsKey + "<br/><small>e.g. /cancel/</small>";
-        case "testMode":
-          return settingsKey + "<br/><small>If set to 1, use test url. If set to 0, use production url</small>";
         case "FRONTEND.JSCRIPT_PATH":
           return settingsKey + "<br/><small>URL to file that will be included in the payment window. This requires a HTTPS server to work flawlessly.</small>";
+        case "TRANSACTION.MODE":
+          return settingsKey + "<br/><small>INTEGRATOR_TEST, CONNECTOR_TEST, LIVE</small>";
         default:
           return base.GetLocalizedSettingsKey( settingsKey, culture );
       }
