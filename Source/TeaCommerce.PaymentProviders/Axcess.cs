@@ -26,11 +26,10 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "FRONTEND.LANGUAGE" ] = "en";
         defaultSettings[ "FRONTEND.RESPONSE_URL" ] = string.Empty;
         defaultSettings[ "FRONTEND.CANCEL_URL" ] = string.Empty;
-
-        defaultSettings[ "zipCodePropertyAlias" ] = string.Empty;
-        defaultSettings[ "cityPropertyAlias" ] = string.Empty;
+        defaultSettings[ "PAYMENT.CODE" ] = "CC.PA";
         defaultSettings[ "streetAddressPropertyAlias" ] = string.Empty;
-
+        defaultSettings[ "cityPropertyAlias" ] = string.Empty;
+        defaultSettings[ "zipCodePropertyAlias" ] = string.Empty;
         defaultSettings[ "TRANSACTION.MODE" ] = "LIVE";
 
         return defaultSettings;
@@ -40,50 +39,68 @@ namespace TeaCommerce.PaymentProviders {
     public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
 
       order.MustNotBeNull( "order" );
-      settings.MustNotBeNull( "SECURITY.SENDER" );
-      settings.MustNotBeNull( "USER.LOGIN" );
-      settings.MustNotBeNull( "USER.PWD" );
-      settings.MustNotBeNull( "TRANSACTION.CHANNEL" );
+      settings.MustContainKey( "SECURITY.SENDER", "settings" );
+      settings.MustContainKey( "USER.LOGIN", "settings" );
+      settings.MustContainKey( "USER.PWD", "settings" );
+      settings.MustContainKey( "TRANSACTION.CHANNEL", "settings" );
+      settings.MustContainKey( "PAYMENT.CODE", "settings" );
+      settings.MustContainKey( "streetAddressPropertyAlias", "settings" );
+      settings.MustContainKey( "cityPropertyAlias", "settings" );
+      settings.MustContainKey( "zipCodePropertyAlias", "settings" );
+      settings.MustContainKey( "TRANSACTION.MODE", "settings" );
 
       PaymentHtmlForm htmlForm = new PaymentHtmlForm();
 
-      string[] settingsToExclude = new[] { "" };
+      string[] settingsToExclude = new[] { "FRONTEND.RESPONSE_URL", "FRONTEND.CANCEL_URL", "streetAddressPropertyAlias", "cityPropertyAlias", "zipCodePropertyAlias" };
       Dictionary<string, string> initialData = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
-      // mandatory settings
       initialData[ "REQUEST.VERSION" ] = "1.0";
       initialData[ "FRONTEND.ENABLED" ] = "true";
-      initialData[ "FRONTEND.POPUP" ] = "true"; //TODO: skal det indstilles i BIP?
-      //defaultSettings[ "PAYMENT.CODE" ] = "CC.DB"; TODO: lav denne
+      initialData[ "FRONTEND.POPUP" ] = "true";//TODO: undersøge false
 
-      //orderid
       initialData[ "IDENTIFICATION.TRANSACTIONID" ] = order.CartNumber;
 
-      // currency related settings
       initialData[ "PRESENTATION.CURRENCY" ] = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId ).IsoCode;
-      initialData[ "PRESENTATION.AMOUNT" ] = ( order.TotalPrice.WithVat ).ToString( "0", CultureInfo.InvariantCulture );
+      initialData[ "PRESENTATION.AMOUNT" ] = ( order.TotalPrice.WithVat ).ToString( "0.00", CultureInfo.InvariantCulture );
 
       initialData[ "FRONTEND.RESPONSE_URL" ] = teaCommerceCallBackUrl;
 
-      // fill out fields
       initialData[ "NAME.GIVEN" ] = order.PaymentInformation.FirstName;
       initialData[ "NAME.FAMILY" ] = order.PaymentInformation.LastName;
+
       initialData[ "CONTACT.EMAIL" ] = order.PaymentInformation.Email;
-      initialData[ "ADDRESS.COUNTRY" ] = CountryService.Instance.Get( order.StoreId, order.PaymentInformation.CountryId ).RegionCode;
-      initialData[ "ADDRESS.STREET" ] = order.Properties[ settings[ "streetAddressPropertyAlias" ] ];
-      initialData[ "ADDRESS.ZIP" ] = order.Properties[ settings[ "zipCodePropertyAlias" ] ];
-      initialData[ "ADDRESS.CITY" ] = order.Properties[ settings[ "cityPropertyAlias" ] ];
+      initialData[ "CONTACT.IP" ] = HttpContext.Current.Request.UserHostAddress;
+
+      string streetAddress = order.Properties[ settings[ "streetAddressPropertyAlias" ] ];
+      string city = order.Properties[ settings[ "cityPropertyAlias" ] ];
+      string zipCode = order.Properties[ settings[ "zipCodePropertyAlias" ] ];
+
+      streetAddress.MustNotBeNullOrEmpty( "streetAddress" );
+      city.MustNotBeNullOrEmpty( "city" );
+      zipCode.MustNotBeNullOrEmpty( "zipCode" );
+
+      initialData[ "ADDRESS.STREET" ] = streetAddress;
+      initialData[ "ADDRESS.CITY" ] = city;
+      initialData[ "ADDRESS.ZIP" ] = zipCode;
+
+      Country country = CountryService.Instance.Get( order.StoreId, order.PaymentInformation.CountryId );
+      initialData[ "ADDRESS.COUNTRY" ] = country.RegionCode;
+      if ( order.PaymentInformation.CountryRegionId != null ) {
+        CountryRegion countryRegion = CountryRegionService.Instance.Get( order.StoreId, order.PaymentInformation.CountryRegionId.Value );
+        initialData[ "ADDRESS.STATE" ] = country.RegionCode + "." + countryRegion.RegionCode;
+      }
 
       Dictionary<string, string> responseKvps = new Dictionary<string, string>();
 
-      foreach ( string[] kvpTokens in MakePostRequest( settings[ "TRANSACTION.MODE" ] == "LIVE" ? "https://ctpe.net/frontend/payment.prc" : "https://test.ctpe.net/frontend/payment.prc", initialData ).Split( '&' ).Select( kvp => kvp.Split( '=' ) ) ) {
+      string response = MakePostRequest( settings[ "TRANSACTION.MODE" ] == "LIVE" ? "https://ctpe.net/frontend/payment.prc" : "https://test.ctpe.net/frontend/payment.prc", initialData );
+      foreach ( string[] kvpTokens in response.Split( '&' ).Select( kvp => kvp.Split( '=' ) ) ) {
         responseKvps[ kvpTokens[ 0 ] ] = kvpTokens[ 1 ];
       }
 
       if ( responseKvps[ "POST.VALIDATION" ].Equals( "ACK" ) ) {
         htmlForm.Action = HttpContext.Current.Server.UrlDecode( responseKvps[ "FRONTEND.REDIRECT_URL" ] );
       } else {
-        throw new Exception( "Axcess - Generate html failed - check the order data" );//TODO: hvor har vi fejl data besked
+        throw new Exception( "Generate html failed - error code: " + responseKvps[ "POST.VALIDATION" ] );
       }
 
       return htmlForm;
@@ -110,9 +127,10 @@ namespace TeaCommerce.PaymentProviders {
         order.MustNotBeNull( "order" );
         request.MustNotBeNull( "request" );
         settings.MustNotBeNull( "settings" );
+        settings.MustContainKey( "TRANSACTION.MODE", "settings" );
 
         //Write data when testing
-        if ( settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ) {
+        if ( settings[ "TRANSACTION.MODE" ] != "LIVE" ) {
           using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/axcess-callback-data.txt" ) ) ) ) {
             writer.WriteLine( "FORM:" );
             foreach ( string k in request.Form.Keys ) {
@@ -122,17 +140,29 @@ namespace TeaCommerce.PaymentProviders {
           }
         }
 
+        HttpContext.Current.Response.Clear();
+        if ( request[ "PROCESSING.RESULT" ].Equals( "ACK" ) ) {
+          callbackInfo = new CallbackInfo( decimal.Parse( request[ "PRESENTATION.AMOUNT" ], CultureInfo.InvariantCulture ), request[ "IDENTIFICATION.UNIQUEID" ], request[ "PAYMENT.CODE" ] != "CC.DB" ? PaymentState.Authorized : PaymentState.Captured );
+
+          string continueUrl = GetContinueUrl( settings );
+          if ( !continueUrl.StartsWith( "http" ) ) {
+            Uri baseUrl = new UriBuilder( request.Url.Scheme, request.Url.Host, request.Url.Port ).Uri;
+            continueUrl = new Uri( baseUrl, continueUrl ).AbsoluteUri;
+          }
+
+          HttpContext.Current.Response.Write( continueUrl );
+        } else {
+          LoggingService.Instance.Log( "Axcess(" + order.CartNumber + ") - Process callback - PROCESSING.CODE: " + request[ "PROCESSING.CODE" ] );
+
+          string cancelUrl = GetCancelUrl( settings );
+          if ( !cancelUrl.StartsWith( "http" ) ) {
+            Uri baseUrl = new UriBuilder( request.Url.Scheme, request.Url.Host, request.Url.Port ).Uri;
+            cancelUrl = new Uri( baseUrl, cancelUrl ).AbsoluteUri;
+          }
+          HttpContext.Current.Response.Write( cancelUrl );
+        }
       } catch ( Exception exp ) {
         LoggingService.Instance.Log( exp, "Axcess(" + order.CartNumber + ") - Process callback" );
-      }
-
-      //TODO: calc HASH of response - page 25 in 3.2.2
-      HttpContext.Current.Response.Clear();
-      if ( request[ "PROCESSING.RESULT" ].Equals( "ACK" ) ) {
-        callbackInfo = new CallbackInfo( order.TotalPrice.WithVat, request[ "IDENTIFICATION.UNIQUEID" ], PaymentState.Authorized );
-        HttpContext.Current.Response.Write( GetContinueUrl( settings ) );
-      } else {
-        HttpContext.Current.Response.Write( GetCancelUrl( settings ) );
       }
 
       return callbackInfo;
@@ -144,8 +174,10 @@ namespace TeaCommerce.PaymentProviders {
           return settingsKey + "<br/><small>e.g. /continue/</small>";
         case "FRONTEND.CANCEL_URL":
           return settingsKey + "<br/><small>e.g. /cancel/</small>";
-        case "FRONTEND.JSCRIPT_PATH":
-          return settingsKey + "<br/><small>URL to file that will be included in the payment window. This requires a HTTPS server to work flawlessly.</small>";
+        case "PAYMENT.CODE":
+          return settingsKey + "<br/><small>CC.PA = Authorize, CC.DB = Instant capture</small>";
+        //case "FRONTEND.JSCRIPT_PATH":
+        //  return settingsKey + "<br/><small>URL to file that will be included in the payment window. This requires a HTTPS server to work flawlessly.</small>";
         case "TRANSACTION.MODE":
           return settingsKey + "<br/><small>INTEGRATOR_TEST, CONNECTOR_TEST, LIVE</small>";
         default:
