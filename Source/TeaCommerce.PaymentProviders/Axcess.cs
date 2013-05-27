@@ -16,6 +16,10 @@ namespace TeaCommerce.PaymentProviders {
   [PaymentProvider( "Axcess" )]
   public class Axcess : APaymentProvider {
 
+    public override bool SupportsCapturingOfPayment { get { return true; } }
+    public override bool SupportsRefundOfPayment { get { return true; } }
+    public override bool SupportsCancellationOfPayment { get { return true; } }
+
     public override IDictionary<string, string> DefaultSettings {
       get {
         Dictionary<string, string> defaultSettings = new Dictionary<string, string>();
@@ -37,7 +41,6 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
-
       order.MustNotBeNull( "order" );
       settings.MustContainKey( "SECURITY.SENDER", "settings" );
       settings.MustContainKey( "USER.LOGIN", "settings" );
@@ -52,24 +55,24 @@ namespace TeaCommerce.PaymentProviders {
       PaymentHtmlForm htmlForm = new PaymentHtmlForm();
 
       string[] settingsToExclude = new[] { "FRONTEND.RESPONSE_URL", "FRONTEND.CANCEL_URL", "streetAddressPropertyAlias", "cityPropertyAlias", "zipCodePropertyAlias" };
-      Dictionary<string, string> initialData = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
+      Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
-      initialData[ "REQUEST.VERSION" ] = "1.0";
-      initialData[ "FRONTEND.ENABLED" ] = "true";
-      initialData[ "FRONTEND.POPUP" ] = "true";//TODO: undersøge false
+      inputFields[ "REQUEST.VERSION" ] = "1.0";
+      inputFields[ "FRONTEND.ENABLED" ] = "true";
+      inputFields[ "FRONTEND.POPUP" ] = "false";
 
-      initialData[ "IDENTIFICATION.TRANSACTIONID" ] = order.CartNumber;
+      inputFields[ "IDENTIFICATION.TRANSACTIONID" ] = order.CartNumber;
 
-      initialData[ "PRESENTATION.CURRENCY" ] = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId ).IsoCode;
-      initialData[ "PRESENTATION.AMOUNT" ] = ( order.TotalPrice.WithVat ).ToString( "0.00", CultureInfo.InvariantCulture );
+      inputFields[ "PRESENTATION.CURRENCY" ] = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId ).IsoCode;
+      inputFields[ "PRESENTATION.AMOUNT" ] = ( order.TotalPrice.WithVat ).ToString( "0.00", CultureInfo.InvariantCulture );
 
-      initialData[ "FRONTEND.RESPONSE_URL" ] = teaCommerceCallBackUrl;
+      inputFields[ "FRONTEND.RESPONSE_URL" ] = teaCommerceCallBackUrl;
 
-      initialData[ "NAME.GIVEN" ] = order.PaymentInformation.FirstName;
-      initialData[ "NAME.FAMILY" ] = order.PaymentInformation.LastName;
+      inputFields[ "NAME.GIVEN" ] = order.PaymentInformation.FirstName;
+      inputFields[ "NAME.FAMILY" ] = order.PaymentInformation.LastName;
 
-      initialData[ "CONTACT.EMAIL" ] = order.PaymentInformation.Email;
-      initialData[ "CONTACT.IP" ] = HttpContext.Current.Request.UserHostAddress;
+      inputFields[ "CONTACT.EMAIL" ] = order.PaymentInformation.Email;
+      inputFields[ "CONTACT.IP" ] = HttpContext.Current.Request.UserHostAddress;
 
       string streetAddress = order.Properties[ settings[ "streetAddressPropertyAlias" ] ];
       string city = order.Properties[ settings[ "cityPropertyAlias" ] ];
@@ -79,24 +82,16 @@ namespace TeaCommerce.PaymentProviders {
       city.MustNotBeNullOrEmpty( "city" );
       zipCode.MustNotBeNullOrEmpty( "zipCode" );
 
-      initialData[ "ADDRESS.STREET" ] = streetAddress;
-      initialData[ "ADDRESS.CITY" ] = city;
-      initialData[ "ADDRESS.ZIP" ] = zipCode;
+      inputFields[ "ADDRESS.STREET" ] = streetAddress;
+      inputFields[ "ADDRESS.CITY" ] = city;
+      inputFields[ "ADDRESS.ZIP" ] = zipCode;
 
-      Country country = CountryService.Instance.Get( order.StoreId, order.PaymentInformation.CountryId );
-      initialData[ "ADDRESS.COUNTRY" ] = country.RegionCode;
+      inputFields[ "ADDRESS.COUNTRY" ] = CountryService.Instance.Get( order.StoreId, order.PaymentInformation.CountryId ).RegionCode;
       if ( order.PaymentInformation.CountryRegionId != null ) {
-        CountryRegion countryRegion = CountryRegionService.Instance.Get( order.StoreId, order.PaymentInformation.CountryRegionId.Value );
-        initialData[ "ADDRESS.STATE" ] = country.RegionCode + "." + countryRegion.RegionCode;
+        inputFields[ "ADDRESS.STATE" ] = CountryRegionService.Instance.Get( order.StoreId, order.PaymentInformation.CountryRegionId.Value ).RegionCode;
       }
 
-      Dictionary<string, string> responseKvps = new Dictionary<string, string>();
-
-      string response = MakePostRequest( settings[ "TRANSACTION.MODE" ] == "LIVE" ? "https://ctpe.net/frontend/payment.prc" : "https://test.ctpe.net/frontend/payment.prc", initialData );
-      foreach ( string[] kvpTokens in response.Split( '&' ).Select( kvp => kvp.Split( '=' ) ) ) {
-        responseKvps[ kvpTokens[ 0 ] ] = kvpTokens[ 1 ];
-      }
-
+      IDictionary<string, string> responseKvps = MakePostRequest( settings, inputFields );
       if ( responseKvps[ "POST.VALIDATION" ].Equals( "ACK" ) ) {
         htmlForm.Action = HttpContext.Current.Server.UrlDecode( responseKvps[ "FRONTEND.REDIRECT_URL" ] );
       } else {
@@ -141,7 +136,7 @@ namespace TeaCommerce.PaymentProviders {
         }
 
         HttpContext.Current.Response.Clear();
-        if ( request[ "PROCESSING.RESULT" ].Equals( "ACK" ) ) {
+        if ( request[ "PROCESSING.RESULT" ] == "ACK" ) {
           callbackInfo = new CallbackInfo( decimal.Parse( request[ "PRESENTATION.AMOUNT" ], CultureInfo.InvariantCulture ), request[ "IDENTIFICATION.UNIQUEID" ], request[ "PAYMENT.CODE" ] != "CC.DB" ? PaymentState.Authorized : PaymentState.Captured );
 
           string continueUrl = GetContinueUrl( settings );
@@ -168,6 +163,126 @@ namespace TeaCommerce.PaymentProviders {
       return callbackInfo;
     }
 
+    public override ApiInfo CapturePayment( Order order, IDictionary<string, string> settings ) {
+      ApiInfo apiInfo = null;
+
+      try {
+        order.MustNotBeNull( "order" );
+        settings.MustNotBeNull( "settings" );
+        settings.MustContainKey( "SECURITY.SENDER", "settings" );
+        settings.MustContainKey( "USER.LOGIN", "settings" );
+        settings.MustContainKey( "USER.PWD", "settings" );
+        settings.MustContainKey( "TRANSACTION.CHANNEL", "settings" );
+        settings.MustContainKey( "TRANSACTION.MODE", "settings" );
+
+        Dictionary<string, string> inputFields = new Dictionary<string, string>();
+        inputFields[ "REQUEST.VERSION" ] = "1.0";
+
+        inputFields[ "SECURITY.SENDER" ] = settings[ "SECURITY.SENDER" ];
+        inputFields[ "USER.LOGIN" ] = settings[ "USER.LOGIN" ];
+        inputFields[ "USER.PWD" ] = settings[ "USER.PWD" ];
+        inputFields[ "TRANSACTION.CHANNEL" ] = settings[ "TRANSACTION.CHANNEL" ];
+
+        inputFields[ "PRESENTATION.CURRENCY" ] = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId ).IsoCode;
+        inputFields[ "PRESENTATION.AMOUNT" ] = ( order.TransactionInformation.AmountAuthorized.Value ).ToString( "0.00", CultureInfo.InvariantCulture );
+
+        inputFields[ "PAYMENT.CODE" ] = "CC.CP";
+        inputFields[ "IDENTIFICATION.REFERENCEID" ] = order.TransactionInformation.TransactionId;
+        inputFields[ "TRANSACTION.MODE" ] = settings[ "TRANSACTION.MODE" ];
+
+        IDictionary<string, string> responseKvps = MakePostRequest( settings, inputFields );
+        if ( responseKvps[ "PROCESSING.RESULT" ] == "ACK" ) {
+          apiInfo = new ApiInfo( responseKvps[ "IDENTIFICATION.UNIQUEID" ], PaymentState.Captured );
+        } else {
+          LoggingService.Instance.Log( "Axcess(" + order.OrderNumber + ") - Error making API request - PROCESSING.CODE: " + responseKvps[ "PROCESSING.CODE" ] );
+        }
+        
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "Axcess(" + order.OrderNumber + ") - Capture payment" );
+      }
+
+      return apiInfo;
+    }
+
+    public override ApiInfo RefundPayment( Order order, IDictionary<string, string> settings ) {
+      ApiInfo apiInfo = null;
+
+      try {
+        order.MustNotBeNull( "order" );
+        settings.MustNotBeNull( "settings" );
+        settings.MustContainKey( "SECURITY.SENDER", "settings" );
+        settings.MustContainKey( "USER.LOGIN", "settings" );
+        settings.MustContainKey( "USER.PWD", "settings" );
+        settings.MustContainKey( "TRANSACTION.CHANNEL", "settings" );
+        settings.MustContainKey( "TRANSACTION.MODE", "settings" );
+
+        Dictionary<string, string> inputFields = new Dictionary<string, string>();
+        inputFields[ "REQUEST.VERSION" ] = "1.0";
+
+        inputFields[ "SECURITY.SENDER" ] = settings[ "SECURITY.SENDER" ];
+        inputFields[ "USER.LOGIN" ] = settings[ "USER.LOGIN" ];
+        inputFields[ "USER.PWD" ] = settings[ "USER.PWD" ];
+        inputFields[ "TRANSACTION.CHANNEL" ] = settings[ "TRANSACTION.CHANNEL" ];
+
+        inputFields[ "PRESENTATION.CURRENCY" ] = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId ).IsoCode;
+        inputFields[ "PRESENTATION.AMOUNT" ] = ( order.TransactionInformation.AmountAuthorized.Value ).ToString( "0.00", CultureInfo.InvariantCulture );
+
+        inputFields[ "PAYMENT.CODE" ] = "CC.RF";
+        inputFields[ "IDENTIFICATION.REFERENCEID" ] = order.TransactionInformation.TransactionId;
+        inputFields[ "TRANSACTION.MODE" ] = settings[ "TRANSACTION.MODE" ];
+
+        IDictionary<string, string> responseKvps = MakePostRequest( settings, inputFields );
+        if ( responseKvps[ "PROCESSING.RESULT" ] == "ACK" ) {
+          apiInfo = new ApiInfo( responseKvps[ "IDENTIFICATION.UNIQUEID" ], PaymentState.Refunded );
+        } else {
+          LoggingService.Instance.Log( "Axcess(" + order.OrderNumber + ") - Error making API request - PROCESSING.CODE: " + responseKvps[ "PROCESSING.CODE" ] );
+        }
+
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "Axcess(" + order.OrderNumber + ") - Refund payment" );
+      }
+
+      return apiInfo;
+    }
+
+    public override ApiInfo CancelPayment( Order order, IDictionary<string, string> settings ) {
+      ApiInfo apiInfo = null;
+
+      try {
+        order.MustNotBeNull( "order" );
+        settings.MustNotBeNull( "settings" );
+        settings.MustContainKey( "SECURITY.SENDER", "settings" );
+        settings.MustContainKey( "USER.LOGIN", "settings" );
+        settings.MustContainKey( "USER.PWD", "settings" );
+        settings.MustContainKey( "TRANSACTION.CHANNEL", "settings" );
+        settings.MustContainKey( "TRANSACTION.MODE", "settings" );
+
+        Dictionary<string, string> inputFields = new Dictionary<string, string>();
+        inputFields[ "REQUEST.VERSION" ] = "1.0";
+
+        inputFields[ "SECURITY.SENDER" ] = settings[ "SECURITY.SENDER" ];
+        inputFields[ "USER.LOGIN" ] = settings[ "USER.LOGIN" ];
+        inputFields[ "USER.PWD" ] = settings[ "USER.PWD" ];
+        inputFields[ "TRANSACTION.CHANNEL" ] = settings[ "TRANSACTION.CHANNEL" ];
+
+        inputFields[ "PAYMENT.CODE" ] = "CC.RV";
+        inputFields[ "IDENTIFICATION.REFERENCEID" ] = order.TransactionInformation.TransactionId;
+        inputFields[ "TRANSACTION.MODE" ] = settings[ "TRANSACTION.MODE" ];
+
+        IDictionary<string, string> responseKvps = MakePostRequest( settings, inputFields );
+        if ( responseKvps[ "PROCESSING.RESULT" ] == "ACK" ) {
+          apiInfo = new ApiInfo( responseKvps[ "IDENTIFICATION.UNIQUEID" ], PaymentState.Cancelled );
+        } else {
+          LoggingService.Instance.Log( "Axcess(" + order.OrderNumber + ") - Error making API request - PROCESSING.CODE: " + responseKvps[ "PROCESSING.CODE" ] );
+        }
+
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "Axcess(" + order.OrderNumber + ") - Cancel payment" );
+      }
+
+      return apiInfo;
+    }
+
     public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
       switch ( settingsKey ) {
         case "FRONTEND.RESPONSE_URL":
@@ -176,14 +291,29 @@ namespace TeaCommerce.PaymentProviders {
           return settingsKey + "<br/><small>e.g. /cancel/</small>";
         case "PAYMENT.CODE":
           return settingsKey + "<br/><small>CC.PA = Authorize, CC.DB = Instant capture</small>";
-        //case "FRONTEND.JSCRIPT_PATH":
-        //  return settingsKey + "<br/><small>URL to file that will be included in the payment window. This requires a HTTPS server to work flawlessly.</small>";
         case "TRANSACTION.MODE":
           return settingsKey + "<br/><small>INTEGRATOR_TEST, CONNECTOR_TEST, LIVE</small>";
         default:
           return base.GetLocalizedSettingsKey( settingsKey, culture );
       }
     }
+
+    #region Helper methods
+
+    protected IDictionary<string, string> MakePostRequest( IDictionary<string, string> settings, IDictionary<string, string> inputFields ) {
+      settings.MustNotBeNull( "settings" );
+      inputFields.MustNotBeNull( "inputFields" );
+      settings.MustContainKey( "TRANSACTION.MODE", "settings" );
+
+      string response = MakePostRequest( settings[ "TRANSACTION.MODE" ] == "LIVE" ? "https://ctpe.net/frontend/payment.prc" : "https://test.ctpe.net/frontend/payment.prc", inputFields );
+      Dictionary<string, string> responseKvps = new Dictionary<string, string>();
+      foreach ( string[] kvpTokens in response.Split( '&' ).Select( kvp => kvp.Split( '=' ) ) ) {
+        responseKvps[ kvpTokens[ 0 ] ] = kvpTokens[ 1 ];
+      }
+      return responseKvps;
+    }
+
+    #endregion
 
   }
 }
