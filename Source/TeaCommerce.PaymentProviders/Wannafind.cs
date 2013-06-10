@@ -45,7 +45,7 @@ namespace TeaCommerce.PaymentProviders {
     public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
       order.MustNotBeNull( "order" );
       settings.MustNotBeNull( "settings" );
-      settings.MustContainKey( "merchant", "settings" );
+      settings.MustContainKey( "shopid", "settings" );
 
       PaymentHtmlForm htmlForm = new PaymentHtmlForm {
         Action = "https://betaling.wannafind.dk/paymentwindow.php",
