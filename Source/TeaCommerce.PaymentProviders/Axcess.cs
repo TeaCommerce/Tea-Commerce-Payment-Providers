@@ -35,6 +35,7 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "cityPropertyAlias" ] = string.Empty;
         defaultSettings[ "zipCodePropertyAlias" ] = string.Empty;
         defaultSettings[ "TRANSACTION.MODE" ] = "LIVE";
+        defaultSettings[ "SYSTEM" ] = "LIVE";
 
         return defaultSettings;
       }
@@ -51,6 +52,7 @@ namespace TeaCommerce.PaymentProviders {
       settings.MustContainKey( "cityPropertyAlias", "settings" );
       settings.MustContainKey( "zipCodePropertyAlias", "settings" );
       settings.MustContainKey( "TRANSACTION.MODE", "settings" );
+      settings.MustContainKey( "SYSTEM", "settings" );
 
       PaymentHtmlForm htmlForm = new PaymentHtmlForm();
 
@@ -293,6 +295,8 @@ namespace TeaCommerce.PaymentProviders {
           return settingsKey + "<br/><small>CC.PA = Authorize, CC.DB = Instant capture</small>";
         case "TRANSACTION.MODE":
           return settingsKey + "<br/><small>INTEGRATOR_TEST, CONNECTOR_TEST, LIVE</small>";
+        case "SYSTEM":
+          return settingsKey + "<br/><small>TEST, LIVE</small>";
         default:
           return base.GetLocalizedSettingsKey( settingsKey, culture );
       }
@@ -305,7 +309,7 @@ namespace TeaCommerce.PaymentProviders {
       inputFields.MustNotBeNull( "inputFields" );
       settings.MustContainKey( "TRANSACTION.MODE", "settings" );
 
-      string response = MakePostRequest( settings[ "TRANSACTION.MODE" ] == "LIVE" ? "https://ctpe.net/frontend/payment.prc" : "https://test.ctpe.net/frontend/payment.prc", inputFields );
+      string response = MakePostRequest( settings[ "SYSTEM" ] == "LIVE" ? "https://ctpe.net/frontend/payment.prc" : "https://test.ctpe.net/frontend/payment.prc", inputFields );
       Dictionary<string, string> responseKvps = new Dictionary<string, string>();
       foreach ( string[] kvpTokens in response.Split( '&' ).Select( kvp => kvp.Split( '=' ) ) ) {
         responseKvps[ kvpTokens[ 0 ] ] = kvpTokens[ 1 ];
