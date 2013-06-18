@@ -296,7 +296,7 @@ namespace TeaCommerce.PaymentProviders {
         case "TRANSACTION.MODE":
           return settingsKey + "<br/><small>INTEGRATOR_TEST, CONNECTOR_TEST, LIVE</small>";
         case "SYSTEM":
-          return settingsKey + "<br/><small>TEST, LIVE</small>";
+          return settingsKey + "<br/><small>TEST = test.ctpe.net, LIVE = ctpe.net</small>";
         default:
           return base.GetLocalizedSettingsKey( settingsKey, culture );
       }
