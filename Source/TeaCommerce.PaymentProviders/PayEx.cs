@@ -320,7 +320,7 @@ namespace TeaCommerce.PaymentProviders {
       settings.MustNotBeNull( "settings" );
 
       PxOrder pxOrder = new PxOrder {
-        Url = settings.ContainsKey( "settings" ) && settings[ "testing" ] == "1" ? "https://test-external.payex.com/pxorder/pxorder.asmx" : "https://external.payex.com/pxorder/pxorder.asmx"
+        Url = settings.ContainsKey( "testing" ) && settings[ "testing" ] == "1" ? "https://test-external.payex.com/pxorder/pxorder.asmx" : "https://external.payex.com/pxorder/pxorder.asmx"
       };
       return pxOrder;
     }

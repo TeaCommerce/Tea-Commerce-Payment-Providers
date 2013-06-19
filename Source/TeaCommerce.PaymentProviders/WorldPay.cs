@@ -54,7 +54,7 @@ namespace TeaCommerce.PaymentProviders {
         Action = settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ? "https://secure-test.worldpay.com/wcc/purchase" : "https://secure.worldpay.com/wcc/purchase"
       };
 
-      string[] settingsToExclude = new[] { "md5Secret", "callbackPW", "streetAddressPropertyAlias", "cityPropertyAlias", "zipCodePropertyAlias" };
+      string[] settingsToExclude = new[] { "md5Secret", "callbackPW", "streetAddressPropertyAlias", "cityPropertyAlias", "zipCodePropertyAlias", "testMode" };
       htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
       //cartId

@@ -42,6 +42,7 @@ namespace TeaCommerce.PaymentProviders {
 
     public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
       order.MustNotBeNull( "order" );
+      settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "SECURITY.SENDER", "settings" );
       settings.MustContainKey( "USER.LOGIN", "settings" );
       settings.MustContainKey( "USER.PWD", "settings" );
@@ -63,7 +64,11 @@ namespace TeaCommerce.PaymentProviders {
 
       inputFields[ "IDENTIFICATION.TRANSACTIONID" ] = order.CartNumber;
 
-      inputFields[ "PRESENTATION.CURRENCY" ] = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId ).IsoCode;
+      Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
+      if ( !Iso4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
+        throw new Exception( "You must specify an ISO 4217 currency code for the " + currency.Name + " currency" );
+      }
+      inputFields[ "PRESENTATION.CURRENCY" ] = currency.IsoCode;
       inputFields[ "PRESENTATION.AMOUNT" ] = ( order.TotalPrice.WithVat ).ToString( "0.00", CultureInfo.InvariantCulture );
 
       inputFields[ "FRONTEND.RESPONSE_URL" ] = teaCommerceCallBackUrl;
@@ -137,7 +142,7 @@ namespace TeaCommerce.PaymentProviders {
 
         HttpContext.Current.Response.Clear();
         if ( request[ "PROCESSING.RESULT" ] == "ACK" ) {
-          callbackInfo = new CallbackInfo( decimal.Parse( request[ "PRESENTATION.AMOUNT" ], CultureInfo.InvariantCulture ), request[ "IDENTIFICATION.UNIQUEID" ], request[ "PAYMENT.CODE" ] != "CC.DB" ? PaymentState.Authorized : PaymentState.Captured );
+          callbackInfo = new CallbackInfo( decimal.Parse( request.Form[ "PRESENTATION.AMOUNT" ], CultureInfo.InvariantCulture ), request.Form[ "IDENTIFICATION.UNIQUEID" ], request.Form[ "PAYMENT.CODE" ] != "CC.DB" ? PaymentState.Authorized : PaymentState.Captured );
 
           string continueUrl = GetContinueUrl( settings );
           if ( !continueUrl.StartsWith( "http" ) ) {
