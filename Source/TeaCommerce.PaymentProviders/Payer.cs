@@ -167,7 +167,7 @@ namespace TeaCommerce.PaymentProviders {
       );
 
       htmlForm.InputFields[ "payer_data" ] = xmlDocument.ToString().Base64Encode();
-      htmlForm.InputFields[ "payer_checksum" ] = GetMd5Hash( settings[ "md5Key1" ] + htmlForm.InputFields[ "payer_data" ] + settings[ "md5Key2" ] );
+      htmlForm.InputFields[ "payer_checksum" ] = GenerateMD5Hash( settings[ "md5Key1" ] + htmlForm.InputFields[ "payer_data" ] + settings[ "md5Key2" ] );
 
       return htmlForm;
     }
@@ -215,7 +215,7 @@ namespace TeaCommerce.PaymentProviders {
           string url = request.Url.Scheme + "://" + request.Url.Host + request.ServerVariables[ "REQUEST_URI" ];
           string urlExceptMd5Sum = url.Substring( 0, url.IndexOf("&md5sum", StringComparison.Ordinal) );
 
-          string md5CheckValue = GetMd5Hash( settings[ "md5Key1" ] + urlExceptMd5Sum + settings[ "md5Key2" ] ).ToUpperInvariant();
+          string md5CheckValue = GenerateMD5Hash( settings[ "md5Key1" ] + urlExceptMd5Sum + settings[ "md5Key2" ] ).ToUpperInvariant();
 
           if ( md5CheckValue == request.QueryString[ "md5sum" ] ) {
             HttpContext.Current.Response.Output.Write( "TRUE" );

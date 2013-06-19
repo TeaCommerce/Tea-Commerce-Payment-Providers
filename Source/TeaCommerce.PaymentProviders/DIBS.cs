@@ -95,7 +95,7 @@ namespace TeaCommerce.PaymentProviders {
       md5CheckValue += "&currency=" + currencyStr;
       md5CheckValue += "&amount=" + strAmount;
 
-      htmlForm.InputFields[ "md5key" ] = GetMd5Hash( settings[ "md5k2" ] + GetMd5Hash( md5CheckValue ) );
+      htmlForm.InputFields[ "md5key" ] = GenerateMD5Hash( settings[ "md5k2" ] + GenerateMD5Hash( md5CheckValue ) );
 
       return htmlForm;
     }
@@ -154,7 +154,7 @@ namespace TeaCommerce.PaymentProviders {
         md5CheckValue += "&currency=" + currencyCode;
 
         //authkey = MD5(k2 + MD5(k1 + "transact=tt&amount=aa&currency=cc"))
-        if ( GetMd5Hash( settings[ "md5k2" ] + GetMd5Hash( md5CheckValue ) ) == authkey ) {
+        if ( GenerateMD5Hash( settings[ "md5k2" ] + GenerateMD5Hash( md5CheckValue ) ) == authkey ) {
           callbackInfo = new CallbackInfo( totalAmount / 100M, transaction, !autoCaptured ? PaymentState.Authorized : PaymentState.Captured, paytype, cardnomask );
         } else {
           LoggingService.Instance.Log( "DIBS(" + order.CartNumber + ") - MD5Sum security check failed" );
@@ -242,7 +242,7 @@ namespace TeaCommerce.PaymentProviders {
         md5CheckValue += "&transact=" + order.TransactionInformation.TransactionId;
         md5CheckValue += "&amount=" + strAmount;
 
-        inputFields[ "md5key" ] = GetMd5Hash( settings[ "md5k2" ] + GetMd5Hash( md5CheckValue ) );
+        inputFields[ "md5key" ] = GenerateMD5Hash( settings[ "md5k2" ] + GenerateMD5Hash( md5CheckValue ) );
 
         try {
           string response = MakePostRequest( "https://payment.architrade.com/cgi-bin/capture.cgi", inputFields );
@@ -304,7 +304,7 @@ namespace TeaCommerce.PaymentProviders {
         md5CheckValue += "&transact=" + order.TransactionInformation.TransactionId;
         md5CheckValue += "&amount=" + strAmount;
 
-        inputFields[ "md5key" ] = GetMd5Hash( settings[ "md5k2" ] + GetMd5Hash( md5CheckValue ) );
+        inputFields[ "md5key" ] = GenerateMD5Hash( settings[ "md5k2" ] + GenerateMD5Hash( md5CheckValue ) );
 
         try {
           string response = MakePostRequest( "https://payment.architrade.com/cgi-adm/refund.cgi", inputFields, new NetworkCredential( settings[ "apiusername" ], settings[ "apipassword" ] ) );
@@ -356,7 +356,7 @@ namespace TeaCommerce.PaymentProviders {
         md5CheckValue += "&orderid=" + order.CartNumber;
         md5CheckValue += "&transact=" + order.TransactionInformation.TransactionId;
 
-        inputFields[ "md5key" ] = GetMd5Hash( settings[ "md5k2" ] + GetMd5Hash( md5CheckValue ) );
+        inputFields[ "md5key" ] = GenerateMD5Hash( settings[ "md5k2" ] + GenerateMD5Hash( md5CheckValue ) );
 
         try {
           string response = MakePostRequest( "https://payment.architrade.com/cgi-adm/cancel.cgi", inputFields, new NetworkCredential( settings[ "apiusername" ], settings[ "apipassword" ] ) );

@@ -76,7 +76,7 @@ namespace TeaCommerce.PaymentProviders {
       string cancelUrl = teaCommerceCancelUrl;
       string clientLanguage = string.Empty;
 
-      string md5Hash = GetMd5Hash( accountNumber.ToString( CultureInfo.InvariantCulture ) + purchaseOperation + price.ToString( CultureInfo.InvariantCulture ) + priceArgList + currency.IsoCode + vat.ToString( CultureInfo.InvariantCulture ) + orderId + productNumber + description + clientIpAddress + clientIdentifier + additionalValues + externalId + returnUrl + view + agreementRef + cancelUrl + clientLanguage + settings[ "encryptionKey" ] );
+      string md5Hash = GenerateMD5Hash( accountNumber.ToString( CultureInfo.InvariantCulture ) + purchaseOperation + price.ToString( CultureInfo.InvariantCulture ) + priceArgList + currency.IsoCode + vat.ToString( CultureInfo.InvariantCulture ) + orderId + productNumber + description + clientIpAddress + clientIdentifier + additionalValues + externalId + returnUrl + view + agreementRef + cancelUrl + clientLanguage + settings[ "encryptionKey" ] );
 
       string xmlReturn = GetPayExServiceClient( settings ).Initialize7( accountNumber, purchaseOperation, price, priceArgList, currency.IsoCode, vat, orderId, productNumber, description, clientIpAddress, clientIdentifier, additionalValues, externalId, returnUrl, view, agreementRef, cancelUrl, clientLanguage, md5Hash );
 
@@ -121,7 +121,7 @@ namespace TeaCommerce.PaymentProviders {
 
         long accountNumber = long.Parse( settings[ "accountNumber" ] );
         string orderRef = order.Properties.First( p => p.Alias.Equals( "orderRef" ) ).Value;
-        string md5Hash = GetMd5Hash( accountNumber + orderRef + settings[ "encryptionKey" ] );
+        string md5Hash = GenerateMD5Hash( accountNumber + orderRef + settings[ "encryptionKey" ] );
 
         string xmlReturn = GetPayExServiceClient( settings ).Complete( accountNumber, orderRef, md5Hash );
 
@@ -169,7 +169,7 @@ namespace TeaCommerce.PaymentProviders {
         long accountNumber = long.Parse( settings[ "accountNumber" ] );
         int transactionNumber = int.Parse( order.TransactionInformation.TransactionId );
 
-        string md5Hash = GetMd5Hash( accountNumber.ToString( CultureInfo.InvariantCulture ) + transactionNumber.ToString( CultureInfo.InvariantCulture ) + settings[ "encryptionKey" ] );
+        string md5Hash = GenerateMD5Hash( accountNumber.ToString( CultureInfo.InvariantCulture ) + transactionNumber.ToString( CultureInfo.InvariantCulture ) + settings[ "encryptionKey" ] );
 
         XDocument xmlDoc = XDocument.Parse( GetPayExServiceClient( settings ).GetTransactionDetails2( accountNumber, transactionNumber, md5Hash ), LoadOptions.PreserveWhitespace );
         string errorCode = xmlDoc.XPathSelectElement( "//status/errorCode" ).Value;
@@ -218,7 +218,7 @@ namespace TeaCommerce.PaymentProviders {
         int vatAmount = (int)Math.Round( order.VatRate * 100M * 100M, 0 );
         string additionalValues = string.Empty;
 
-        string md5Hash = GetMd5Hash( accountNumber.ToString( CultureInfo.InvariantCulture ) + transactionNumber.ToString( CultureInfo.InvariantCulture ) + amount.ToString( CultureInfo.InvariantCulture ) + orderId + vatAmount.ToString( CultureInfo.InvariantCulture ) + additionalValues + settings[ "encryptionKey" ] );
+        string md5Hash = GenerateMD5Hash( accountNumber.ToString( CultureInfo.InvariantCulture ) + transactionNumber.ToString( CultureInfo.InvariantCulture ) + amount.ToString( CultureInfo.InvariantCulture ) + orderId + vatAmount.ToString( CultureInfo.InvariantCulture ) + additionalValues + settings[ "encryptionKey" ] );
 
         XDocument xmlDoc = XDocument.Parse( GetPayExServiceClient( settings ).Capture4( accountNumber, transactionNumber, amount, orderId, vatAmount, additionalValues, md5Hash ), LoadOptions.PreserveWhitespace );
         string errorCode = xmlDoc.XPathSelectElement( "//status/errorCode" ).Value;
@@ -251,7 +251,7 @@ namespace TeaCommerce.PaymentProviders {
         int vatAmount = (int)Math.Round( order.VatRate * 100M, 0 );
         string additionalValues = string.Empty;
 
-        string md5Hash = GetMd5Hash( accountNumber.ToString( CultureInfo.InvariantCulture ) + transactionNumber.ToString( CultureInfo.InvariantCulture ) + amount.ToString( CultureInfo.InvariantCulture ) + orderId + vatAmount.ToString( CultureInfo.InvariantCulture ) + additionalValues + settings[ "encryptionKey" ] );
+        string md5Hash = GenerateMD5Hash( accountNumber.ToString( CultureInfo.InvariantCulture ) + transactionNumber.ToString( CultureInfo.InvariantCulture ) + amount.ToString( CultureInfo.InvariantCulture ) + orderId + vatAmount.ToString( CultureInfo.InvariantCulture ) + additionalValues + settings[ "encryptionKey" ] );
 
         XDocument xmlDoc = XDocument.Parse( GetPayExServiceClient( settings ).Credit4( accountNumber, transactionNumber, amount, orderId, vatAmount, additionalValues, md5Hash ), LoadOptions.PreserveWhitespace );
         string errorCode = xmlDoc.XPathSelectElement( "//status/errorCode" ).Value;
@@ -280,7 +280,7 @@ namespace TeaCommerce.PaymentProviders {
         long accountNumber = long.Parse( settings[ "accountNumber" ] );
         int transactionNumber = int.Parse( order.TransactionInformation.TransactionId );
 
-        string md5Hash = GetMd5Hash( accountNumber.ToString( CultureInfo.InvariantCulture ) + transactionNumber.ToString( CultureInfo.InvariantCulture ) + settings[ "encryptionKey" ] );
+        string md5Hash = GenerateMD5Hash( accountNumber.ToString( CultureInfo.InvariantCulture ) + transactionNumber.ToString( CultureInfo.InvariantCulture ) + settings[ "encryptionKey" ] );
 
         XDocument xmlDoc = XDocument.Parse( GetPayExServiceClient( settings ).Cancel2( accountNumber, transactionNumber, md5Hash ), LoadOptions.PreserveWhitespace );
         string errorCode = xmlDoc.XPathSelectElement( "//status/errorCode" ).Value;

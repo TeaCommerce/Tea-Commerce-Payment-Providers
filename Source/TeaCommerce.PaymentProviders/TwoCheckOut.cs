@@ -220,7 +220,7 @@ namespace TeaCommerce.PaymentProviders {
         md5CheckValue += settings.ContainsKey( "demo" ) && settings[ "demo" ] == "Y" ? "1" : transaction;
         md5CheckValue += strAmount;
 
-        string calculatedMd5 = GetMd5Hash( md5CheckValue ).ToUpperInvariant();
+        string calculatedMd5 = GenerateMD5Hash( md5CheckValue ).ToUpperInvariant();
 
         if ( calculatedMd5 == key ) {
           decimal totalAmount = decimal.Parse( strAmount, CultureInfo.InvariantCulture );

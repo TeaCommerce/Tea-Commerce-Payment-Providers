@@ -106,7 +106,7 @@ namespace TeaCommerce.PaymentProviders {
       htmlForm.InputFields[ "hideContact" ] = string.Empty;
 
       htmlForm.InputFields[ "signatureFields" ] = "amount:currency:instId:cartId";
-      htmlForm.InputFields[ "signature" ] = GetMd5Hash( settings[ "md5Secret" ] + ":" + amount + ":" + currency.IsoCode + ":" + settings[ "instId" ] + ":" + order.CartNumber );
+      htmlForm.InputFields[ "signature" ] = GenerateMD5Hash( settings[ "md5Secret" ] + ":" + amount + ":" + currency.IsoCode + ":" + settings[ "instId" ] + ":" + order.CartNumber );
 
       //WorldPay dont support to show order line information to the shopper
 
