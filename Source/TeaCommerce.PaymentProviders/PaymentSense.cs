@@ -226,7 +226,7 @@ namespace TeaCommerce.PaymentProviders {
       settings.MustContainKey( "Password", "settings" );
       settings.MustContainKey( "PreSharedKey", "settings" );
 
-      string test = string.Join( "&", keys.Select( k => k + "=" + ( inputFields.ContainsKey( k ) ? inputFields[ k ] : ( settings.ContainsKey( k ) ? settings[ k ] : "" ) ) ) );
+      string test = string.Join( "&", keys.Where( k => inputFields.ContainsKey( k ) || settings.ContainsKey( k ) ).Select( k => k + "=" + ( inputFields.ContainsKey( k ) ? inputFields[ k ] : settings[ k ] ) ) );
       string encrypted = EncryptHmac( settings[ "PreSharedKey" ], test );
       using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/payment-sense-generate-form-data.txt" ) ) ) ) {
         writer.WriteLine( test );
