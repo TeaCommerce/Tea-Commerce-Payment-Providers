@@ -217,7 +217,7 @@ namespace TeaCommerce.PaymentProviders {
         md5CheckValue += cardType;
         md5CheckValue += last4Digits;
 
-        string calcedMd5Hash = GetMd5Hash( md5CheckValue ).ToUpperInvariant();
+        string calcedMd5Hash = GenerateMD5Hash( md5CheckValue ).ToUpperInvariant();
         string vpsSignature = request.Form[ "VPSSignature" ];
 
         if ( calcedMd5Hash == vpsSignature ) {

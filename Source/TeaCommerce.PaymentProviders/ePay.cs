@@ -95,7 +95,7 @@ namespace TeaCommerce.PaymentProviders {
 
       //md5securitykey
       if ( settings.ContainsKey( "md5securitykey" ) && !string.IsNullOrEmpty( settings[ "md5securitykey" ] ) ) {
-        htmlForm.InputFields[ "hash" ] = GetMd5Hash( string.Join( "", htmlForm.InputFields.Values ) + settings[ "md5securitykey" ] );
+        htmlForm.InputFields[ "hash" ] = GenerateMD5Hash( string.Join( "", htmlForm.InputFields.Values ) + settings[ "md5securitykey" ] );
       }
 
       htmlForm.JavaScriptFunction = SubmitJavascriptFunction( htmlForm.InputFields, settings );
@@ -183,7 +183,7 @@ namespace TeaCommerce.PaymentProviders {
           md5CheckValue += settings[ "md5securitykey" ];
         }
 
-        if ( GetMd5Hash( md5CheckValue ) == hash ) {
+        if ( GenerateMD5Hash( md5CheckValue ) == hash ) {
           string fee = request.QueryString[ "txnfee" ];
           string cardid = request.QueryString[ "paymenttype" ];
           string cardnopostfix = request.QueryString[ "cardno" ];

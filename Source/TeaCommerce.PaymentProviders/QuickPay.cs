@@ -86,7 +86,7 @@ namespace TeaCommerce.PaymentProviders {
         }
       }
 
-      htmlForm.InputFields[ "md5check" ] = GetMd5Hash( md5CheckSumValues + settings[ "md5secret" ] );
+      htmlForm.InputFields[ "md5check" ] = GenerateMD5Hash( md5CheckSumValues + settings[ "md5secret" ] );
 
       return htmlForm;
     }
@@ -151,7 +151,7 @@ namespace TeaCommerce.PaymentProviders {
         md5CheckValue += request.Form[ "fee" ];
         md5CheckValue += settings[ "md5secret" ];
 
-        if ( GetMd5Hash( md5CheckValue ) == request.Form[ "md5check" ] ) {
+        if ( GenerateMD5Hash( md5CheckValue ) == request.Form[ "md5check" ] ) {
           string qpstat = request.Form[ "qpstat" ];
 
           if ( qpstat == "000" ) {
@@ -191,7 +191,7 @@ namespace TeaCommerce.PaymentProviders {
         inputFields[ "transaction" ] = order.TransactionInformation.TransactionId;
 
         string md5Secret = settings[ "md5secret" ];
-        inputFields[ "md5check" ] = GetMd5Hash( string.Join( "", inputFields.Values ) + md5Secret );
+        inputFields[ "md5check" ] = GenerateMD5Hash( string.Join( "", inputFields.Values ) + md5Secret );
 
         apiInfo = MakeApiPostRequest( order.OrderNumber, inputFields, md5Secret );
       } catch ( Exception exp ) {
@@ -220,7 +220,7 @@ namespace TeaCommerce.PaymentProviders {
         inputFields[ "transaction" ] = order.TransactionInformation.TransactionId;
 
         string md5Secret = settings[ "md5secret" ];
-        inputFields[ "md5check" ] = GetMd5Hash( string.Join( "", inputFields.Values ) + md5Secret );
+        inputFields[ "md5check" ] = GenerateMD5Hash( string.Join( "", inputFields.Values ) + md5Secret );
 
         apiInfo = MakeApiPostRequest( order.OrderNumber, inputFields, md5Secret );
       } catch ( Exception exp ) {
@@ -248,7 +248,7 @@ namespace TeaCommerce.PaymentProviders {
         inputFields[ "transaction" ] = order.TransactionInformation.TransactionId;
 
         string md5Secret = settings[ "md5secret" ];
-        inputFields[ "md5check" ] = GetMd5Hash( string.Join( "", inputFields.Values ) + md5Secret );
+        inputFields[ "md5check" ] = GenerateMD5Hash( string.Join( "", inputFields.Values ) + md5Secret );
 
         apiInfo = MakeApiPostRequest( order.OrderNumber, inputFields, md5Secret );
       } catch ( Exception exp ) {
@@ -275,7 +275,7 @@ namespace TeaCommerce.PaymentProviders {
         inputFields[ "transaction" ] = order.TransactionInformation.TransactionId;
 
         string md5Secret = settings[ "md5secret" ];
-        inputFields[ "md5check" ] = GetMd5Hash( string.Join( "", inputFields.Values ) + md5Secret );
+        inputFields[ "md5check" ] = GenerateMD5Hash( string.Join( "", inputFields.Values ) + md5Secret );
 
         apiInfo = MakeApiPostRequest( order.OrderNumber, inputFields, md5Secret );
       } catch ( Exception exp ) {
@@ -369,7 +369,7 @@ namespace TeaCommerce.PaymentProviders {
       md5CheckValue += doc.XPathSelectElement( "//fraudreport" ).Value;
       md5CheckValue += md5Secret;
 
-      return GetMd5Hash( md5CheckValue ) == doc.XPathSelectElement( "//md5check" ).Value;
+      return GenerateMD5Hash( md5CheckValue ) == doc.XPathSelectElement( "//md5check" ).Value;
     }
 
     #endregion

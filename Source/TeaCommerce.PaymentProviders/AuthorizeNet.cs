@@ -74,7 +74,7 @@ namespace TeaCommerce.PaymentProviders {
       string timestamp = ( DateTime.UtcNow - new DateTime( 1970, 1, 1 ) ).TotalSeconds.ToString( "0", CultureInfo.InvariantCulture );
       htmlForm.InputFields[ "x_fp_timestamp" ] = timestamp;
 
-      htmlForm.InputFields[ "x_fp_hash" ] = EncryptHmac( settings[ "transactionKey" ], settings[ "x_login" ] + "^" + sequenceNumber + "^" + timestamp + "^" + amount + "^" );
+      htmlForm.InputFields[ "x_fp_hash" ] = GenerateHMACMD5Hash( settings[ "transactionKey" ], settings[ "x_login" ] + "^" + sequenceNumber + "^" + timestamp + "^" + amount + "^" );
 
       return htmlForm;
     }

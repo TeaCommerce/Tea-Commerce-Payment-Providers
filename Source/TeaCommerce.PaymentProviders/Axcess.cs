@@ -35,6 +35,7 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "cityPropertyAlias" ] = string.Empty;
         defaultSettings[ "zipCodePropertyAlias" ] = string.Empty;
         defaultSettings[ "TRANSACTION.MODE" ] = "LIVE";
+        defaultSettings[ "SYSTEM" ] = "LIVE";
 
         return defaultSettings;
       }
@@ -52,10 +53,11 @@ namespace TeaCommerce.PaymentProviders {
       settings.MustContainKey( "cityPropertyAlias", "settings" );
       settings.MustContainKey( "zipCodePropertyAlias", "settings" );
       settings.MustContainKey( "TRANSACTION.MODE", "settings" );
+      settings.MustContainKey( "SYSTEM", "settings" );
 
       PaymentHtmlForm htmlForm = new PaymentHtmlForm();
 
-      string[] settingsToExclude = new[] { "FRONTEND.RESPONSE_URL", "FRONTEND.CANCEL_URL", "streetAddressPropertyAlias", "cityPropertyAlias", "zipCodePropertyAlias" };
+      string[] settingsToExclude = new[] { "FRONTEND.RESPONSE_URL", "FRONTEND.CANCEL_URL", "streetAddressPropertyAlias", "cityPropertyAlias", "zipCodePropertyAlias", "SYSTEM" };
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
       inputFields[ "REQUEST.VERSION" ] = "1.0";
@@ -298,6 +300,8 @@ namespace TeaCommerce.PaymentProviders {
           return settingsKey + "<br/><small>CC.PA = Authorize, CC.DB = Instant capture</small>";
         case "TRANSACTION.MODE":
           return settingsKey + "<br/><small>INTEGRATOR_TEST, CONNECTOR_TEST, LIVE</small>";
+        case "SYSTEM":
+          return settingsKey + "<br/><small>TEST = test.ctpe.net, LIVE = ctpe.net</small>";
         default:
           return base.GetLocalizedSettingsKey( settingsKey, culture );
       }
@@ -308,9 +312,9 @@ namespace TeaCommerce.PaymentProviders {
     protected IDictionary<string, string> MakePostRequest( IDictionary<string, string> settings, IDictionary<string, string> inputFields ) {
       settings.MustNotBeNull( "settings" );
       inputFields.MustNotBeNull( "inputFields" );
-      settings.MustContainKey( "TRANSACTION.MODE", "settings" );
+      settings.MustContainKey( "SYSTEM", "settings" );
 
-      string response = MakePostRequest( settings[ "TRANSACTION.MODE" ] == "LIVE" ? "https://ctpe.net/frontend/payment.prc" : "https://test.ctpe.net/frontend/payment.prc", inputFields );
+      string response = MakePostRequest( settings[ "SYSTEM" ] == "LIVE" ? "https://ctpe.net/frontend/payment.prc" : "https://test.ctpe.net/frontend/payment.prc", inputFields );
       Dictionary<string, string> responseKvps = new Dictionary<string, string>();
       foreach ( string[] kvpTokens in response.Split( '&' ).Select( kvp => kvp.Split( '=' ) ) ) {
         responseKvps[ kvpTokens[ 0 ] ] = kvpTokens[ 1 ];

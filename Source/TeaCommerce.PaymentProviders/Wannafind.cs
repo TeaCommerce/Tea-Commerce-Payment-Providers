@@ -98,7 +98,7 @@ namespace TeaCommerce.PaymentProviders {
 
       //md5securitykey
       if ( settings.ContainsKey( "md5AuthSecret" ) && !string.IsNullOrEmpty( settings[ "md5AuthSecret" ] ) )
-        htmlForm.InputFields[ "checkmd5" ] = GetMd5Hash( currencyStr + order.CartNumber + amount + cardType + settings[ "md5AuthSecret" ] );
+        htmlForm.InputFields[ "checkmd5" ] = GenerateMD5Hash( currencyStr + order.CartNumber + amount + cardType + settings[ "md5AuthSecret" ] );
 
       //wannafind dont support to show order line information to the shopper
 
@@ -144,7 +144,7 @@ namespace TeaCommerce.PaymentProviders {
         string amount = request.QueryString[ "amount" ];
         string cardType = settings.ContainsKey( "cardtype" ) ? settings[ "cardtype" ] : string.Empty;
 
-        string md5CheckValue = GetMd5Hash( orderId + currency + cardType + amount + settings[ "md5CallbackSecret" ] );
+        string md5CheckValue = GenerateMD5Hash( orderId + currency + cardType + amount + settings[ "md5CallbackSecret" ] );
 
         if ( md5CheckValue.Equals( request.QueryString[ "checkmd5callback" ] ) ) {
 
