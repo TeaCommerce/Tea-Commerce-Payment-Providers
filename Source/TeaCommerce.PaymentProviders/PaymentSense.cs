@@ -24,6 +24,9 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "CallbackURL" ] = string.Empty;
         defaultSettings[ "CancelURL" ] = string.Empty;
         defaultSettings[ "TransactionType" ] = "PREAUTH";
+        defaultSettings[ "streetAddressPropertyAlias" ] = "streetAddress";
+        defaultSettings[ "cityPropertyAlias" ] = "city";
+        defaultSettings[ "zipCodePropertyAlias" ] = "zipCode";
         defaultSettings[ "PreSharedKey" ] = "";
         defaultSettings[ "Password" ] = "";
         defaultSettings[ "Testing" ] = "0";
@@ -38,11 +41,11 @@ namespace TeaCommerce.PaymentProviders {
       settings.MustContainKey( "MerchantID", "settings" );
       settings.MustContainKey( "TransactionType", "settings" );
 
-      PaymentHtmlForm htmlForm = new PaymentHtmlForm() {
+      PaymentHtmlForm htmlForm = new PaymentHtmlForm {
         Action = "https://mms.paymentsensegateway.com/Pages/PublicPages/PaymentForm.aspx"
       };
 
-      string[] settingsToExclude = new[] { "CancelURL", "PreSharedKey", "Password", "Testing" };
+      string[] settingsToExclude = new[] { "CancelURL", "streetAddressPropertyAlias", "cityPropertyAlias", "zipCodePropertyAlias", "PreSharedKey", "Password", "Testing" };
       htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
       htmlForm.InputFields[ "OrderID" ] = order.CartNumber.Truncate( 50 );
@@ -54,6 +57,32 @@ namespace TeaCommerce.PaymentProviders {
       htmlForm.InputFields[ "CurrencyCode" ] = Iso4217CurrencyCodes[ currency.IsoCode ];
       htmlForm.InputFields[ "Amount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
 
+      htmlForm.InputFields[ "CustomerName" ] = order.PaymentInformation.FirstName + " " + order.PaymentInformation.LastName;
+
+      if ( settings.ContainsKey( "streetAddressPropertyAlias" ) ) {
+        htmlForm.InputFields[ "Address1" ] = order.Properties[ settings[ "streetAddressPropertyAlias" ] ];
+      }
+
+      if ( settings.ContainsKey( "cityPropertyAlias" ) ) {
+        htmlForm.InputFields[ "City" ] = order.Properties[ settings[ "cityPropertyAlias" ] ];
+      }
+
+      if ( order.PaymentInformation.CountryRegionId != null ) {
+        htmlForm.InputFields[ "State" ] = CountryRegionService.Instance.Get( order.StoreId, order.PaymentInformation.CountryRegionId.Value ).Name;
+      }
+
+      if ( settings.ContainsKey( "zipCodePropertyAlias" ) ) {
+        htmlForm.InputFields[ "PostCode" ] = order.Properties[ settings[ "zipCodePropertyAlias" ] ];
+      }
+
+      Country country = CountryService.Instance.Get( order.StoreId, order.PaymentInformation.CountryId );
+      if ( !Iso3166CountryCodes.ContainsKey( country.RegionCode ) ) {
+        throw new Exception( "You must specify an ISO 3166 country code for the " + country.Name + " country" );
+      }
+      htmlForm.InputFields[ "CountryCode" ] = Iso3166CountryCodes[ country.RegionCode ];
+
+      htmlForm.InputFields[ "EmailAddress" ] = order.PaymentInformation.Email;
+
       htmlForm.InputFields[ "CallbackURL" ] = teaCommerceCallBackUrl;
       htmlForm.InputFields[ "ServerResultURL" ] = teaCommerceCallBackUrl;
 
@@ -61,57 +90,53 @@ namespace TeaCommerce.PaymentProviders {
       htmlForm.InputFields[ "PaymentFormDisplaysResult" ] = bool.FalseString;
       htmlForm.InputFields[ "TransactionDateTime" ] = DateTime.Now.ToString( "yyyy-MM-dd HH:mm:ss zzz" );
 
-      htmlForm.InputFields[ "CV2Mandatory" ] = bool.TrueString;
-      htmlForm.InputFields[ "Address1Mandatory" ] = bool.FalseString;
-      htmlForm.InputFields[ "CityMandatory" ] = bool.FalseString;
-      htmlForm.InputFields[ "PostCodeMandatory" ] = bool.FalseString;
-      htmlForm.InputFields[ "StateMandatory" ] = bool.FalseString;
-      htmlForm.InputFields[ "CountryMandatory" ] = bool.FalseString;
+      htmlForm.InputFields[ "EchoCardType" ] = bool.TrueString;
 
-      htmlForm.InputFields[ "HashDigest" ] = CreateHashDigest( new[] {
-        "MerchantID",
-        "Password",
-        "Amount",
-        "CurrencyCode",
-        "EchoAVSCheckResult",
-        "EchoCV2CheckResult",
-        "EchoThreeDSecureAuthenticationCheckResult",
-        "EchoCardType",
-        "AVSOverridePolicy",
-        "CV2OverridePolicy",
-        "ThreeDSecureOverridePolicy",
-        "OrderID",
-        "TransactionType",
-        "TransactionDateTime",
-        "CallbackURL",
-        "OrderDescription",
-        "CustomerName",
-        "Address1",
-        "Address2",
-        "Address3",
-        "Address4",
-        "City",
-        "State",
-        "PostCode",
-        "CountryCode",
-        "EmailAddress",
-        "PhoneNumber",
-        "EmailAddressEditable",
-        "PhoneNumberEditable",
-        "CV2Mandatory",
-        "Address1Mandatory",
-        "CityMandatory",
-        "PostCodeMandatory",
-        "StateMandatory",
-        "CountryMandatory",
-        "ResultDeliveryMethod",
-        "ServerResultURL",
-        "PaymentFormDisplaysResult",
-        "ServerResultURLCookieVariables",
-        "ServerResultURLFormVariables",
-        "ServerResultURLQueryStringVariables"
-      },
-      settings, htmlForm.InputFields );
+      List<string> keysToHash = new List<string>();
+      keysToHash.Add( "PreSharedKey" );
+      keysToHash.Add( "MerchantID" );
+      keysToHash.Add( "Password" );
+      keysToHash.Add( "Amount" );
+      keysToHash.Add( "CurrencyCode" );
+      if ( htmlForm.InputFields.ContainsKey( "EchoAVSCheckResult" ) ) keysToHash.Add( "EchoAVSCheckResult" );
+      if ( htmlForm.InputFields.ContainsKey( "EchoCV2CheckResult" ) ) keysToHash.Add( "EchoCV2CheckResult" );
+      if ( htmlForm.InputFields.ContainsKey( "EchoThreeDSecureAuthenticationCheckResult" ) ) keysToHash.Add( "EchoThreeDSecureAuthenticationCheckResult" );
+      if ( htmlForm.InputFields.ContainsKey( "EchoCardType" ) ) keysToHash.Add( "EchoCardType" );
+      if ( htmlForm.InputFields.ContainsKey( "AVSOverridePolicy" ) ) keysToHash.Add( "AVSOverridePolicy" );
+      if ( htmlForm.InputFields.ContainsKey( "CV2OverridePolicy" ) ) keysToHash.Add( "CV2OverridePolicy" );
+      if ( htmlForm.InputFields.ContainsKey( "ThreeDSecureOverridePolicy" ) ) keysToHash.Add( "ThreeDSecureOverridePolicy" );
+      keysToHash.Add( "OrderID" );
+      keysToHash.Add( "TransactionType" );
+      keysToHash.Add( "TransactionDateTime" );
+      keysToHash.Add( "CallbackURL" );
+      keysToHash.Add( "OrderDescription" );
+      keysToHash.Add( "CustomerName" );
+      keysToHash.Add( "Address1" );
+      keysToHash.Add( "Address2" );
+      keysToHash.Add( "Address3" );
+      keysToHash.Add( "Address4" );
+      keysToHash.Add( "City" );
+      keysToHash.Add( "State" );
+      keysToHash.Add( "PostCode" );
+      keysToHash.Add( "CountryCode" );
+      if ( htmlForm.InputFields.ContainsKey( "EmailAddress" ) ) keysToHash.Add( "EmailAddress" );
+      if ( htmlForm.InputFields.ContainsKey( "PhoneNumber" ) ) keysToHash.Add( "PhoneNumber" );
+      if ( htmlForm.InputFields.ContainsKey( "EmailAddressEditable" ) ) keysToHash.Add( "EmailAddressEditable" );
+      if ( htmlForm.InputFields.ContainsKey( "PhoneNumberEditable" ) ) keysToHash.Add( "PhoneNumberEditable" );
+      if ( htmlForm.InputFields.ContainsKey( "CV2Mandatory" ) ) keysToHash.Add( "CV2Mandatory" );
+      if ( htmlForm.InputFields.ContainsKey( "Address1Mandatory" ) ) keysToHash.Add( "Address1Mandatory" );
+      if ( htmlForm.InputFields.ContainsKey( "CityMandatory" ) ) keysToHash.Add( "CityMandatory" );
+      if ( htmlForm.InputFields.ContainsKey( "PostCodeMandatory" ) ) keysToHash.Add( "PostCodeMandatory" );
+      if ( htmlForm.InputFields.ContainsKey( "StateMandatory" ) ) keysToHash.Add( "StateMandatory" );
+      if ( htmlForm.InputFields.ContainsKey( "CountryMandatory" ) ) keysToHash.Add( "CountryMandatory" );
+      keysToHash.Add( "ResultDeliveryMethod" );
+      if ( htmlForm.InputFields.ContainsKey( "ServerResultURL" ) ) keysToHash.Add( "ServerResultURL" );
+      if ( htmlForm.InputFields.ContainsKey( "PaymentFormDisplaysResult" ) ) keysToHash.Add( "PaymentFormDisplaysResult" );
+      if ( htmlForm.InputFields.ContainsKey( "ServerResultURLCookieVariables" ) ) keysToHash.Add( "ServerResultURLCookieVariables" );
+      if ( htmlForm.InputFields.ContainsKey( "ServerResultURLFormVariables" ) ) keysToHash.Add( "ServerResultURLFormVariables" );
+      if ( htmlForm.InputFields.ContainsKey( "ServerResultURLQueryStringVariables" ) ) keysToHash.Add( "ServerResultURLQueryStringVariables" );
+
+      htmlForm.InputFields[ "HashDigest" ] = CreateHashDigest( keysToHash, settings, htmlForm.InputFields );
 
       return htmlForm;
     }
@@ -133,7 +158,7 @@ namespace TeaCommerce.PaymentProviders {
     public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
       CallbackInfo callbackInfo = null;
 
-      if ( request != null && request.Form[ "StatusCode" ] != "" ) {
+      if ( request != null && !string.IsNullOrEmpty( request.Form[ "StatusCode" ] ) ) {
         //First callback from PaymentSense - server to server callback        
 
         HttpContext.Current.Response.Clear();
@@ -142,7 +167,7 @@ namespace TeaCommerce.PaymentProviders {
           settings.MustNotBeNull( "settings" );
 
           //Write data when testing
-          if ( settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ) {
+          if ( settings.ContainsKey( "Testing" ) && settings[ "Testing" ] == "1" ) {
             using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/payment-sense-callback-data.txt" ) ) ) ) {
               writer.WriteLine( "FORM:" );
               foreach ( string k in request.Form.Keys ) {
@@ -152,34 +177,46 @@ namespace TeaCommerce.PaymentProviders {
             }
           }
 
-          string hashDigest = CreateHashDigest( new[] {
-            "MerchantID",
-            "Password",
-            "StatusCode",
-            "Message",
-            "PreviousStatusCode",
-            "PreviousMessage",
-            "CrossReference",
-            "Amount",
-            "CurrencyCode",
-            "OrderID",
-            "TransactionType",
-            "TransactionDateTime",
-            "OrderDescription",
-            "CustomerName",
-            "Address1",
-            "Address2",
-            "Address3",
-            "Address4",
-            "City",
-            "State",
-            "PostCode",
-            "CountryCode"
-          }, settings, request.Form.AllKeys.ToDictionary( k => k, k => request.Form[ k ] ) );
+          List<string> keysToHash = new List<string>();
+          keysToHash.Add( "PreSharedKey" );
+          keysToHash.Add( "MerchantID" );
+          keysToHash.Add( "Password" );
+          keysToHash.Add( "StatusCode" );
+          keysToHash.Add( "Message" );
+          keysToHash.Add( "PreviousStatusCode" );
+          keysToHash.Add( "PreviousMessage" );
+          keysToHash.Add( "CrossReference" );
+          if ( !string.IsNullOrEmpty( request.Form[ "AddressNumericCheckResult" ] ) ) keysToHash.Add( "AddressNumericCheckResult" );
+          if ( !string.IsNullOrEmpty( request.Form[ "PostCodeCheckResult" ] ) ) keysToHash.Add( "PostCodeCheckResult" );
+          if ( !string.IsNullOrEmpty( request.Form[ "CV2CheckResult" ] ) ) keysToHash.Add( "CV2CheckResult" );
+          if ( !string.IsNullOrEmpty( request.Form[ "ThreeDSecureCheckResult" ] ) ) keysToHash.Add( "ThreeDSecureCheckResult" );
+          if ( !string.IsNullOrEmpty( request.Form[ "CardType" ] ) ) keysToHash.Add( "CardType" );
+          if ( !string.IsNullOrEmpty( request.Form[ "CardClass" ] ) ) keysToHash.Add( "CardClass" );
+          if ( !string.IsNullOrEmpty( request.Form[ "CardIssuer" ] ) ) keysToHash.Add( "CardIssuer" );
+          if ( !string.IsNullOrEmpty( request.Form[ "CardIssuerCountryCode" ] ) ) keysToHash.Add( "CardIssuerCountryCode" );
+          keysToHash.Add( "Amount" );
+          keysToHash.Add( "CurrencyCode" );
+          keysToHash.Add( "OrderID" );
+          keysToHash.Add( "TransactionType" );
+          keysToHash.Add( "TransactionDateTime" );
+          keysToHash.Add( "OrderDescription" );
+          keysToHash.Add( "CustomerName" );
+          keysToHash.Add( "Address1" );
+          keysToHash.Add( "Address2" );
+          keysToHash.Add( "Address3" );
+          keysToHash.Add( "Address4" );
+          keysToHash.Add( "City" );
+          keysToHash.Add( "State" );
+          keysToHash.Add( "PostCode" );
+          keysToHash.Add( "CountryCode" );
+          if ( !string.IsNullOrEmpty( request.Form[ "EmailAddress" ] ) ) keysToHash.Add( "EmailAddress" );
+          if ( !string.IsNullOrEmpty( request.Form[ "PhoneNumber" ] ) ) keysToHash.Add( "PhoneNumber" );
+
+          string hashDigest = CreateHashDigest( keysToHash, settings, request.Form.AllKeys.ToDictionary( k => k, k => request.Form[ k ] ) );
 
           if ( hashDigest == request.Form[ "HashDigest" ] ) {
-            if ( request.Form[ "StatusCode" ] == "0" ) {
-              callbackInfo = new CallbackInfo( decimal.Parse( request.Form[ "PRESENTATION.AMOUNT" ], CultureInfo.InvariantCulture ) / 100M, request.Form[ "CrossReference" ], request.Form[ "TransactionType" ] != "SALE" ? PaymentState.Authorized : PaymentState.Captured );
+            if ( request.Form[ "StatusCode" ] == "0" || ( request.Form[ "StatusCode" ] == "20" && request.Form[ "PreviousStatusCode" ] == "0" ) ) {
+              callbackInfo = new CallbackInfo( decimal.Parse( request.Form[ "Amount" ], CultureInfo.InvariantCulture ) / 100M, request.Form[ "CrossReference" ], request.Form[ "TransactionType" ] != "SALE" ? PaymentState.Authorized : PaymentState.Captured );
               HttpContext.Current.Response.Write( "StatusCode=0" );
             } else {
               HttpContext.Current.Response.Write( "StatusCode=" + request.Form[ "StatusCode" ] + "&Message=" + request.Form[ "Message" ] );
@@ -226,15 +263,18 @@ namespace TeaCommerce.PaymentProviders {
       settings.MustContainKey( "Password", "settings" );
       settings.MustContainKey( "PreSharedKey", "settings" );
 
-      string test = string.Join( "&", keys.Where( k => inputFields.ContainsKey( k ) || settings.ContainsKey( k ) ).Select( k => k + "=" + ( inputFields.ContainsKey( k ) ? inputFields[ k ] : settings[ k ] ) ) );
-      string encrypted = EncryptHmac( settings[ "PreSharedKey" ], test );
-      using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/payment-sense-generate-form-data.txt" ) ) ) ) {
-        writer.WriteLine( test );
-        writer.WriteLine( encrypted );
-        writer.Flush();
+      string valueToHash = string.Join( "&", keys.Select( k => k + "=" + ( inputFields.ContainsKey( k ) ? inputFields[ k ] : settings.ContainsKey( k ) ? settings[ k ] : "" ) ) );
+      string hashValue = GenerateSHA1Hash( valueToHash );
+
+      if ( settings.ContainsKey( "Testing" ) && settings[ "Testing" ] == "1" ) {
+        using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/payment-sense-generate-digest.txt" ) ) ) ) {
+          writer.WriteLine( "Value to hash: " + valueToHash );
+          writer.WriteLine( "Hash: " + hashValue );
+          writer.Flush();
+        }
       }
 
-      return encrypted;
+      return hashValue;
     }
 
     #endregion

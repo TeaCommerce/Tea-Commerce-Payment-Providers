@@ -31,9 +31,9 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "FRONTEND.RESPONSE_URL" ] = string.Empty;
         defaultSettings[ "FRONTEND.CANCEL_URL" ] = string.Empty;
         defaultSettings[ "PAYMENT.CODE" ] = "CC.PA";
-        defaultSettings[ "streetAddressPropertyAlias" ] = string.Empty;
-        defaultSettings[ "cityPropertyAlias" ] = string.Empty;
-        defaultSettings[ "zipCodePropertyAlias" ] = string.Empty;
+        defaultSettings[ "streetAddressPropertyAlias" ] = "streetAddress";
+        defaultSettings[ "cityPropertyAlias" ] = "city";
+        defaultSettings[ "zipCodePropertyAlias" ] = "zipCode";
         defaultSettings[ "TRANSACTION.MODE" ] = "LIVE";
         defaultSettings[ "SYSTEM" ] = "LIVE";
 
@@ -54,6 +54,9 @@ namespace TeaCommerce.PaymentProviders {
       settings.MustContainKey( "zipCodePropertyAlias", "settings" );
       settings.MustContainKey( "TRANSACTION.MODE", "settings" );
       settings.MustContainKey( "SYSTEM", "settings" );
+      order.Properties[ settings[ "streetAddressPropertyAlias" ] ].MustNotBeNullOrEmpty( "street address" );
+      order.Properties[ settings[ "cityPropertyAlias" ] ].MustNotBeNullOrEmpty( "city" );
+      order.Properties[ settings[ "zipCodePropertyAlias" ] ].MustNotBeNullOrEmpty( "zip code" );
 
       PaymentHtmlForm htmlForm = new PaymentHtmlForm();
 
@@ -81,17 +84,9 @@ namespace TeaCommerce.PaymentProviders {
       inputFields[ "CONTACT.EMAIL" ] = order.PaymentInformation.Email;
       inputFields[ "CONTACT.IP" ] = HttpContext.Current.Request.UserHostAddress;
 
-      string streetAddress = order.Properties[ settings[ "streetAddressPropertyAlias" ] ];
-      string city = order.Properties[ settings[ "cityPropertyAlias" ] ];
-      string zipCode = order.Properties[ settings[ "zipCodePropertyAlias" ] ];
-
-      streetAddress.MustNotBeNullOrEmpty( "streetAddress" );
-      city.MustNotBeNullOrEmpty( "city" );
-      zipCode.MustNotBeNullOrEmpty( "zipCode" );
-
-      inputFields[ "ADDRESS.STREET" ] = streetAddress;
-      inputFields[ "ADDRESS.CITY" ] = city;
-      inputFields[ "ADDRESS.ZIP" ] = zipCode;
+      inputFields[ "ADDRESS.STREET" ] = order.Properties[ settings[ "streetAddressPropertyAlias" ] ];
+      inputFields[ "ADDRESS.CITY" ] = order.Properties[ settings[ "cityPropertyAlias" ] ];
+      inputFields[ "ADDRESS.ZIP" ] = order.Properties[ settings[ "zipCodePropertyAlias" ] ];
 
       inputFields[ "ADDRESS.COUNTRY" ] = CountryService.Instance.Get( order.StoreId, order.PaymentInformation.CountryId ).RegionCode;
       if ( order.PaymentInformation.CountryRegionId != null ) {
