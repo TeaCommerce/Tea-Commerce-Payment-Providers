@@ -50,6 +50,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Axcess.cs" />
+    <Compile Include="PaymentSense.cs" />
     <Compile Include="Dibs.cs" />
     <Compile Include="ePay.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
