@@ -79,14 +79,15 @@ namespace TeaCommerce.PaymentProviders {
 
       //Md5 check sum
       string[] md5CheckSumKeys = { "protocol", "msgtype", "merchant", "language", "ordernumber", "amount", "currency", "continueurl", "cancelurl", "callbackurl", "autocapture", "autofee", "cardtypelock", "description", "group", "testmode", "splitpayment", "forcemobile", "deadline", "cardhash" };
-      string md5CheckSumValues = "";
+      string md5CheckValue = "";
       foreach ( string key in md5CheckSumKeys ) {
         if ( htmlForm.InputFields.ContainsKey( key ) ) {
-          md5CheckSumValues += htmlForm.InputFields[ key ];
+          md5CheckValue += htmlForm.InputFields[ key ];
         }
       }
+      md5CheckValue += settings[ "md5secret" ];
 
-      htmlForm.InputFields[ "md5check" ] = GenerateMD5Hash( md5CheckSumValues + settings[ "md5secret" ] );
+      htmlForm.InputFields[ "md5check" ] = GenerateMD5Hash( md5CheckValue );
 
       return htmlForm;
     }
@@ -318,7 +319,18 @@ namespace TeaCommerce.PaymentProviders {
         string transaction = doc.XPathSelectElement( "//transaction" ).Value;
 
         if ( qpstat == "000" ) {
-          if ( CheckMd5Sum( doc, md5Secret ) ) {
+
+          string[] md5CheckSumKeys = { "msgtype", "ordernumber", "amount", "balance", "currency", "time", "state", "qpstat", "qpstatmsg", "chstat", "chstatmsg", "merchant", "merchantemail", "transaction", "cardtype", "cardnumber", "cardhash", "cardexpire", "splitpayment", "acquirer", "fraudprobability", "fraudremarks", "fraudreport" };
+          string md5CheckValue = string.Empty;
+          foreach ( string key in md5CheckSumKeys ) {
+            XElement xElement = doc.XPathSelectElement( "//" + key );
+            if ( xElement != null ) {
+              md5CheckValue += xElement.Value;
+            }
+          }
+          md5CheckValue += md5Secret;
+
+          if ( GenerateMD5Hash( md5CheckValue ) == doc.XPathSelectElement( "//md5check" ).Value ) {
 
             PaymentState paymentState = PaymentState.Initialized;
             if ( state == "1" )
@@ -342,34 +354,6 @@ namespace TeaCommerce.PaymentProviders {
       }
 
       return apiInfo;
-    }
-
-    protected bool CheckMd5Sum( XDocument doc, string md5Secret ) {
-      doc.MustNotBeNull( "doc" );
-
-      string md5CheckValue = string.Empty;
-      md5CheckValue += doc.XPathSelectElement( "//msgtype" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//ordernumber" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//amount" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//currency" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//time" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//state" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//qpstat" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//qpstatmsg" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//chstat" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//chstatmsg" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//merchant" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//merchantemail" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//transaction" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//cardtype" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//cardnumber" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//splitpayment" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//fraudprobability" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//fraudremarks" ).Value;
-      md5CheckValue += doc.XPathSelectElement( "//fraudreport" ).Value;
-      md5CheckValue += md5Secret;
-
-      return GenerateMD5Hash( md5CheckValue ) == doc.XPathSelectElement( "//md5check" ).Value;
     }
 
     #endregion
