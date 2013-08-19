@@ -103,14 +103,14 @@ namespace TeaCommerce.PaymentProviders {
       return htmlForm;
     }
 
-    public override string GetContinueUrl( IDictionary<string, string> settings ) {
+    public override string GetContinueUrl( Order order, IDictionary<string, string> settings ) {
       settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "FRONTEND.RESPONSE_URL", "settings" );
 
       return settings[ "FRONTEND.RESPONSE_URL" ];
     }
 
-    public override string GetCancelUrl( IDictionary<string, string> settings ) {
+    public override string GetCancelUrl( Order order, IDictionary<string, string> settings ) {
       settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "FRONTEND.CANCEL_URL", "settings" );
 
@@ -141,7 +141,7 @@ namespace TeaCommerce.PaymentProviders {
         if ( request[ "PROCESSING.RESULT" ] == "ACK" ) {
           callbackInfo = new CallbackInfo( decimal.Parse( request.Form[ "PRESENTATION.AMOUNT" ], CultureInfo.InvariantCulture ), request.Form[ "IDENTIFICATION.UNIQUEID" ], request.Form[ "PAYMENT.CODE" ] != "CC.DB" ? PaymentState.Authorized : PaymentState.Captured );
 
-          string continueUrl = GetContinueUrl( settings );
+          string continueUrl = GetContinueUrl( order, settings );
           if ( !continueUrl.StartsWith( "http" ) ) {
             Uri baseUrl = new UriBuilder( request.Url.Scheme, request.Url.Host, request.Url.Port ).Uri;
             continueUrl = new Uri( baseUrl, continueUrl ).AbsoluteUri;
@@ -151,7 +151,7 @@ namespace TeaCommerce.PaymentProviders {
         } else {
           LoggingService.Instance.Log( "Axcess(" + order.CartNumber + ") - Process callback - PROCESSING.CODE: " + request[ "PROCESSING.CODE" ] );
 
-          string cancelUrl = GetCancelUrl( settings );
+          string cancelUrl = GetCancelUrl( order, settings );
           if ( !cancelUrl.StartsWith( "http" ) ) {
             Uri baseUrl = new UriBuilder( request.Url.Scheme, request.Url.Host, request.Url.Port ).Uri;
             cancelUrl = new Uri( baseUrl, cancelUrl ).AbsoluteUri;
@@ -198,7 +198,7 @@ namespace TeaCommerce.PaymentProviders {
         } else {
           LoggingService.Instance.Log( "Axcess(" + order.OrderNumber + ") - Error making API request - PROCESSING.CODE: " + responseKvps[ "PROCESSING.CODE" ] );
         }
-        
+
       } catch ( Exception exp ) {
         LoggingService.Instance.Log( exp, "Axcess(" + order.OrderNumber + ") - Capture payment" );
       }

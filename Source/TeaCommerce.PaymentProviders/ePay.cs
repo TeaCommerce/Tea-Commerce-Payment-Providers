@@ -135,14 +135,14 @@ namespace TeaCommerce.PaymentProviders {
       return rtnString;
     }
 
-    public override string GetContinueUrl( IDictionary<string, string> settings ) {
+    public override string GetContinueUrl( Order order, IDictionary<string, string> settings ) {
       settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "accepturl", "settings" );
 
       return settings[ "accepturl" ];
     }
 
-    public override string GetCancelUrl( IDictionary<string, string> settings ) {
+    public override string GetCancelUrl( Order order, IDictionary<string, string> settings ) {
       settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "cancelurl", "settings" );
 

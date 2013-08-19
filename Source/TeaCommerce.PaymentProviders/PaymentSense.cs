@@ -139,14 +139,14 @@ namespace TeaCommerce.PaymentProviders {
       return htmlForm;
     }
 
-    public override string GetContinueUrl( IDictionary<string, string> settings ) {
+    public override string GetContinueUrl( Order order, IDictionary<string, string> settings ) {
       settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "CallbackURL", "settings" );
 
       return settings[ "CallbackURL" ];
     }
 
-    public override string GetCancelUrl( IDictionary<string, string> settings ) {
+    public override string GetCancelUrl( Order order, IDictionary<string, string> settings ) {
       settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "CancelURL", "settings" );
 
@@ -231,7 +231,7 @@ namespace TeaCommerce.PaymentProviders {
         }
       } else {
         //Second callback from PaymentSense - redirect the user to the continue or cancel url
-        HttpContext.Current.Response.Redirect( order != null && order.IsFinalized ? GetContinueUrl( settings ) : GetCancelUrl( settings ) );
+        HttpContext.Current.Response.Redirect( order != null && order.IsFinalized ? GetContinueUrl( order, settings ) : GetCancelUrl( order, settings ) );
       }
 
       return callbackInfo;
