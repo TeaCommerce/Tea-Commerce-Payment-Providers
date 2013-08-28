@@ -76,7 +76,7 @@ namespace TeaCommerce.PaymentProviders {
         htmlForm.InputFields[ "item_number_" + itemIndex ] = orderLine.Sku;
         htmlForm.InputFields[ "amount_" + itemIndex ] = orderLine.UnitPrice.Value.ToString( "0.00", CultureInfo.InvariantCulture );
         htmlForm.InputFields[ "tax_" + itemIndex ] = orderLine.UnitPrice.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
-        htmlForm.InputFields[ "quantity_" + itemIndex ] = orderLine.Quantity.ToString( CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "quantity_" + itemIndex ] = orderLine.Quantity.ToString( "0", CultureInfo.InvariantCulture );
 
         itemIndex++;
       }
