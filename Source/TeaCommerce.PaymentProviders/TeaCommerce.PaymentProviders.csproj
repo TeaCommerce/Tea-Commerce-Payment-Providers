@@ -29,8 +29,12 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Stripe.net">
+      <HintPath>..\..\Lib\StripeDotNet\Stripe.net.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
@@ -69,6 +73,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
+    <Compile Include="Stripe.cs" />
     <Compile Include="TwoCheckOut.cs" />
     <Compile Include="Wannafind.cs" />
     <Compile Include="Web References\AuthorizeNetService\Reference.cs">

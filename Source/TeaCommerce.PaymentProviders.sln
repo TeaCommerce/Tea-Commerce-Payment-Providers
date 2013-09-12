@@ -3,6 +3,29 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProviders", "TeaCommerce.PaymentProviders\TeaCommerce.PaymentProviders.csproj", "{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProviders.Umbraco.Web", "TeaCommerce.PaymentProviders.Umbraco.Web\TeaCommerce.PaymentProviders.Umbraco.Web.csproj", "{596DF8F3-45DC-45E0-A29E-B09F6410DF16}"
+EndProject
+Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "TeaCommerce.PaymentProviders.Umbraco.Web.UI", "http://localhost:54564", "{0FFCC216-03F2-422B-B3A3-4822AD93CC6C}"
+	ProjectSection(WebsiteProperties) = preProject
+		UseIISExpress = "true"
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
+		Debug.AspNetCompiler.VirtualPath = "/TeaCommerce.PaymentProviders.Umbraco.Web.UI"
+		Debug.AspNetCompiler.PhysicalPath = "TeaCommerce.PaymentProviders.Umbraco.Web.UI\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\TeaCommerce.PaymentProviders.Umbraco.Web.UI\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/TeaCommerce.PaymentProviders.Umbraco.Web.UI"
+		Release.AspNetCompiler.PhysicalPath = "TeaCommerce.PaymentProviders.Umbraco.Web.UI\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\TeaCommerce.PaymentProviders.Umbraco.Web.UI\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		SlnRelativePath = "TeaCommerce.PaymentProviders.Umbraco.Web.UI\"
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,6 +36,14 @@ Global
 		{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}.Release|Any CPU.Build.0 = Release|Any CPU
+		{596DF8F3-45DC-45E0-A29E-B09F6410DF16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{596DF8F3-45DC-45E0-A29E-B09F6410DF16}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{596DF8F3-45DC-45E0-A29E-B09F6410DF16}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{596DF8F3-45DC-45E0-A29E-B09F6410DF16}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FFCC216-03F2-422B-B3A3-4822AD93CC6C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FFCC216-03F2-422B-B3A3-4822AD93CC6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FFCC216-03F2-422B-B3A3-4822AD93CC6C}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FFCC216-03F2-422B-B3A3-4822AD93CC6C}.Release|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

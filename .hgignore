@@ -1,2 +1,6 @@
 syntax: glob
 Source/TeaCommerce.PaymentProviders.sln.docstates
+*/bin/*
+*/obj/*
+*.suo
+*/Bin/*
