@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{596DF8F3-45DC-45E0-A29E-B09F6410DF16}</ProjectGuid>
+    <ProjectGuid>{F8E6FCDE-3DFA-4643-BBDB-F01AB9402D25}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>TeaCommerce.PaymentProviders.Umbraco.Web</RootNamespace>
-    <AssemblyName>TeaCommerce.PaymentProviders.Umbraco.Web</AssemblyName>
+    <RootNamespace>TeaCommerce.PaymentProviders.Mvc.Web</RootNamespace>
+    <AssemblyName>TeaCommerce.PaymentProviders.Mvc.Web</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -31,30 +31,23 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Stripe.net, Version=1.6.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Lib\StripeDotNet\Stripe.net.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Net" />
+    <Reference Include="System.Net.Http, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="System.Web" />
+    <Reference Include="System.Web.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="TeaCommerce.Api">
-      <HintPath>..\..\Lib\Tea Commerce\TeaCommerce.Api.dll</HintPath>
-    </Reference>
     <Reference Include="TeaCommerce.Api.Web">
       <HintPath>..\..\Lib\Tea Commerce\TeaCommerce.Api.Web.dll</HintPath>
     </Reference>
-    <Reference Include="umbraco">
-      <HintPath>..\..\Lib\Umbraco\umbraco.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="RestExtensions\Stripe.cs" />
+    <Compile Include="Controllers\StripeController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

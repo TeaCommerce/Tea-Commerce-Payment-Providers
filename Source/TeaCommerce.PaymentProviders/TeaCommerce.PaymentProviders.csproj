@@ -32,6 +32,7 @@
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="Stripe.net">
       <HintPath>..\..\Lib\StripeDotNet\Stripe.net.dll</HintPath>
     </Reference>

@@ -26,6 +26,8 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "TeaCommerce.PaymentProvider
 		SlnRelativePath = "TeaCommerce.PaymentProviders.Umbraco.Web.UI\"
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProviders.Mvc.Web", "TeaCommerce.PaymentProviders.Mvc.Web\TeaCommerce.PaymentProviders.Mvc.Web.csproj", "{F8E6FCDE-3DFA-4643-BBDB-F01AB9402D25}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,6 +46,10 @@ Global
 		{0FFCC216-03F2-422B-B3A3-4822AD93CC6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0FFCC216-03F2-422B-B3A3-4822AD93CC6C}.Release|Any CPU.ActiveCfg = Debug|Any CPU
 		{0FFCC216-03F2-422B-B3A3-4822AD93CC6C}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{F8E6FCDE-3DFA-4643-BBDB-F01AB9402D25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8E6FCDE-3DFA-4643-BBDB-F01AB9402D25}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8E6FCDE-3DFA-4643-BBDB-F01AB9402D25}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8E6FCDE-3DFA-4643-BBDB-F01AB9402D25}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

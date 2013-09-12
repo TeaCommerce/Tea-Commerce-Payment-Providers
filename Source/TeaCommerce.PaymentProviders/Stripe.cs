@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Web;
 using Stripe;
 using TeaCommerce.Api.Common;
@@ -239,6 +240,66 @@ namespace TeaCommerce.PaymentProviders
                 default:
                     return base.GetLocalizedSettingsKey(settingsKey, culture);
             }
+        }
+
+        public static bool ProcessWebHookRequest(
+            int storeId,
+            string paymentProviderAlias,
+            string mode,
+            Stream requestStream)
+        {
+            if (requestStream.CanSeek)
+                requestStream.Seek(0, SeekOrigin.Begin);
+
+            var json = new StreamReader(requestStream).ReadToEnd();
+            StripeEvent stripeEvent;
+
+            try
+            {
+                stripeEvent = StripeEventUtility.ParseEvent(json);
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+
+            if (stripeEvent == null)
+            {
+                return false;
+            }
+
+            switch (stripeEvent.Type)
+            {
+                case "charge.refunded":
+                    StripeCharge refundedCharge = Mapper<StripeCharge>.MapFromJson(stripeEvent.Data.Object.ToString());
+                    var refundedOrder = OrderService.Instance.Get(storeId, Guid.Parse(refundedCharge.Description));
+                    if (refundedOrder.TransactionInformation.PaymentState != PaymentState.Refunded)
+                    {
+                        refundedOrder.TransactionInformation.TransactionId = refundedCharge.Id;
+                        refundedOrder.TransactionInformation.PaymentState = PaymentState.Refunded;
+                        refundedOrder.Save();
+                    }
+                    break;
+                case "charge.captured":
+                    StripeCharge capturedCharge = Mapper<StripeCharge>.MapFromJson(stripeEvent.Data.Object.ToString());
+                    var capturedOrder = OrderService.Instance.Get(storeId, Guid.Parse(capturedCharge.Description));
+                    if (capturedOrder.TransactionInformation.PaymentState != PaymentState.Captured)
+                    {
+                        capturedOrder.TransactionInformation.TransactionId = capturedCharge.Id;
+                        capturedOrder.TransactionInformation.PaymentState = PaymentState.Captured;
+                        capturedOrder.Save();
+                    }
+                    break;
+                case "charge.succeeded":
+                case "charge.failed":
+                    // We can hook up these up if we want to, but I don't think it makes sense
+                    // these should get handled during the checkout process so I think it
+                    // should only be the events that can happen "after" the sale that 
+                    // should be proccessed (MB)
+                    break;
+            }
+
+            return true;
         }
     }
 }
