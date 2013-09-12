@@ -13,6 +13,7 @@ namespace TeaCommerce.PaymentProviders.Mvc.Web.Controllers
 {
     public class StripeController : ApiController 
     {
+        [HttpPost]
         public HttpResponseMessage  WebHook(int storeId,
             string paymentProviderAlias,
             string mode)
