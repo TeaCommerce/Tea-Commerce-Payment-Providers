@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Net;
 using System.Web;
 using Stripe;
 using TeaCommerce.Api.Common;
@@ -28,6 +29,8 @@ namespace TeaCommerce.PaymentProviders
         public override bool SupportsRetrievalOfPaymentStatus { get { return true; } }
         public override bool SupportsCapturingOfPayment { get { return true; } }
         public override bool SupportsRefundOfPayment { get { return true; } }
+
+        public override bool AllowsCallbackWithoutOrderId { get { return true; } }
 
         public override IDictionary<string, string> DefaultSettings
         {
@@ -88,34 +91,64 @@ namespace TeaCommerce.PaymentProviders
                 request.MustNotBeNull("request");
                 settings.MustNotBeNull("settings");
 
-                var orderCurrency = CurrencyService.Instance.Get(order.StoreId,
+                // Check to see if being called as a result of a
+                // stripe web hook request or not
+                var stripeEvent = GetStripeEvent(request);
+                if (stripeEvent == null)
+                {
+                    // Not a web hook request so process new order
+                    var orderCurrency = CurrencyService.Instance.Get(order.StoreId,
                     order.CurrencyId);
 
-                var stripeApiKey = settings[settings["mode"] + "_secret_key"];
-                var stripeToken = request.Form["stripeToken"];
+                    var stripeApiKey = settings[settings["mode"] + "_secret_key"];
+                    var stripeToken = request.Form["stripeToken"];
 
-                bool capture;
-                var chargeOptions = new StripeChargeCreateOptions
-                {
-                    AmountInCents = (int)(order.TotalPrice.WithVat * 100),
-                    Currency = orderCurrency.IsoCode,
-                    TokenId = stripeToken,
-                    Description = order.Id.ToString(),
-                    Capture = bool.TryParse(settings["capture"], out capture) && capture
-                };
+                    bool capture;
+                    var chargeOptions = new StripeChargeCreateOptions
+                    {
+                        AmountInCents = (int)(order.TotalPrice.WithVat * 100),
+                        Currency = orderCurrency.IsoCode,
+                        TokenId = stripeToken,
+                        Description = order.CartNumber,
+                        Capture = bool.TryParse(settings["capture"], out capture) && capture
+                    };
 
-                var chargeService = new StripeChargeService(stripeApiKey);
-                var result = chargeService.Create(chargeOptions);
+                    var chargeService = new StripeChargeService(stripeApiKey);
+                    var result = chargeService.Create(chargeOptions);
 
-                if (result.AmountInCents.HasValue &&
-                    result.Captured.HasValue && result.Captured.Value)
-                {
-                    return new CallbackInfo((decimal)result.AmountInCents.Value / 100,
-                        result.Id,
-                        PaymentState.Captured);
+                    if (result.AmountInCents.HasValue &&
+                        result.Captured.HasValue && result.Captured.Value)
+                    {
+                        return new CallbackInfo((decimal)result.AmountInCents.Value / 100,
+                            result.Id,
+                            PaymentState.Captured);
+                    }
                 }
-
-                LoggingService.Instance.Log("Stripe(" + order.CartNumber + ") - Payment not captured");
+                else
+                {
+                    // A web hook request so update existing order
+                    switch (stripeEvent.Type)
+                    {
+                        case "charge.refunded":
+                            StripeCharge refundedCharge = Mapper<StripeCharge>.MapFromJson(stripeEvent.Data.Object.ToString());
+                            if (order.TransactionInformation.PaymentState != PaymentState.Refunded)
+                            {
+                                order.TransactionInformation.TransactionId = refundedCharge.Id;
+                                order.TransactionInformation.PaymentState = PaymentState.Refunded;
+                                order.Save();
+                            }
+                            break;
+                        case "charge.captured":
+                            StripeCharge capturedCharge = Mapper<StripeCharge>.MapFromJson(stripeEvent.Data.Object.ToString());
+                            if (order.TransactionInformation.PaymentState != PaymentState.Captured)
+                            {
+                                order.TransactionInformation.TransactionId = capturedCharge.Id;
+                                order.TransactionInformation.PaymentState = PaymentState.Captured;
+                                order.Save();
+                            }
+                            break;
+                    }
+                }
             }
             catch (Exception exp)
             {
@@ -193,6 +226,26 @@ namespace TeaCommerce.PaymentProviders
             return null;
         }
 
+        public override string GetCartNumber(HttpRequest request, IDictionary<string, string> settings)
+        {
+            var stripeEvent = GetStripeEvent(request);
+
+            if (stripeEvent == null)
+            {
+                HttpContext.Current.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return "";
+            }
+
+            if (stripeEvent.Type.StartsWith("charge."))
+            {
+                // We are only interested in charge events
+                StripeCharge charge = Mapper<StripeCharge>.MapFromJson(stripeEvent.Data.Object.ToString());
+                return charge.Description;
+            }
+
+            return "";
+        }
+
         private ApiInfo InternalGetStatus(Order order, StripeCharge charge)
         {
             var paymentState = PaymentState.Initialized;
@@ -204,12 +257,6 @@ namespace TeaCommerce.PaymentProviders
             else if (charge.Captured.HasValue && charge.Captured.Value)
             {
                 paymentState = PaymentState.Captured;
-            }
-            else if (charge.Paid.HasValue && charge.Paid.Value)
-            {
-                // TODO: Not sure if this check is right. Waiting on feedback
-                // from stipe
-                paymentState = PaymentState.Authorized;
             }
 
             return new ApiInfo(charge.Id, paymentState);
@@ -242,64 +289,29 @@ namespace TeaCommerce.PaymentProviders
             }
         }
 
-        public static bool ProcessWebHookRequest(
-            int storeId,
-            string paymentProviderAlias,
-            string mode,
-            Stream requestStream)
+        private StripeEvent GetStripeEvent(HttpRequest request)
         {
-            if (requestStream.CanSeek)
-                requestStream.Seek(0, SeekOrigin.Begin);
+            if (HttpContext.Current.Items["TC_StripeEvent"] != null)
+                return (StripeEvent)HttpContext.Current.Items["TC_StripeEvent"];
 
-            var json = new StreamReader(requestStream).ReadToEnd();
-            StripeEvent stripeEvent;
+            if (request.InputStream.CanSeek)
+                request.InputStream.Seek(0, SeekOrigin.Begin);
+
+            var json = new StreamReader(request.InputStream).ReadToEnd();
 
             try
             {
-                stripeEvent = StripeEventUtility.ParseEvent(json);
+                var stripEvent = StripeEventUtility.ParseEvent(json);
+
+                HttpContext.Current.Items["TC_StripeEvent"] = stripEvent;
+
+                return stripEvent;
             }
             catch (Exception ex)
             {
-                return false;
+                return null;
             }
-
-            if (stripeEvent == null)
-            {
-                return false;
-            }
-
-            switch (stripeEvent.Type)
-            {
-                case "charge.refunded":
-                    StripeCharge refundedCharge = Mapper<StripeCharge>.MapFromJson(stripeEvent.Data.Object.ToString());
-                    var refundedOrder = OrderService.Instance.Get(storeId, Guid.Parse(refundedCharge.Description));
-                    if (refundedOrder.TransactionInformation.PaymentState != PaymentState.Refunded)
-                    {
-                        refundedOrder.TransactionInformation.TransactionId = refundedCharge.Id;
-                        refundedOrder.TransactionInformation.PaymentState = PaymentState.Refunded;
-                        refundedOrder.Save();
-                    }
-                    break;
-                case "charge.captured":
-                    StripeCharge capturedCharge = Mapper<StripeCharge>.MapFromJson(stripeEvent.Data.Object.ToString());
-                    var capturedOrder = OrderService.Instance.Get(storeId, Guid.Parse(capturedCharge.Description));
-                    if (capturedOrder.TransactionInformation.PaymentState != PaymentState.Captured)
-                    {
-                        capturedOrder.TransactionInformation.TransactionId = capturedCharge.Id;
-                        capturedOrder.TransactionInformation.PaymentState = PaymentState.Captured;
-                        capturedOrder.Save();
-                    }
-                    break;
-                case "charge.succeeded":
-                case "charge.failed":
-                    // We can hook up these up if we want to, but I don't think it makes sense
-                    // these should get handled during the checkout process so I think it
-                    // should only be the events that can happen "after" the sale that 
-                    // should be proccessed (MB)
-                    break;
-            }
-
-            return true;
         }
+
     }
 }
