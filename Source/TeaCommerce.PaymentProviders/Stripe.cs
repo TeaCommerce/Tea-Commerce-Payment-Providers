@@ -10,6 +10,7 @@ using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Web;
+using System.Web.Hosting;
 using Stripe;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
@@ -82,6 +83,26 @@ namespace TeaCommerce.PaymentProviders
             return settings["cancel_url"];
         }
 
+        public override string GetCartNumber(HttpRequest request, IDictionary<string, string> settings)
+        {
+            var stripeEvent = GetStripeEvent(request);
+
+            if (stripeEvent == null)
+            {
+                HttpContext.Current.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return "";
+            }
+
+            if (stripeEvent.Type.StartsWith("charge."))
+            {
+                // We are only interested in charge events
+                StripeCharge charge = Mapper<StripeCharge>.MapFromJson(stripeEvent.Data.Object.ToString());
+                return charge.Description;
+            }
+
+            return "";
+        }
+
         public override CallbackInfo ProcessCallback(Order order, HttpRequest request,
             IDictionary<string, string> settings)
         {
@@ -90,6 +111,28 @@ namespace TeaCommerce.PaymentProviders
                 order.MustNotBeNull("order");
                 request.MustNotBeNull("request");
                 settings.MustNotBeNull("settings");
+
+                // If in test mode, write out the form data to a text file
+                if (settings["mode"].ToLower() == "test")
+                {
+                    using (var sw = new StreamWriter(File.Create(HostingEnvironment.MapPath("~/stripe-callback-data.txt"))))
+                    {
+                        sw.WriteLine("QueryString:");
+                        foreach (string k in request.QueryString.Keys)
+                        {
+                            sw.WriteLine(k + " : " + request.QueryString[k]);
+                        }
+                        sw.WriteLine("");
+                        sw.WriteLine("-----------------------------------------------------");
+                        sw.WriteLine("");
+                        sw.WriteLine("Form:");
+                        foreach (string k in request.Form.Keys)
+                        {
+                            sw.WriteLine(k + " : " + request.Form[k]);
+                        }
+                        sw.Flush();
+                    }
+                }
 
                 // Check to see if being called as a result of a
                 // stripe web hook request or not
@@ -226,48 +269,12 @@ namespace TeaCommerce.PaymentProviders
             return null;
         }
 
-        public override string GetCartNumber(HttpRequest request, IDictionary<string, string> settings)
-        {
-            var stripeEvent = GetStripeEvent(request);
-
-            if (stripeEvent == null)
-            {
-                HttpContext.Current.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                return "";
-            }
-
-            if (stripeEvent.Type.StartsWith("charge."))
-            {
-                // We are only interested in charge events
-                StripeCharge charge = Mapper<StripeCharge>.MapFromJson(stripeEvent.Data.Object.ToString());
-                return charge.Description;
-            }
-
-            return "";
-        }
-
-        private ApiInfo InternalGetStatus(Order order, StripeCharge charge)
-        {
-            var paymentState = PaymentState.Initialized;
-
-            if (charge.Refunded.HasValue && charge.Refunded.Value)
-            {
-                paymentState = PaymentState.Refunded;
-            }
-            else if (charge.Captured.HasValue && charge.Captured.Value)
-            {
-                paymentState = PaymentState.Captured;
-            }
-
-            return new ApiInfo(charge.Id, paymentState);
-        }
-
         public override string GetLocalizedSettingsKey(string settingsKey, CultureInfo culture)
         {
             switch (settingsKey)
             {
                 case "form_url":
-                    return settingsKey + "<br/><small>The url of the page with the swipe payment form on.</small>";
+                    return settingsKey + "<br/><small>The url of the page with the stripe payment form on.</small>";
                 case "continue_url":
                     return settingsKey + "<br/><small>The url to navigate to after payment is processed.</small>";
                 case "cancel_url":
@@ -289,7 +296,23 @@ namespace TeaCommerce.PaymentProviders
             }
         }
 
-        private StripeEvent GetStripeEvent(HttpRequest request)
+        protected ApiInfo InternalGetStatus(Order order, StripeCharge charge)
+        {
+            var paymentState = PaymentState.Initialized;
+
+            if (charge.Refunded.HasValue && charge.Refunded.Value)
+            {
+                paymentState = PaymentState.Refunded;
+            }
+            else if (charge.Captured.HasValue && charge.Captured.Value)
+            {
+                paymentState = PaymentState.Captured;
+            }
+
+            return new ApiInfo(charge.Id, paymentState);
+        }
+
+        protected StripeEvent GetStripeEvent(HttpRequest request)
         {
             if (HttpContext.Current.Items["TC_StripeEvent"] != null)
                 return (StripeEvent)HttpContext.Current.Items["TC_StripeEvent"];
@@ -312,6 +335,5 @@ namespace TeaCommerce.PaymentProviders
                 return null;
             }
         }
-
     }
 }
