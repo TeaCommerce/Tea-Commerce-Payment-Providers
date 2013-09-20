@@ -40,13 +40,16 @@
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Web.Services" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Xml" />
-    <Reference Include="TeaCommerce.Api">
+    <Reference Include="TeaCommerce.Api, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Lib\Tea Commerce\TeaCommerce.Api.dll</HintPath>
     </Reference>
-    <Reference Include="TeaCommerce.Api.Web">
+    <Reference Include="TeaCommerce.Api.Web, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Lib\Tea Commerce\TeaCommerce.Api.Web.dll</HintPath>
     </Reference>
   </ItemGroup>
@@ -55,6 +58,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Axcess.cs" />
+    <Compile Include="CyberSource.cs" />
     <Compile Include="PaymentSense.cs" />
     <Compile Include="Dibs.cs" />
     <Compile Include="ePay.cs" />
@@ -268,6 +272,9 @@
     <None Include="Web References\AuthorizeNetService\Service.disco" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>xcopy /s /y "$(TargetDir)TeaCommerce.PaymentProviders.*" "C:\Users\mattbrailsford\Desktop\Tea\Src\TeaCommerce.Web\bin"</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
