@@ -30,6 +30,7 @@ namespace TeaCommerce.PaymentProviders
         public override bool SupportsRetrievalOfPaymentStatus { get { return true; } }
         public override bool SupportsCapturingOfPayment { get { return true; } }
         public override bool SupportsRefundOfPayment { get { return true; } }
+        public override bool SupportsCancellationOfPayment { get { return true; } }
 
         public override bool AllowsCallbackWithoutOrderId { get { return true; } }
 
@@ -160,11 +161,13 @@ namespace TeaCommerce.PaymentProviders
                     var result = chargeService.Create(chargeOptions);
 
                     if (result.AmountInCents.HasValue &&
-                        result.Captured.HasValue && result.Captured.Value)
+                        result.Paid.HasValue && result.Paid.Value)
                     {
                         return new CallbackInfo((decimal)result.AmountInCents.Value / 100,
                             result.Id,
-                            PaymentState.Captured);
+                            result.Captured.HasValue && result.Captured.Value
+                                ? PaymentState.Captured
+                                : PaymentState.Authorized);
                     }
                 }
                 else
@@ -269,6 +272,11 @@ namespace TeaCommerce.PaymentProviders
             return null;
         }
 
+        public override ApiInfo CancelPayment(Order order, IDictionary<string, string> settings)
+        {
+            return RefundPayment(order, settings);
+        }
+
         public override string GetLocalizedSettingsKey(string settingsKey, CultureInfo culture)
         {
             switch (settingsKey)
@@ -300,13 +308,26 @@ namespace TeaCommerce.PaymentProviders
         {
             var paymentState = PaymentState.Initialized;
 
-            if (charge.Refunded.HasValue && charge.Refunded.Value)
+            if (charge.Paid.HasValue && charge.Paid.Value)
             {
-                paymentState = PaymentState.Refunded;
-            }
-            else if (charge.Captured.HasValue && charge.Captured.Value)
-            {
-                paymentState = PaymentState.Captured;
+                paymentState = PaymentState.Authorized;
+
+                if (charge.Captured.HasValue && charge.Captured.Value)
+                {
+                    paymentState = PaymentState.Captured;
+
+                    if (charge.Refunded.HasValue && charge.Refunded.Value)
+                    {
+                        paymentState = PaymentState.Refunded;
+                    }
+                }
+                else
+                {
+                    if (charge.Refunded.HasValue && charge.Refunded.Value)
+                    {
+                        paymentState = PaymentState.Cancelled;
+                    }
+                }
             }
 
             return new ApiInfo(charge.Id, paymentState);
