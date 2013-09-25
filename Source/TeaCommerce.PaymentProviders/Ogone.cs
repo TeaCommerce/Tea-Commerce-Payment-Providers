@@ -42,7 +42,7 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "SHAOUTPASSPHRASE" ] = string.Empty;
         defaultSettings[ "APIUSERID" ] = string.Empty;
         defaultSettings[ "APIPASSWORD" ] = string.Empty;
-        defaultSettings[ "TESTMODE" ] = "0";
+        defaultSettings[ "TESTMODE" ] = "1";
         return defaultSettings;
       }
     }

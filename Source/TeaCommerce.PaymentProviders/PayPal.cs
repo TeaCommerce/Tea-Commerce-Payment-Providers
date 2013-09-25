@@ -33,7 +33,7 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "USER" ] = string.Empty;
         defaultSettings[ "PWD" ] = string.Empty;
         defaultSettings[ "SIGNATURE" ] = string.Empty;
-        defaultSettings[ "isSandbox" ] = "0";
+        defaultSettings[ "isSandbox" ] = "1";
         return defaultSettings;
       }
     }

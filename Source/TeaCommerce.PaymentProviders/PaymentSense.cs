@@ -29,7 +29,7 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "zipCodePropertyAlias" ] = "zipCode";
         defaultSettings[ "PreSharedKey" ] = "";
         defaultSettings[ "Password" ] = "";
-        defaultSettings[ "Testing" ] = "0";
+        defaultSettings[ "Testing" ] = "1";
 
         return defaultSettings;
       }

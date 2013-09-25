@@ -30,15 +30,15 @@ namespace TeaCommerce.PaymentProviders {
         Dictionary<string, string> defaultSettings = new Dictionary<string, string>();
         defaultSettings[ "merchantnumber" ] = string.Empty;
         defaultSettings[ "language" ] = "2";
-        defaultSettings[ "accepturl" ] = string.Empty;
-        defaultSettings[ "cancelurl" ] = string.Empty;
+        defaultSettings[ "accepturl" ] = "";
+        defaultSettings[ "cancelurl" ] = "";
         defaultSettings[ "instantcapture" ] = "0";
-        defaultSettings[ "paymenttype" ] = string.Empty;
+        defaultSettings[ "paymenttype" ] = "";
         defaultSettings[ "windowstate" ] = "1";
-        defaultSettings[ "iframeelement" ] = string.Empty;
-        defaultSettings[ "md5securitykey" ] = string.Empty;
-        defaultSettings[ "webservicepassword" ] = string.Empty;
-        defaultSettings[ "testMode" ] = "0";
+        defaultSettings[ "iframeelement" ] = "";
+        defaultSettings[ "md5securitykey" ] = "";
+        defaultSettings[ "webservicepassword" ] = "";
+        defaultSettings[ "testMode" ] = "1";
         return defaultSettings;
       }
     }
@@ -215,7 +215,7 @@ namespace TeaCommerce.PaymentProviders {
         int ePayResponse = 0;
 
         if ( GetEPayServiceClient().gettransaction( int.Parse( settings[ "merchantnumber" ] ), long.Parse( order.TransactionInformation.TransactionId ), settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty, ref tit, ref ePayResponse ) ) {
-          apiInfo = new ApiInfo( tit.transactionid.ToString( CultureInfo.InvariantCulture ), GetPaymentStatus( tit.status, tit.creditedamount ) );
+          apiInfo = new ApiInfo( tit.transactionid.ToString( CultureInfo.InvariantCulture ), GetPaymentState( tit.status, tit.creditedamount ) );
         } else {
           LoggingService.Instance.Log( "ePay(" + order.OrderNumber + ") - Error making API request - error code: " + ePayResponse );
         }
@@ -319,7 +319,7 @@ namespace TeaCommerce.PaymentProviders {
       return new PaymentSoapClient( new BasicHttpBinding( BasicHttpSecurityMode.Transport ), new EndpointAddress( "https://ssl.ditonlinebetalingssystem.dk/remote/payment.asmx" ) );
     }
 
-    protected PaymentState GetPaymentStatus( TransactionStatus transactionStatus, int refundAmount ) {
+    protected PaymentState GetPaymentState( TransactionStatus transactionStatus, int refundAmount ) {
       PaymentState paymentState = PaymentState.Initialized;
       if ( transactionStatus == TransactionStatus.PAYMENT_NEW )
         paymentState = PaymentState.Authorized;

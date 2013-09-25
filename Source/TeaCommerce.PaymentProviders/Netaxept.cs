@@ -35,7 +35,7 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "cancelurl" ] = string.Empty;
         defaultSettings[ "instantcapture" ] = "0";
         defaultSettings[ "paymentMethodList" ] = "";
-        defaultSettings[ "testMode" ] = "0";
+        defaultSettings[ "testMode" ] = "1";
         return defaultSettings;
       }
     }

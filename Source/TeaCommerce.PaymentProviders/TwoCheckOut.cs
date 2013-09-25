@@ -33,7 +33,7 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "zipCodePropertyAlias" ] = "zipCode";
         defaultSettings[ "phonePropertyAlias" ] = "phone";
         defaultSettings[ "phoneExtensionPropertyAlias" ] = "phoneExtension";
-        defaultSettings[ "demo" ] = "N";
+        defaultSettings[ "demo" ] = "Y";
         return defaultSettings;
       }
     }

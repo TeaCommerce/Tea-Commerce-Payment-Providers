@@ -33,7 +33,7 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "streetAddressPropertyAlias" ] = "streetAddress";
         defaultSettings[ "cityPropertyAlias" ] = "city";
         defaultSettings[ "zipCodePropertyAlias" ] = "zipCode";
-        defaultSettings[ "testMode" ] = "0";
+        defaultSettings[ "testMode" ] = "1";
         return defaultSettings;
       }
     }

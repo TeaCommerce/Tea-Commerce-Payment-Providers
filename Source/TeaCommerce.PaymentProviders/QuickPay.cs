@@ -35,7 +35,7 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "autocapture" ] = "0";
         defaultSettings[ "cardtypelock" ] = string.Empty;
         defaultSettings[ "md5secret" ] = string.Empty;
-        defaultSettings[ "testmode" ] = "0";
+        defaultSettings[ "testmode" ] = "1";
         return defaultSettings;
       }
     }

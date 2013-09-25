@@ -37,7 +37,7 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "cancelUrl" ] = string.Empty;
         defaultSettings[ "purchaseOperation" ] = "AUTHORIZATION";
         defaultSettings[ "encryptionKey" ] = string.Empty;
-        defaultSettings[ "testing" ] = "0";
+        defaultSettings[ "testing" ] = "1";
         return defaultSettings;
       }
     }

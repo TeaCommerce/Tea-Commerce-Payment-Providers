@@ -37,7 +37,7 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "md5CallbackSecret" ] = string.Empty;
         defaultSettings[ "apiUser" ] = string.Empty;
         defaultSettings[ "apiPassword" ] = string.Empty;
-        defaultSettings[ "testmode" ] = "0";
+        defaultSettings[ "testmode" ] = "1";
         return defaultSettings;
       }
     }

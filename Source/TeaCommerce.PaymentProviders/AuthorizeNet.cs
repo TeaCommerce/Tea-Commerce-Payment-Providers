@@ -34,7 +34,7 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "x_type" ] = "AUTH_ONLY";
         defaultSettings[ "transactionKey" ] = string.Empty;
         defaultSettings[ "md5HashKey" ] = string.Empty;
-        defaultSettings[ "testing" ] = "0";
+        defaultSettings[ "testing" ] = "1";
         return defaultSettings;
       }
     }

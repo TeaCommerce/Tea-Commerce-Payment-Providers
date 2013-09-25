@@ -39,7 +39,7 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "md5k2" ] = string.Empty;
         defaultSettings[ "apiusername" ] = string.Empty;
         defaultSettings[ "apipassword" ] = string.Empty;
-        defaultSettings[ "test" ] = "0";
+        defaultSettings[ "test" ] = "1";
         return defaultSettings;
       }
     }

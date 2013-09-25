@@ -30,7 +30,7 @@ namespace TeaCommerce.PaymentProviders {
         defaultSettings[ "payment_methods" ] = "auto";
         defaultSettings[ "md5Key1" ] = string.Empty;
         defaultSettings[ "md5Key2" ] = string.Empty;
-        defaultSettings[ "test_mode" ] = "false";
+        defaultSettings[ "test_mode" ] = "true";
         return defaultSettings;
       }
     }
@@ -250,7 +250,7 @@ namespace TeaCommerce.PaymentProviders {
         case "payment_methods":
           return settingsKey + "<br/><small>e.g. invoice,card</small>";
         case "test_mode":
-          return settingsKey + "<br/><small>1 = true; 0 = false</small>";
+          return settingsKey + "<br/><small>true/false</small>";
         default:
           return base.GetLocalizedSettingsKey( settingsKey, culture );
       }
