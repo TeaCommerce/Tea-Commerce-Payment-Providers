@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProviders", "TeaCommerce.PaymentProviders\TeaCommerce.PaymentProviders.csproj", "{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProviders.Web", "TeaCommerce.PaymentProviders.Web\TeaCommerce.PaymentProviders.Web.csproj", "{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}"
 EndProject
 Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "TeaCommerce.PaymentProviders.Web.UI", "http://localhost:56791", "{7F142543-1476-4166-A88B-C4C9AB960616}"
 	ProjectSection(WebsiteProperties) = preProject
