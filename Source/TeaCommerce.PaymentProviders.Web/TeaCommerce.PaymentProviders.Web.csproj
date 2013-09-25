@@ -46,9 +46,11 @@
     <Reference Include="System.Xml" />
     <Reference Include="TeaCommerce.Api">
       <HintPath>..\..\Lib\Tea Commerce\TeaCommerce.Api.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="TeaCommerce.Api.Web">
       <HintPath>..\..\Lib\Tea Commerce\TeaCommerce.Api.Web.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
