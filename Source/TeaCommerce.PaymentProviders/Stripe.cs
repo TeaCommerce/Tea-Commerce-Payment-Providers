@@ -147,15 +147,13 @@ namespace TeaCommerce.PaymentProviders {
           // A web hook request so update existing order
           StripeCharge charge = Mapper<StripeCharge>.MapFromJson( stripeEvent.Data.Object.ToString() );
 
-          if (stripeEvent.Type.StartsWith("charge."))
-          {
-              var state = GetPaymentState(charge);
-              if (order.TransactionInformation.PaymentState != state)
-              {
-                  order.TransactionInformation.TransactionId = charge.Id;
-                  order.TransactionInformation.PaymentState = state;
-                  order.Save();
-              }
+          if ( stripeEvent.Type.StartsWith( "charge." ) ) {
+            PaymentState paymentState = GetPaymentState( charge );
+            if ( order.TransactionInformation.PaymentState != paymentState ) {
+              order.TransactionInformation.TransactionId = charge.Id;
+              order.TransactionInformation.PaymentState = paymentState;
+              order.Save();
+            }
           }
         }
       } catch ( Exception exp ) {
