@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Web;
@@ -13,7 +12,7 @@ using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 using TeaCommerce.PaymentProviders.Web.wannafindService;
 
-namespace TeaCommerce.PaymentProviders.Web {
+namespace TeaCommerce.PaymentProviders.Web.Classic {
 
   [PaymentProvider( "Wannafind" )]
   public class Wannafind : APaymentProvider {
@@ -42,7 +41,7 @@ namespace TeaCommerce.PaymentProviders.Web {
       }
     }
 
-    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings ) {
       order.MustNotBeNull( "order" );
       settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "shopid", "settings" );
@@ -130,13 +129,7 @@ namespace TeaCommerce.PaymentProviders.Web {
 
         //Write data when testing
         if ( settings.ContainsKey( "testmode" ) && settings[ "testmode" ] == "1" ) {
-          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/wannafind-callback-data.txt" ) ) ) ) {
-            writer.WriteLine( "Query string:" );
-            foreach ( string k in request.QueryString.Keys ) {
-              writer.WriteLine( k + " : " + request.QueryString[ k ] );
-            }
-            writer.Flush();
-          }
+          LogRequestToFile( request, HostingEnvironment.MapPath( "~/wannafind-callback-data.txt" ), logGetData: true );
         }
 
         string orderId = request.QueryString[ "orderid" ];

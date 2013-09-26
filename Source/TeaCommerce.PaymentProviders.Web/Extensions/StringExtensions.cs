@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 
-namespace TeaCommerce.PaymentProviders.Extensions {
+namespace TeaCommerce.PaymentProviders.Web.Extensions {
   public static class StringExtensions {
 
     /// <summary>

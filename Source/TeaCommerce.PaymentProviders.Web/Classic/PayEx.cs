@@ -14,7 +14,7 @@ using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 using TeaCommerce.PaymentProviders.Web.PayExService;
 
-namespace TeaCommerce.PaymentProviders.Web {
+namespace TeaCommerce.PaymentProviders.Web.Classic {
 
   [PaymentProvider( "PayEx" )]
   public class PayEx : APaymentProvider {
@@ -42,7 +42,7 @@ namespace TeaCommerce.PaymentProviders.Web {
       }
     }
 
-    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings ) {
       order.MustNotBeNull( "order" );
       settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "accountNumber", "settings" );

@@ -1,198 +1,126 @@
 ﻿@using System.Threading
 @*
- * FileName: CyberSourcePaymentForm.cshtml
- * Description: A basic payment form for use with the CyberSource payment provider
- * Author: Matt Brailsford (@mattbrailsford)
- * Create Date: 2013-09-20
- *
  * IMPORTANT!
  * Please ensure that this macro is placed on a page 
  * that is protected by SSL.
  *@
 
 <style type="text/css">
-    .error { border: solid 1px red; color: red; }
+  .error {
+    border: solid 1px red;
+    color: red;
+  }
 </style>
 
-<form action="@Request.Form["form_url"]" method="POST" id="payment-form">
-    
-    <input type="hidden" name="override_custom_receipt_page" value="@Request.Form["callback_url"]" />
-    
-    <input type="hidden" name="profile_id" value="@Request.Form["profile_id"]" />
-    <input type="hidden" name="access_key" value="@Request.Form["access_key"]" />
-    <input type="hidden" name="transaction_uuid" value="@Guid.NewGuid()" />
-    <input type="hidden" name="reference_number" value="@Request.Form["cart_number"]" />
-    <input type="hidden" name="amount" value="@Request.Form["amount"]" />
-    <input type="hidden" name="currency" value="@Request.Form["currency"]" />
-    <input type="hidden" name="locale" value="@Thread.CurrentThread.CurrentCulture.Name" />
-    
-    <input type="hidden" name="transaction_type" value="sale" />
-    <input type="hidden" name="payment_method" value="card" />
+<form action="@Request.Form[ "form_url" ]" method="POST" id="payment-form">
 
-    <input type="hidden" name="signed_field_names" value="override_custom_receipt_page,access_key,profile_id,transaction_uuid,signed_field_names,unsigned_field_names,signed_date_time,locale,transaction_type,reference_number,amount,currency,payment_method,card_type,card_number,card_cvn,card_expiry_date,bill_to_forename,bill_to_surname,bill_to_email,bill_to_phone,bill_to_address_line1,bill_to_address_city,bill_to_address_state,bill_to_address_country,bill_to_address_postal_code" />
-    <input type="hidden" name="unsigned_field_names" value="" />
-    <input type="hidden" name="signed_date_time" value="" />
-    <input type="hidden" name="signature" value="" />
-    
-    <span class="payment-errors">@Request.Form["error_message"]</span>
+  <span class="payment-errors">@Request.Form[ "error_message" ]</span>
 
-    <h3>Billing Information</h3>
-    <div class="form-row"> 
-        <label>
-            <span>Forename</span>
-            <input type="text" name="bill_to_forename" value="@Request.Form["req_bill_to_forename"]" />
-        </label>
-    </div>
-    
-    <div class="form-row"> 
-        <label>
-            <span>Surname</span>
-            <input type="text" name="bill_to_surname" value="@Request.Form["req_bill_to_surname"]" />
-        </label>
-    </div>
-    <div class="form-row"> 
-        <label>
-            <span>Email</span>
-            <input type="email" name="bill_to_email" value="@Request.Form["req_bill_to_email"]" />
-        </label>
-    </div>
-    <div class="form-row"> 
-        <label>
-            <span>Telephone</span>
-            <input type="text" name="bill_to_phone" value="@Request.Form["req_bill_to_phone"]" />
-        </label>
-    </div>
-    <div class="form-row"> 
-        <label>
-            <span>Address</span>
-            <input type="text" name="bill_to_address_line1" value="@Request.Form["req_bill_to_address_line1"]" />
-        </label>
-    </div>
-    <div class="form-row"> 
-        <label>
-            <span>City</span>
-            <input type="text" name="bill_to_address_city" value="@Request.Form["req_bill_to_address_city"]" />
-        </label>
-    </div>
-    <div class="form-row"> 
-        <label>
-            <span>State/County</span>
-            <input type="text" name="bill_to_address_state" value="@Request.Form["req_bill_to_address_state"]" />
-        </label>
-    </div>
-    <div class="form-row"> 
-        <label>
-            <span>Country (uppercase two letter ISO code)</span>
-            <input type="text" name="bill_to_address_country" value="@Request.Form["req_bill_to_address_country"]" />
-        </label>
-    </div>
-    <div class="form-row"> 
-        <label>
-            <span>Zip/Postcode</span>
-            <input type="text" name="bill_to_address_postal_code" value="@Request.Form["req_bill_to_address_postal_code"]" />
-        </label>
-    </div>
-    
-    <h3>Payment Information</h3>
-    <div class="form-row"> 
-        <label>
-            <span>Card Type</span>
-            <select name="card_type">
-                <option value="001">Visa</option>
-                <option value="002">MasterCard</option>
-                <!--
-                    ============================================
-                    Enable credit cards as required
-                    ============================================
-                    <option value="003">American Express</option>
-                    <option value="004">Discover</option>
-                    <option value="005">Diners Club</option>
-                    <option value="006">Carte Blanche</option>
-                    <option value="007">JCB</option>
-                    <option value="014">EnRoute</option>
-                    <option value="021">JAL</option>
-                    <option value="024">Maestro (UK Domestic)</option>
-                    <option value="031">Delta</option>
-                    <option value="033">Visa Electron</option>
-                    <option value="034">Dankort</option>
-                    <option value="035">Laser</option>
-                    <option value="036">Carte Bleue</option>
-                    <option value="037">Carta Si</option>
-                    <option value="042">Maestro (International)</option>
-                    <option value="043">GE Money UK Card</option>
-                    -->
-            </select>
-        </label>
-    </div>
+  <h3>Payment Information</h3>
+  <div class="form-row">
+    <label>
+      <span>Card Type</span>
+      <select name="card_type">
+        <option value="001">Visa</option>
+        <option value="002">MasterCard</option>
+        <!--
+          ============================================
+          Enable credit cards as required
+          ============================================
+          <option value="003">American Express</option>
+          <option value="004">Discover</option>
+          <option value="005">Diners Club</option>
+          <option value="006">Carte Blanche</option>
+          <option value="007">JCB</option>
+          <option value="014">EnRoute</option>
+          <option value="021">JAL</option>
+          <option value="024">Maestro (UK Domestic)</option>
+          <option value="031">Delta</option>
+          <option value="033">Visa Electron</option>
+          <option value="034">Dankort</option>
+          <option value="035">Laser</option>
+          <option value="036">Carte Bleue</option>
+          <option value="037">Carta Si</option>
+          <option value="042">Maestro (International)</option>
+          <option value="043">GE Money UK Card</option>
+          -->
+      </select>
+    </label>
+  </div>
 
-    <div class="form-row"> 
-        <label>
-            <span>Card Number</span>
-            <input type="text" size="20" name="card_number"/>
-        </label>
-    </div>
+  <div class="form-row">
+    <label>
+      <span>Card Number</span>
+      <input type="text" size="20" name="card_number" />
+    </label>
+  </div>
 
-    <div class="form-row"> 
-        <label>
-            <span>CVN</span>
-            <input type="text" size="4" name="card_cvn"/>
-        </label>
-    </div>
+  <div class="form-row">
+    <label>
+      <span>CVN</span>
+      <input type="text" size="4" name="card_cvn" />
+    </label>
+  </div>
 
-    <div class="form-row">
-        <span>Expiration (MM-YYYY)</span>
-        <input type="text" size="7" name="card_expiry_date"/>
-    </div>
-    
-    <a href="@Request.Form["cancel_url"]">&lt; Cancel</a>
-    <button type="submit">Submit Payment</button>
+  <div class="form-row">
+    <span>Expiration (MM-YYYY)</span>
+    <input type="text" size="2" name="card_expiry_month" />-
+    <input type="text" size="4" name="card_expiry_year" />
+  </div>
+
+  <a href="@Request.Form[ "cancel_url" ]">&lt; Cancel</a>
+  <input type="submit" value="Submit payment" />
 </form>
 
 <script type="text/javascript">
+  jQuery(function () {
+    jQuery('#payment-form').on('submit', function () {
+      var form = jQuery(this);
 
-    jQuery(function ($) {
-        $('#payment-form').on("submit", function (e) {
-            var $form = $(this);
+      // Disable the submit button to prevent repeated clicks
+      form.find('input[type=submit]').prop('disabled', true);
+      
 
-            // Disable the submit button to prevent repeated clicks
-            $form.find('button').prop('disabled', true);
 
-            // Generate the signature for the form fields
-            $.post("@Request.Form["callback_url"]?sign=true",
-                $form.serialize(),
-                function (data, status, xhr) {
-                    if (data.error) {
-                        // Display errors and re-enable the submit button
-                        $form.find('.payment-errors').text(data.error_message);
-                        $form.find('button').prop('disabled', false);
-                    } else {
-                        // Grab signature details
-                        var signatureTimestamp = data.signature_timestamp;
-                        var signature = data.signature;
-                        // Update the form fields and submit the payment
-                        $form.find("*[name=signed_date_time]").val(signatureTimestamp);
-                        $form.find("*[name=signature]").val(signature);
-                        $form.get(0).submit();
-                    }
-                },
-                "json");
+      // Generate the signature for the form fields
+      jQuery.post('@Request.Form[ "communication_url" ]',
+        form.serialize(),
+        function (data, status, xhr) {
+          form.append(data);
+          //form.get(0).submit();
 
-            // Prevent the form from submitting with the default action
-            return false;
-        });
+          //if (data.error) {
+          //  // Display errors and re-enable the submit button
+          //  $form.find('.payment-errors').text(data.error_message);
+          //  $form.find('button').prop('disabled', false);
+          //} else {
+          //  // Grab signature details
+          //  var signatureTimestamp = data.signature_timestamp;
+          //  var signature = data.signature;
+          //  // Update the form fields and submit the payment
+          //  $form.find("*[name=signed_date_time]").val(signatureTimestamp);
+          //  $form.find("*[name=signature]").val(signature);
+          //  $form.get(0).submit();
+          //}
+        },
+        "json");
 
-        errorFields("@Request.Form["required_fields"]");
-        errorFields("@Request.Form["invalid_fields"]");
+      // Prevent the form from submitting with the default action
+      return false;
     });
 
-    function errorFields(fieldNames) {
-        var names = fieldNames.split(",");
-        for (var i = 0; i < names.length; i++) {
-            var name = $.trim(names[i]);
-            if (name != "") {
-                $("#payment-form *[name=" + name + "]").addClass("error");
-            }
-        }
+    //errorFields("@Request.Form[ "required_fields" ]");
+    //errorFields("@Request.Form[ "invalid_fields" ]");
+  });
+
+  function errorFields(fieldNames) {
+    var names = fieldNames.split(",");
+    for (var i = 0; i < names.length; i++) {
+      var name = $.trim(names[i]);
+      if (name != "") {
+        $("#payment-form *[name=" + name + "]").addClass("error");
+      }
     }
+  }
 
 </script>

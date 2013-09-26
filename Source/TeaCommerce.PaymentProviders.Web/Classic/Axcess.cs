@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Web;
 using System.Web.Hosting;
@@ -11,7 +10,7 @@ using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 
-namespace TeaCommerce.PaymentProviders.Web {
+namespace TeaCommerce.PaymentProviders.Web.Classic {
 
   [PaymentProvider( "Axcess" )]
   public class Axcess : APaymentProvider {
@@ -41,7 +40,7 @@ namespace TeaCommerce.PaymentProviders.Web {
       }
     }
 
-    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings ) {
       order.MustNotBeNull( "order" );
       settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "SECURITY.SENDER", "settings" );
@@ -128,13 +127,7 @@ namespace TeaCommerce.PaymentProviders.Web {
 
         //Write data when testing
         if ( settings[ "TRANSACTION.MODE" ] != "LIVE" ) {
-          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/axcess-callback-data.txt" ) ) ) ) {
-            writer.WriteLine( "FORM:" );
-            foreach ( string k in request.Form.Keys ) {
-              writer.WriteLine( k + " : " + request.Form[ k ] );
-            }
-            writer.Flush();
-          }
+          LogRequestToFile( request, HostingEnvironment.MapPath( "~/axcess-callback-data.txt" ), logPostData: true );
         }
 
         HttpContext.Current.Response.Clear();

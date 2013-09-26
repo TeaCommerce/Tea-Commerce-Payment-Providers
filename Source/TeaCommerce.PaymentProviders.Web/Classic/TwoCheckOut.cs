@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Web;
 using System.Web.Hosting;
@@ -9,10 +8,10 @@ using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
-using TeaCommerce.PaymentProviders.Extensions;
 using TeaCommerce.Api.Infrastructure.Logging;
+using TeaCommerce.PaymentProviders.Web.Extensions;
 
-namespace TeaCommerce.PaymentProviders.Web {
+namespace TeaCommerce.PaymentProviders.Web.Classic {
 
   [PaymentProvider( "2CheckOut" )]
   public class TwoCheckOut : APaymentProvider {
@@ -38,7 +37,7 @@ namespace TeaCommerce.PaymentProviders.Web {
       }
     }
 
-    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings ) {
       order.MustNotBeNull( "order" );
       settings.MustNotBeNull( "settings" );
 
@@ -200,13 +199,7 @@ namespace TeaCommerce.PaymentProviders.Web {
 
         //Write data when testing
         if ( settings.ContainsKey( "demo" ) && settings[ "demo" ] == "Y" ) {
-          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/2checkout-callback-data.txt" ) ) ) ) {
-            writer.WriteLine( "Query string:" );
-            foreach ( string k in request.QueryString.Keys ) {
-              writer.WriteLine( k + " : " + request.QueryString[ k ] );
-            }
-            writer.Flush();
-          }
+          LogRequestToFile( request, HostingEnvironment.MapPath( "~/2checkout-callback-data.txt" ), logGetData: true );
         }
 
         string accountNumber = request.QueryString[ "sid" ];

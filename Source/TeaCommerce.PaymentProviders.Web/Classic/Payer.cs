@@ -1,19 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Web;
 using System.Web.Hosting;
 using System.Xml.Linq;
 using TeaCommerce.Api.Common;
+using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
-using TeaCommerce.PaymentProviders.Extensions;
-using TeaCommerce.Api.Infrastructure.Logging;
+using TeaCommerce.PaymentProviders.Web.Extensions;
 
-namespace TeaCommerce.PaymentProviders.Web {
+namespace TeaCommerce.PaymentProviders.Web.Classic {
 
   [PaymentProvider( "Payer" )]
   public class Payer : APaymentProvider {
@@ -35,7 +34,7 @@ namespace TeaCommerce.PaymentProviders.Web {
       }
     }
 
-    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings ) {
       order.MustNotBeNull( "order" );
       settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "payer_agentid", "settings" );
@@ -198,13 +197,7 @@ namespace TeaCommerce.PaymentProviders.Web {
 
         //Write data when testing
         if ( settings.ContainsKey( "test_mode" ) && settings[ "test_mode" ] == "true" ) {
-          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/payer-callback-data.txt" ) ) ) ) {
-            writer.WriteLine( "Query string:" );
-            foreach ( string k in request.QueryString.Keys ) {
-              writer.WriteLine( k + " : " + request.QueryString[ k ] );
-            }
-            writer.Flush();
-          }
+          LogRequestToFile( request, HostingEnvironment.MapPath( "~/payer-callback-data.txt" ), logGetData: true );
         }
 
         //Check for payer IP addresses

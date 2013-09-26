@@ -10,9 +10,9 @@ using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
-using TeaCommerce.PaymentProviders.Extensions;
+using TeaCommerce.PaymentProviders.Web.Extensions;
 
-namespace TeaCommerce.PaymentProviders.Web {
+namespace TeaCommerce.PaymentProviders.Web.Classic {
 
   [PaymentProvider( "PaymentSense" )]
   public class PaymentSense : APaymentProvider {
@@ -35,7 +35,7 @@ namespace TeaCommerce.PaymentProviders.Web {
       }
     }
 
-    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings ) {
       order.MustNotBeNull( "order" );
       settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "MerchantID", "settings" );
@@ -166,13 +166,7 @@ namespace TeaCommerce.PaymentProviders.Web {
 
           //Write data when testing
           if ( settings.ContainsKey( "Testing" ) && settings[ "Testing" ] == "1" ) {
-            using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/payment-sense-callback-data.txt" ) ) ) ) {
-              writer.WriteLine( "FORM:" );
-              foreach ( string k in request.Form.Keys ) {
-                writer.WriteLine( k + " : " + request.Form[ k ] );
-              }
-              writer.Flush();
-            }
+            LogRequestToFile( request, HostingEnvironment.MapPath( "~/payment-sense-callback-data.txt" ), logPostData: true );
           }
 
           List<string> keysToHash = new List<string>();

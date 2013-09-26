@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Web;
 using System.Web.Hosting;
@@ -12,9 +11,9 @@ using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
-using TeaCommerce.PaymentProviders.Extensions;
+using TeaCommerce.PaymentProviders.Web.Extensions;
 
-namespace TeaCommerce.PaymentProviders.Web {
+namespace TeaCommerce.PaymentProviders.Web.Classic {
   [PaymentProvider( "QuickPay" )]
   public class QuickPay : APaymentProvider {
 
@@ -40,7 +39,7 @@ namespace TeaCommerce.PaymentProviders.Web {
       }
     }
 
-    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings ) {
       order.MustNotBeNull( "order" );
       settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "merchant", "settings" );
@@ -117,13 +116,7 @@ namespace TeaCommerce.PaymentProviders.Web {
 
         //Write data when testing
         if ( settings.ContainsKey( "testmode" ) && settings[ "testmode" ] == "1" ) {
-          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/quick-pay-callback-data.txt" ) ) ) ) {
-            writer.WriteLine( "Form:" );
-            foreach ( string k in request.Form.Keys ) {
-              writer.WriteLine( k + " : " + request.Form[ k ] );
-            }
-            writer.Flush();
-          }
+          LogRequestToFile( request, HostingEnvironment.MapPath( "~/quick-pay-callback-data.txt" ), logPostData: true );
         }
 
         string md5CheckValue = string.Empty;
