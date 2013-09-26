@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -14,7 +13,7 @@ using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Web.PaymentProviders;
 using TeaCommerce.PaymentProviders.Web.AuthorizeNetService;
 
-namespace TeaCommerce.PaymentProviders.Web {
+namespace TeaCommerce.PaymentProviders.Web.Classic {
 
   [PaymentProvider( "AuthorizeNet" )]
   public class AuthorizeNet : APaymentProvider {
@@ -22,8 +21,6 @@ namespace TeaCommerce.PaymentProviders.Web {
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-authorize-net-with-tea-commerce/"; } }
 
     public override bool SupportsRetrievalOfPaymentStatus { get { return true; } }
-
-    public override bool AllowsCallbackWithoutOrderId { get { return true; } }
 
     public override IDictionary<string, string> DefaultSettings {
       get {
@@ -39,7 +36,7 @@ namespace TeaCommerce.PaymentProviders.Web {
       }
     }
 
-    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings ) {
       order.MustNotBeNull( "order" );
       settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "x_login", "settings" );
@@ -73,8 +70,7 @@ namespace TeaCommerce.PaymentProviders.Web {
 
       string timestamp = ( DateTime.UtcNow - new DateTime( 1970, 1, 1 ) ).TotalSeconds.ToString( "0", CultureInfo.InvariantCulture );
       htmlForm.InputFields[ "x_fp_timestamp" ] = timestamp;
-
-      htmlForm.InputFields[ "x_fp_hash" ] = GenerateHMACMD5Hash( settings[ "transactionKey" ], settings[ "x_login" ] + "^" + sequenceNumber + "^" + timestamp + "^" + amount + "^" );
+      htmlForm.InputFields[ "x_fp_hash" ] = new HMACMD5( Encoding.UTF8.GetBytes( settings[ "transactionKey" ] ) ).ComputeHash( Encoding.UTF8.GetBytes( settings[ "x_login" ] + "^" + sequenceNumber + "^" + timestamp + "^" + amount + "^" ) ).ToHex();
 
       return htmlForm;
     }
@@ -104,13 +100,7 @@ namespace TeaCommerce.PaymentProviders.Web {
 
         //Write data when testing
         if ( settings.ContainsKey( "testing" ) && settings[ "testing" ] == "1" ) {
-          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/authorize-net-get-cart-number-data.txt" ) ) ) ) {
-            writer.WriteLine( "Form:" );
-            foreach ( string k in request.Form.Keys ) {
-              writer.WriteLine( k + " : " + request.Form[ k ] );
-            }
-            writer.Flush();
-          }
+          LogRequestToFile( request, HostingEnvironment.MapPath( "~/authorize-net-get-cart-number-data.txt" ), logPostData: true );
         }
 
         string responseCode = request.Form[ "x_response_code" ];
@@ -151,13 +141,7 @@ namespace TeaCommerce.PaymentProviders.Web {
 
         //Write data when testing
         if ( settings.ContainsKey( "testing" ) && settings[ "testing" ] == "1" ) {
-          using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/authorize-net-callback-data.txt" ) ) ) ) {
-            writer.WriteLine( "Form:" );
-            foreach ( string k in request.Form.Keys ) {
-              writer.WriteLine( k + " : " + request.Form[ k ] );
-            }
-            writer.Flush();
-          }
+          LogRequestToFile( request, HostingEnvironment.MapPath( "~/authorize-net-callback-data.txt" ), logPostData: true );
         }
 
         string responseCode = request.Form[ "x_response_code" ];

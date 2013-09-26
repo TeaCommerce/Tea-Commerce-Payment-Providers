@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -15,7 +14,7 @@ using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 using TeaCommerce.Api.Infrastructure.Logging;
 
-namespace TeaCommerce.PaymentProviders.Web {
+namespace TeaCommerce.PaymentProviders.Web.Classic {
 
   [PaymentProvider( "Ogone" )]
   public class Ogone : APaymentProvider {
@@ -47,7 +46,7 @@ namespace TeaCommerce.PaymentProviders.Web {
       }
     }
 
-    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings ) {
       order.MustNotBeNull( "order" );
       settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "SHAINPASSPHRASE", "settings" );
@@ -79,7 +78,7 @@ namespace TeaCommerce.PaymentProviders.Web {
       //Ogone dont support to show order line information to the shopper
 
       string strToHash = string.Join( "", htmlForm.InputFields.OrderBy( i => i.Key ).Select( i => i.Key + "=" + i.Value + settings[ "SHAINPASSPHRASE" ] ) );
-      htmlForm.InputFields[ "SHASIGN" ] = ConvertToHexString( new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ) );
+      htmlForm.InputFields[ "SHASIGN" ] = new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ).ToHex();
 
       return htmlForm;
     }
@@ -109,13 +108,7 @@ namespace TeaCommerce.PaymentProviders.Web {
 
         //Write data when testing
         if ( settings.ContainsKey( "TESTMODE" ) && settings[ "TESTMODE" ] == "1" ) {
-          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/ogone-callback-data.txt" ) ) ) ) {
-            writer.WriteLine( "Query string:" );
-            foreach ( string k in request.QueryString.Keys ) {
-              writer.WriteLine( k + " : " + request.QueryString[ k ] );
-            }
-            writer.Flush();
-          }
+          LogRequestToFile( request, HostingEnvironment.MapPath( "~/ogone-callback-data.txt" ), logGetData: true );
         }
 
         Dictionary<string, string> inputFields = new Dictionary<string, string>();
@@ -133,7 +126,7 @@ namespace TeaCommerce.PaymentProviders.Web {
         }
 
         string strToHash = string.Join( "", inputFields.OrderBy( i => i.Key ).Select( i => i.Key.ToUpperInvariant() + "=" + i.Value + settings[ "SHAOUTPASSPHRASE" ] ) );
-        string digest = ConvertToHexString( new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ) );
+        string digest = new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ).ToHex();
 
         if ( digest.Equals( shaSign ) ) {
           callbackInfo = new CallbackInfo( decimal.Parse( strAmount, CultureInfo.InvariantCulture ), transaction, status == "5" || status == "51" ? PaymentState.Authorized : PaymentState.Captured, cardType, cardNo );
@@ -294,7 +287,7 @@ namespace TeaCommerce.PaymentProviders.Web {
       }
 
       string strToHash = string.Join( "", inputFields.OrderBy( i => i.Key ).Select( i => i.Key.ToUpperInvariant() + "=" + i.Value + settings[ "SHAINPASSPHRASE" ] ) );
-      inputFields[ "SHASIGN" ] = ConvertToHexString( new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ) );
+      inputFields[ "SHASIGN" ] = new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ).ToHex();
 
       string response = MakePostRequest( GetMethodUrl( methodName, settings ), inputFields );
       return XDocument.Parse( response, LoadOptions.PreserveWhitespace );

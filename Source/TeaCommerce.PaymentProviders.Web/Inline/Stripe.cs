@@ -1,9 +1,4 @@
-﻿/*
-- * FileName: Stripe.cs
-- * Description: A payment provider for handling payments via Stripe
-- * Author: Matt Brailsford (@mattbrailsford)
-- * Create Date: 2013-09-12
-- */
+﻿using System.Linq;
 using Stripe;
 using System;
 using System.Collections.Generic;
@@ -18,8 +13,8 @@ using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 
-namespace TeaCommerce.PaymentProviders.Web {
-  [PaymentProvider( "Stripe" )]
+namespace TeaCommerce.PaymentProviders.Web.Inline {
+  [PaymentProvider( "Stripe - inline" )]
   public class Stripe : APaymentProvider {
 
     public override string DocumentationLink { get { return "https://stripe.com/docs"; } }
@@ -30,7 +25,6 @@ namespace TeaCommerce.PaymentProviders.Web {
     public override bool SupportsCancellationOfPayment { get { return true; } }
 
     public override bool FinalizeAtContinueUrl { get { return true; } }
-    public override bool AllowsCallbackWithoutOrderId { get { return true; } }
 
     public override IDictionary<string, string> DefaultSettings {
       get {
@@ -48,10 +42,9 @@ namespace TeaCommerce.PaymentProviders.Web {
       }
     }
 
-    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings ) {
+    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings ) {
       order.MustNotBeNull( "order" );
       settings.MustNotBeNull( "settings" );
-      settings.MustContainKey( "merchantnumber", "settings" );
       settings.MustContainKey( "form_url", "settings" );
       settings.MustContainKey( "mode", "settings" );
       settings.MustContainKey( settings[ "mode" ] + "_public_key", "settings" );
@@ -59,6 +52,9 @@ namespace TeaCommerce.PaymentProviders.Web {
       PaymentHtmlForm htmlForm = new PaymentHtmlForm {
         Action = settings[ "form_url" ]
       };
+
+      string[] settingsToExclude = new[] { "form_url", "capture", "test_secret_key", "test_public_key", "live_secret_key", "live_public_key", "mode" };
+      htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
       htmlForm.InputFields[ "api_key" ] = settings[ settings[ "mode" ] + "_public_key" ];
       htmlForm.InputFields[ "continue_url" ] = teaCommerceContinueUrl;
@@ -84,20 +80,71 @@ namespace TeaCommerce.PaymentProviders.Web {
     public override string GetCartNumber( HttpRequest request, IDictionary<string, string> settings ) {
       string cartNumber = "";
 
-      StripeEvent stripeEvent = GetStripeEvent( request );
+      try {
+        request.MustNotBeNull( "request" );
+        settings.MustNotBeNull( "settings" );
 
-      // We are only interested in charge events
-      if ( stripeEvent != null && stripeEvent.Type.StartsWith( "charge." ) ) {
-        StripeCharge stripeCharge = Mapper<StripeCharge>.MapFromJson( stripeEvent.Data.Object.ToString() );
-        cartNumber = stripeCharge.Description;
-      } else {
-        HttpContext.Current.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+        // If in test mode, write out the form data to a text file
+        if ( settings.ContainsKey( "mode" ) && settings[ "mode" ] == "test" ) {
+          LogRequestToFile( request, HostingEnvironment.MapPath( "~/stripe-get-cart-number-data.txt" ), logPostData: true );
+        }
+
+        StripeEvent stripeEvent = GetStripeEvent( request );
+
+        // We are only interested in charge events
+        if ( stripeEvent != null && stripeEvent.Type.StartsWith( "charge." ) ) {
+          StripeCharge stripeCharge = Mapper<StripeCharge>.MapFromJson( stripeEvent.Data.Object.ToString() );
+          cartNumber = stripeCharge.Description;
+        } else {
+          HttpContext.Current.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+        }
+
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "Stripe - Get cart number" );
       }
 
       return cartNumber;
     }
 
     public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
+      CallbackInfo callbackInfo = null;
+
+      try {
+        order.MustNotBeNull( "order" );
+        request.MustNotBeNull( "request" );
+        settings.MustNotBeNull( "settings" );
+        settings.MustContainKey( "mode", "settings" );
+        settings.MustContainKey( settings[ "mode" ] + "_secret_key", "settings" );
+
+        // If in test mode, write out the form data to a text file
+        if ( settings.ContainsKey( "mode" ) && settings[ "mode" ] == "test" ) {
+          LogRequestToFile( request, HostingEnvironment.MapPath( "~/stripe-callback-data.txt" ), logPostData: true );
+        }
+
+        StripeChargeCreateOptions chargeOptions = new StripeChargeCreateOptions {
+          AmountInCents = (int)( order.TotalPrice.WithVat * 100 ),
+          Currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId ).IsoCode,
+          TokenId = request.Form[ "stripeToken" ],
+          Description = order.CartNumber,
+          Capture = settings.ContainsKey( "capture" ) && ( settings[ "capture" ].TryParse<bool>() ?? false )
+        };
+
+        StripeChargeService chargeService = new StripeChargeService( settings[ settings[ "mode" ] + "_secret_key" ] );
+        StripeCharge charge = chargeService.Create( chargeOptions );
+
+        if ( charge.AmountInCents != null && charge.Paid != null && charge.Paid.Value ) {
+          callbackInfo = new CallbackInfo( (decimal)charge.AmountInCents.Value / 100, charge.Id, charge.Captured != null && charge.Captured.Value ? PaymentState.Captured : PaymentState.Authorized );
+        }
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "Stripe(" + order.CartNumber + ") - ProcessCallback" );
+      }
+
+      return callbackInfo;
+    }
+
+    public override string ProcessRequest( Order order, HttpRequest request, IDictionary<string, string> settings ) {
+      string response = "";
+
       try {
         order.MustNotBeNull( "order" );
         request.MustNotBeNull( "request" );
@@ -105,62 +152,28 @@ namespace TeaCommerce.PaymentProviders.Web {
 
         // If in test mode, write out the form data to a text file
         if ( settings.ContainsKey( "mode" ) && settings[ "mode" ] == "test" ) {
-          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/stripe-callback-data.txt" ) ) ) ) {
-            writer.WriteLine( "QueryString:" );
-            foreach ( string k in request.QueryString.Keys ) {
-              writer.WriteLine( k + " : " + request.QueryString[ k ] );
-            }
-            writer.WriteLine( "" );
-            writer.WriteLine( "-----------------------------------------------------" );
-            writer.WriteLine( "" );
-            writer.WriteLine( "Form:" );
-            foreach ( string k in request.Form.Keys ) {
-              writer.WriteLine( k + " : " + request.Form[ k ] );
-            }
-            writer.Flush();
-          }
+          LogRequestToFile( request, HostingEnvironment.MapPath( "~/stripe-request-data.txt" ), logPostData: true );
         }
 
-        // Check to see if being called as a result of a
-        // stripe web hook request or not
+        //Stripe supports webhooks
         StripeEvent stripeEvent = GetStripeEvent( request );
-        if ( stripeEvent == null ) {
-          // Not a web hook request so process new order
-          settings.MustContainKey( "mode", "settings" );
-          settings.MustContainKey( settings[ "mode" ] + "_secret_key", "settings" );
+        StripeCharge charge = Mapper<StripeCharge>.MapFromJson( stripeEvent.Data.Object.ToString() );
 
-          StripeChargeCreateOptions chargeOptions = new StripeChargeCreateOptions {
-            AmountInCents = (int)( order.TotalPrice.WithVat * 100 ),
-            Currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId ).IsoCode,
-            TokenId = request.Form[ "stripeToken" ],
-            Description = order.CartNumber,
-            Capture = settings.ContainsKey( "capture" ) && ( settings[ "capture" ].TryParse<bool>() ?? false )
-          };
-
-          StripeChargeService chargeService = new StripeChargeService( settings[ settings[ "mode" ] + "_secret_key" ] );
-          StripeCharge charge = chargeService.Create( chargeOptions );
-
-          if ( charge.AmountInCents != null && charge.Paid != null && charge.Paid != null ) {
-            return new CallbackInfo( (decimal)charge.AmountInCents.Value / 100, charge.Id, charge.Captured != null && charge.Captured.Value ? PaymentState.Captured : PaymentState.Authorized );
-          }
-        } else {
-          // A web hook request so update existing order
-          StripeCharge charge = Mapper<StripeCharge>.MapFromJson( stripeEvent.Data.Object.ToString() );
-
-          if ( stripeEvent.Type.StartsWith( "charge." ) ) {
-            PaymentState paymentState = GetPaymentState( charge );
-            if ( order.TransactionInformation.PaymentState != paymentState ) {
-              order.TransactionInformation.TransactionId = charge.Id;
-              order.TransactionInformation.PaymentState = paymentState;
-              order.Save();
-            }
+        if ( stripeEvent.Type.StartsWith( "charge." ) ) {
+          PaymentState paymentState = GetPaymentState( charge );
+          if ( order.TransactionInformation.PaymentState != paymentState ) {
+            order.TransactionInformation.TransactionId = charge.Id;
+            order.TransactionInformation.PaymentState = paymentState;
+            order.Save();
           }
         }
+
+
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Stripe(" + order.CartNumber + ") - ProcessCallback" );
+        LoggingService.Instance.Log( exp, "Stripe(" + order.CartNumber + ") - ProcessRequest" );
       }
 
-      return null;
+      return response;
     }
 
     public override ApiInfo GetStatus( Order order, IDictionary<string, string> settings ) {
