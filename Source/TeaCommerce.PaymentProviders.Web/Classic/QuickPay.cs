@@ -11,7 +11,7 @@ using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
-using TeaCommerce.PaymentProviders.Web.Extensions;
+
 
 namespace TeaCommerce.PaymentProviders.Web.Classic {
   [PaymentProvider( "QuickPay" )]

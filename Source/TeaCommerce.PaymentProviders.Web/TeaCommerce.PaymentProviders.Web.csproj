@@ -63,7 +63,6 @@
     <Compile Include="Classic\PaymentSense.cs" />
     <Compile Include="Classic\Dibs.cs" />
     <Compile Include="Classic\ePay.cs" />
-    <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Classic\Netaxept.cs">
       <SubType>Code</SubType>
     </Compile>

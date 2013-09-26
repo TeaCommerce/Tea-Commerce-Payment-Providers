@@ -1,21 +1,9 @@
-﻿@using System.Threading
-@*
+﻿@*
  * IMPORTANT!
  * Please ensure that this macro is placed on a page 
  * that is protected by SSL.
  *@
-
-<style type="text/css">
-  .error {
-    border: solid 1px red;
-    color: red;
-  }
-</style>
-
 <form action="@Request.Form[ "form_url" ]" method="POST" id="payment-form">
-
-  <span class="payment-errors">@Request.Form[ "error_message" ]</span>
-
   <h3>Payment Information</h3>
   <div class="form-row">
     <label>
@@ -64,8 +52,7 @@
 
   <div class="form-row">
     <span>Expiration (MM-YYYY)</span>
-    <input type="text" size="2" name="card_expiry_month" />-
-    <input type="text" size="4" name="card_expiry_year" />
+    <input type="text" size="7" name="card_expiry_date" />
   </div>
 
   <a href="@Request.Form[ "cancel_url" ]">&lt; Cancel</a>
@@ -77,50 +64,20 @@
     jQuery('#payment-form').on('submit', function () {
       var form = jQuery(this);
 
-      // Disable the submit button to prevent repeated clicks
-      form.find('input[type=submit]').prop('disabled', true);
-      
-
-
       // Generate the signature for the form fields
-      jQuery.post('@Request.Form[ "communication_url" ]',
-        form.serialize(),
-        function (data, status, xhr) {
-          form.append(data);
-          //form.get(0).submit();
-
-          //if (data.error) {
-          //  // Display errors and re-enable the submit button
-          //  $form.find('.payment-errors').text(data.error_message);
-          //  $form.find('button').prop('disabled', false);
-          //} else {
-          //  // Grab signature details
-          //  var signatureTimestamp = data.signature_timestamp;
-          //  var signature = data.signature;
-          //  // Update the form fields and submit the payment
-          //  $form.find("*[name=signed_date_time]").val(signatureTimestamp);
-          //  $form.find("*[name=signature]").val(signature);
-          //  $form.get(0).submit();
-          //}
-        },
-        "json");
+      jQuery.post('@Request.Form[ "communication_url" ]', form.serialize(), function (data) {
+        form.append(data);
+        form.get(0).submit();
+      });
 
       // Prevent the form from submitting with the default action
       return false;
     });
 
-    //errorFields("@Request.Form[ "required_fields" ]");
-    //errorFields("@Request.Form[ "invalid_fields" ]");
-  });
+    var decision = @(Request.Form[ "decision" ]);
 
-  function errorFields(fieldNames) {
-    var names = fieldNames.split(",");
-    for (var i = 0; i < names.length; i++) {
-      var name = $.trim(names[i]);
-      if (name != "") {
-        $("#payment-form *[name=" + name + "]").addClass("error");
-      }
+    if ( decision != '' && decision != 'ACCEPT' ) {
+      alert('Errors - use the Request.Form["message"] to see what is wrong - all other error data is in the Request.\nMost used is required_fields and invalid_fields (is a comma seperated value)');
     }
-  }
-
+  });
 </script>

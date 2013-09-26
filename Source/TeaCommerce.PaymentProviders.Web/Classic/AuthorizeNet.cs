@@ -70,8 +70,7 @@ namespace TeaCommerce.PaymentProviders.Web.Classic {
 
       string timestamp = ( DateTime.UtcNow - new DateTime( 1970, 1, 1 ) ).TotalSeconds.ToString( "0", CultureInfo.InvariantCulture );
       htmlForm.InputFields[ "x_fp_timestamp" ] = timestamp;
-
-      htmlForm.InputFields[ "x_fp_hash" ] = GenerateHMACMD5Hash( settings[ "transactionKey" ], settings[ "x_login" ] + "^" + sequenceNumber + "^" + timestamp + "^" + amount + "^" );
+      htmlForm.InputFields[ "x_fp_hash" ] = new HMACMD5( Encoding.UTF8.GetBytes( settings[ "transactionKey" ] ) ).ComputeHash( Encoding.UTF8.GetBytes( settings[ "x_login" ] + "^" + sequenceNumber + "^" + timestamp + "^" + amount + "^" ) ).ToHex();
 
       return htmlForm;
     }

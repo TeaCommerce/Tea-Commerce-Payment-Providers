@@ -10,7 +10,7 @@ using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
-using TeaCommerce.PaymentProviders.Web.Extensions;
+
 
 namespace TeaCommerce.PaymentProviders.Web.Classic {
 
@@ -165,7 +165,7 @@ namespace TeaCommerce.PaymentProviders.Web.Classic {
         payerData
       );
 
-      htmlForm.InputFields[ "payer_data" ] = xmlDocument.ToString().Base64Encode();
+      htmlForm.InputFields[ "payer_data" ] = xmlDocument.ToString().ToBase64();
       htmlForm.InputFields[ "payer_checksum" ] = GenerateMD5Hash( settings[ "md5Key1" ] + htmlForm.InputFields[ "payer_data" ] + settings[ "md5Key2" ] );
 
       return htmlForm;

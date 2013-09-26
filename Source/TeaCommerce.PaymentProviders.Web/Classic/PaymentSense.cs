@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Web;
 using System.Web.Hosting;
 using TeaCommerce.Api.Common;
@@ -10,7 +12,7 @@ using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
-using TeaCommerce.PaymentProviders.Web.Extensions;
+
 
 namespace TeaCommerce.PaymentProviders.Web.Classic {
 
@@ -256,7 +258,7 @@ namespace TeaCommerce.PaymentProviders.Web.Classic {
       settings.MustContainKey( "PreSharedKey", "settings" );
 
       string valueToHash = string.Join( "&", keys.Select( k => k + "=" + ( inputFields.ContainsKey( k ) ? inputFields[ k ] : settings.ContainsKey( k ) ? settings[ k ] : "" ) ) );
-      string hashValue = GenerateSHA1Hash( valueToHash );
+      string hashValue = new SHA1CryptoServiceProvider().ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) ).ToHex();
 
       if ( settings.ContainsKey( "Testing" ) && settings[ "Testing" ] == "1" ) {
         using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/payment-sense-generate-digest.txt" ) ) ) ) {
