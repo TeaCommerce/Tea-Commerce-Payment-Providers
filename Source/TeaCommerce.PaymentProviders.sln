@@ -1,27 +1,27 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProviders.Web", "TeaCommerce.PaymentProviders.Web\TeaCommerce.PaymentProviders.Web.csproj", "{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProviders.Web", "TeaCommerce.PaymentProviders\TeaCommerce.PaymentProviders.csproj", "{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}"
 EndProject
-Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "TeaCommerce.PaymentProviders.Web.UI", "http://localhost:56791", "{7F142543-1476-4166-A88B-C4C9AB960616}"
+Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "TeaCommerce.PaymentProviders.UI", "http://localhost:56791", "{7F142543-1476-4166-A88B-C4C9AB960616}"
 	ProjectSection(WebsiteProperties) = preProject
 		UseIISExpress = "true"
 		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
-		Debug.AspNetCompiler.VirtualPath = "/TeaCommerce.PaymentProviders.Web.UI"
-		Debug.AspNetCompiler.PhysicalPath = "TeaCommerce.PaymentProviders.Web.UI\"
-		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\TeaCommerce.PaymentProviders.Web.UI\"
+		Debug.AspNetCompiler.VirtualPath = "/TeaCommerce.PaymentProviders.UI"
+		Debug.AspNetCompiler.PhysicalPath = "TeaCommerce.PaymentProviders.UI\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\TeaCommerce.PaymentProviders.UI\"
 		Debug.AspNetCompiler.Updateable = "true"
 		Debug.AspNetCompiler.ForceOverwrite = "true"
 		Debug.AspNetCompiler.FixedNames = "false"
 		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.VirtualPath = "/TeaCommerce.PaymentProviders.Web.UI"
-		Release.AspNetCompiler.PhysicalPath = "TeaCommerce.PaymentProviders.Web.UI\"
-		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\TeaCommerce.PaymentProviders.Web.UI\"
+		Release.AspNetCompiler.VirtualPath = "/TeaCommerce.PaymentProviders.UI"
+		Release.AspNetCompiler.PhysicalPath = "TeaCommerce.PaymentProviders.UI\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\TeaCommerce.PaymentProviders.UI\"
 		Release.AspNetCompiler.Updateable = "true"
 		Release.AspNetCompiler.ForceOverwrite = "true"
 		Release.AspNetCompiler.FixedNames = "false"
 		Release.AspNetCompiler.Debug = "False"
-		SlnRelativePath = "TeaCommerce.PaymentProviders.Web.UI\"
+		SlnRelativePath = "TeaCommerce.PaymentProviders.UI\"
 	EndProjectSection
 EndProject
 Global
