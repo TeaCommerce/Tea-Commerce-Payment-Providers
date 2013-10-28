@@ -108,7 +108,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
 
     public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
       CallbackInfo callbackInfo = null;
-
+        
       try {
         order.MustNotBeNull( "order" );
         request.MustNotBeNull( "request" );
@@ -134,8 +134,34 @@ namespace TeaCommerce.PaymentProviders.Inline {
 
         if ( charge.AmountInCents != null && charge.Paid != null && charge.Paid.Value ) {
           callbackInfo = new CallbackInfo( (decimal)charge.AmountInCents.Value / 100, charge.Id, charge.Captured != null && charge.Captured.Value ? PaymentState.Captured : PaymentState.Authorized );
+            
         }
-      } catch ( Exception exp ) {
+          
+      } catch( StripeException e)
+      {
+              // Pass through request fields
+              string requestFields = string.Join( "", request.Form.AllKeys.Select( k => "<input type=\"hidden\" name=\"" + k + "\" value=\"" + request.Form[ k ] + "\" />" ) );
+             
+              //Add error details from the exception.
+              requestFields = requestFields + "<input type=\"hidden\" name=\"TransactionFailed\" value=\"true\" />";
+              requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.chargeId\" value=\"" + e.StripeError.ChargeId + "\" />";
+              requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.Code\" value=\"" + e.StripeError.Code + "\" />";
+              requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.Error\" value=\"" + e.StripeError.Error + "\" />";
+              requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.ErrorSubscription\" value=\"" + e.StripeError.ErrorSubscription + "\" />";
+              requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.ErrorType\" value=\"" + e.StripeError.ErrorType + "\" />";
+              requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.Message\" value=\"" + e.StripeError.Message + "\" />";
+              requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.Parameter\" value=\"" + e.StripeError.Parameter + "\" />";
+            
+              string paymentForm = PaymentMethodService.Instance.Get( order.StoreId, order.PaymentInformation.PaymentMethodId.Value ).GeneratePaymentForm( order, requestFields );
+
+              //Force the form to auto submit
+              paymentForm += "<script type=\"text/javascript\">document.forms[0].submit();</script>";
+
+              //Write out the form
+              HttpContext.Current.Response.Clear();
+              HttpContext.Current.Response.Write( paymentForm );
+              HttpContext.Current.Response.End();
+      }catch ( Exception exp ) {
         LoggingService.Instance.Log( exp, "Stripe(" + order.CartNumber + ") - ProcessCallback" );
       }
 
