@@ -48,8 +48,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
       PaymentHtmlForm htmlForm = new PaymentHtmlForm {
         Action = "https://betaling.wannafind.dk/paymentwindow.php",
-        Attributes = { { "id", "wannafind" }, { "name", "wannafind" }, { "target", "wannafind_paymentwindow" } },
-        JavaScriptFunction = "openPaymenWindow();"
+        Attributes = { { "id", "wannafind" }, { "name", "wannafind" }, { "target", "_blank" } }
       };
 
       string[] settingsToExclude = new[] { "md5AuthSecret", "md5CallbackSecret", "apiUser", "apiPassword", "testmode" };
