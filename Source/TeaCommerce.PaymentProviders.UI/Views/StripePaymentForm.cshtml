@@ -6,7 +6,23 @@
 
 <form action="@Request.Form["continue_url"]" method="POST" id="payment-form">
 
-    <span class="payment-errors"></span>
+    <span class="payment-errors">
+        @*
+            We only find out a transaction has failed on confirmation of the transation serverside, so this form gets reloaded with additional data about the error.
+            FailureReason.chargeId:ch_2pzC3AkWQAVBDn
+            FailureReason.Code:card_declined
+            FailureReason.Error:
+            FailureReason.ErrorSubscription:
+            FailureReason.ErrorType:card_error
+            FailureReason.Message:Your card was declined.
+            FailureReason.Parameter:
+        *@
+
+        @if(Request.Form["TransactionFailed"]=="true")
+        {
+            @Request.Form["FailureReason.Message"]
+        }
+    </span>
 
     <div class="form-row"> 
         <label>
