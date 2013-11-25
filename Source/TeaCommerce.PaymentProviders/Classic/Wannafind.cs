@@ -48,15 +48,15 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
       PaymentHtmlForm htmlForm = new PaymentHtmlForm {
         Action = "https://betaling.wannafind.dk/paymentwindow.php",
-        Attributes = { { "id", "wannafind" }, { "name", "wannafind" }, { "target", "wannafind_paymentwindow" } },
-        JavaScriptFunction = "openPaymenWindow();"
+        Attributes = { { "id", "wannafind" }, { "name", "wannafind" }, { "target", "_blank" } }
       };
 
       string[] settingsToExclude = new[] { "md5AuthSecret", "md5CallbackSecret", "apiUser", "apiPassword", "testmode" };
       htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
       //orderid
-      htmlForm.InputFields[ "orderid" ] = order.CartNumber.Replace( StoreService.Instance.Get( order.StoreId ).CartNumberPrefix, "" );
+      string orderId = order.CartNumber.Replace( StoreService.Instance.Get( order.StoreId ).CartNumberPrefix, "" );
+      htmlForm.InputFields[ "orderid" ] = orderId;
 
       //currency
       //Check that the Iso code exists
@@ -97,7 +97,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
       //md5securitykey
       if ( settings.ContainsKey( "md5AuthSecret" ) && !string.IsNullOrEmpty( settings[ "md5AuthSecret" ] ) )
-        htmlForm.InputFields[ "checkmd5" ] = GenerateMD5Hash( currencyStr + order.CartNumber + amount + cardType + settings[ "md5AuthSecret" ] );
+        htmlForm.InputFields[ "checkmd5" ] = GenerateMD5Hash( currencyStr + orderId + amount + cardType + settings[ "md5AuthSecret" ] );
 
       //wannafind dont support to show order line information to the shopper
 
