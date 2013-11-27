@@ -1,47 +1,50 @@
-﻿using System;
+﻿using Klarna.Checkout;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Web;
-using Klarna.Checkout;
-using Newtonsoft.Json.Linq;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
+using KlarnaOrder = Klarna.Checkout.Order;
 using Order = TeaCommerce.Api.Models.Order;
 
 namespace TeaCommerce.PaymentProviders.Inline {
   [PaymentProvider( "Klarna" )]
   public class Klarna : APaymentProvider {
 
-    public override string DocumentationLink {
-      get { return "http://anders.burla.dk/umbraco/tea-commerce/using-klarna-with-tea-commerce/"; }
-    } //todo: add documentation
+    protected const string KlarnaApiRequestContentType = "application/vnd.klarna.checkout.aggregated-order-v2+json";
 
     public override IDictionary<string, string> DefaultSettings {
       get {
         Dictionary<string, string> defaultSettings = new Dictionary<string, string>();
         defaultSettings[ "merchant.id" ] = "";
-        defaultSettings[ "merchant.terms_uri" ] = "";
-        defaultSettings[ "merchant.checkout_uri" ] = "";
-        defaultSettings[ "sharedSecret" ] = "";
-        defaultSettings[ "merchant.confirmation_uri" ] = "";
-        defaultSettings[ "merchant.validation_uri" ] = ""; //todo: add validation support
         defaultSettings[ "locale" ] = "sv-se";
-        defaultSettings[ "ContentType" ] = "";
-        defaultSettings[ "BaseUri" ] = "";
-        defaultSettings[ "PaymentFormUrl" ] = "";
+        defaultSettings[ "paymentFormUrl" ] = "";
+        defaultSettings[ "merchant.confirmation_uri" ] = "";
+        defaultSettings[ "merchant.terms_uri" ] = "";
+        defaultSettings[ "sharedSecret" ] = "";
+        defaultSettings[ "testMode" ] = "1";
         return defaultSettings;
       }
     }
 
     public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings ) {
-      PaymentHtmlForm htmlForm = new PaymentHtmlForm();
-      htmlForm.Action = settings[ "PaymentFormUrl" ];
-      order.Properties.AddOrUpdate( new CustomProperty( "teaCommerceCummunicationUrl", teaCommerceCommunicationUrl ) { ServerSideOnly = true } );
-      order.Properties.AddOrUpdate( new CustomProperty( "teaCommerceCallBackUrl", teaCommerceCallBackUrl ) { ServerSideOnly = true } );
+      order.MustNotBeNull( "order" );
+      settings.MustNotBeNull( "settings" );
+      settings.MustContainKey( "paymentFormUrl", "settings" );
+
+      PaymentHtmlForm htmlForm = new PaymentHtmlForm {
+        Action = settings[ "paymentFormUrl" ]
+      };
+
+      order.Properties.AddOrUpdate( new CustomProperty( "teaCommerceCommunicationUrl", teaCommerceCommunicationUrl ) { ServerSideOnly = true } );
       order.Properties.AddOrUpdate( new CustomProperty( "teaCommerceContinueUrl", teaCommerceContinueUrl ) { ServerSideOnly = true } );
+      order.Properties.AddOrUpdate( new CustomProperty( "teaCommerceCallbackUrl", teaCommerceCallBackUrl ) { ServerSideOnly = true } );
 
       return htmlForm;
     }
@@ -59,152 +62,191 @@ namespace TeaCommerce.PaymentProviders.Inline {
 
     public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
       CallbackInfo callbackInfo = null;
+
       try {
         order.MustNotBeNull( "order" );
         request.MustNotBeNull( "request" );
         settings.MustNotBeNull( "settings" );
+        settings.MustContainKey( "sharedSecret", "settings" );
 
-        string klarnaLocation = request.QueryString[ "klarna_order" ];
         IConnector connector = Connector.Create( settings[ "sharedSecret" ] );
-
-        global::Klarna.Checkout.Order klarnaOrder = new global::Klarna.Checkout.Order( connector,
-          new Uri( klarnaLocation ) ) { ContentType = settings[ "ContentType" ] };
-
+        KlarnaOrder klarnaOrder = new KlarnaOrder( connector, new Uri( order.Properties[ "klarnaLocation" ] ) ) {
+          ContentType = KlarnaApiRequestContentType
+        };
         klarnaOrder.Fetch();
 
         if ( (string)klarnaOrder.GetValue( "status" ) == "checkout_complete" ) {
-          //create order
-          decimal amount = Convert.ToDecimal( klarnaOrder.GetValue( "cart.total_price_including_tax" ) );
+          decimal amount = ( (JObject)klarnaOrder.GetValue( "cart" ) )[ "total_price_including_tax" ].Value<decimal>() / 100M;
           string klarnaId = klarnaOrder.GetValue( "id" ).ToString();
-          klarnaOrder.Update( new Dictionary<string, object>() { {"status", "created"} } );
-          PaymentState paymentState = PaymentState.Authorized;
-          callbackInfo = new CallbackInfo( amount, klarnaId, paymentState );
+
+          callbackInfo = new CallbackInfo( amount, klarnaId, PaymentState.Authorized );
+
+          klarnaOrder.Update( new Dictionary<string, object>() { { "status", "created" } } );
+        } else {
+          throw new Exception( "Trying to process a callback from Klarna with an order that isn't completed" );
         }
       } catch ( Exception ex ) {
-        LoggingService.Instance.Log( "Klarna(" + order.OrderNumber + ") - Error recieving callback - Error: " + ex );
+        LoggingService.Instance.Log( "Klarna(" + order.CartNumber + ") - Error recieving callback - Error: " + ex );
       }
 
       return callbackInfo;
     }
 
     public override string ProcessRequest( Order order, HttpRequest request, IDictionary<string, string> settings ) {
-      string contentType = settings[ "ContentType" ];
+      string response = "";
 
-      string callbackType = request[ "teaCommerceCommunicationType" ];
-      global::Klarna.Checkout.Order klarnaOrder = null;
-      IConnector connector = Connector.Create( settings[ "sharedSecret" ] );
-
-      if ( callbackType == "checkout" ) {
-        //Get a checkout response
+      try {
         order.MustNotBeNull( "order" );
         settings.MustNotBeNull( "settings" );
-        settings.MustContainKey( "merchant.id", "settings" );
         settings.MustContainKey( "sharedSecret", "settings" );
-        settings.MustContainKey( "BaseUri", "settings" );
-        settings.MustContainKey( "merchant.terms_uri", "settings" );
-        settings.MustContainKey( "merchant.checkout_uri", "settings" );
-        settings.MustContainKey( "merchant.confirmation_uri", "settings" );
 
-        string callback = order.Properties[ "teaCommerceCallBackUrl" ];
+        string communicationType = request[ "communicationType" ];
 
-        //Cart information
-        List<Dictionary<string, object>> cartItems = new List<Dictionary<string, object>>();
-        IEnumerable<OrderLine> orderLines = order.OrderLines.GetAll();
-        foreach ( OrderLine orderLine in orderLines ) {
-          cartItems.Add( new Dictionary<string, object> {
-            {"reference", orderLine.Sku},
-            {"name", orderLine.Name},
-            {"quantity", (int) orderLine.Quantity},
-            {"unit_price", (int) orderLine.UnitPrice.WithVat*100},
-            {"tax_rate", (int) orderLine.VatRate.Value*100}
-          } );
-        }
+        KlarnaOrder klarnaOrder = null;
+        IConnector connector = Connector.Create( settings[ "sharedSecret" ] );
 
-        Dictionary<string, object> cart = new Dictionary<string, object> { { "items", cartItems } };
-        Dictionary<string, object> data = new Dictionary<string, object> { { "cart", cart } };
+        if ( communicationType == "checkout" ) {
+          settings.MustContainKey( "merchant.id", "settings" );
+          settings.MustContainKey( "merchant.terms_uri", "settings" );
+          settings.MustContainKey( "locale", "settings" );
 
-        CustomProperty klarnaLocation = order.Properties.Get( "klarnaLocation" );
-        if ( klarnaLocation != null ) {
-          //Try to update an old order
-          try {
-            klarnaOrder = new global::Klarna.Checkout.Order( connector, new Uri( klarnaLocation.Value ) ) {
-              ContentType = contentType
+          //Cart information
+          List<Dictionary<string, object>> cartItems = order.OrderLines.Select( orderLine =>
+            new Dictionary<string, object> {
+              { "reference", orderLine.Sku }, 
+              { "name", orderLine.Name }, 
+              { "quantity", (int) orderLine.Quantity },
+              { "unit_price", (int) (orderLine.UnitPrice.WithVat * 100M) },
+              { "tax_rate", (int) (orderLine.VatRate.Value * 10000M) }
+            } )
+          .ToList();
+
+          if ( order.PaymentInformation.PaymentMethodId != null ) {
+            PaymentMethod paymentMethod = PaymentMethodService.Instance.Get( order.StoreId, order.PaymentInformation.PaymentMethodId.Value );
+            cartItems.Add( new Dictionary<string, object> {
+              { "reference", paymentMethod.Sku},
+              { "name", paymentMethod.Name},
+              { "quantity", 1},
+              { "unit_price", (int) (order.PaymentInformation.TotalPrice.WithVat * 100M) },
+              { "tax_rate", (int) (order.PaymentInformation.VatRate * 10000M) }
+            } );
+          }
+          if ( order.ShipmentInformation.ShippingMethodId != null ) {
+            ShippingMethod shippingMethod = ShippingMethodService.Instance.Get( order.StoreId, order.ShipmentInformation.ShippingMethodId.Value );
+            cartItems.Add( new Dictionary<string, object> {
+              { "type", "shipping_fee" },
+              { "reference", shippingMethod.Sku},
+              { "name", shippingMethod.Name},
+              { "quantity", 1},
+              { "unit_price", (int) (order.ShipmentInformation.TotalPrice.WithVat * 100M) },
+              { "tax_rate",  (int) (order.ShipmentInformation.VatRate * 10000M) }
+            } );
+          }
+
+          Dictionary<string, object> data = new Dictionary<string, object> { { "cart", new Dictionary<string, object> { { "items", cartItems } } } };
+          string klarnaLocation = order.Properties[ "klarnaLocation" ];
+
+          //Check if the order has a Klarna location URI property - then we try and update the order
+          if ( !string.IsNullOrEmpty( klarnaLocation ) ) {
+            try {
+              klarnaOrder = new KlarnaOrder( connector, new Uri( klarnaLocation ) ) {
+                ContentType = KlarnaApiRequestContentType
+              };
+              klarnaOrder.Fetch();
+              klarnaOrder.Update( data );
+            } catch ( Exception ) {
+              //Klarna cart session has expired and we make sure to remove the Klarna location URI property
+              klarnaOrder = null;
+            }
+          }
+
+          //If no Klarna order was found to update or the session expired - then create new Klarna order
+          if ( klarnaOrder == null ) {
+            //Merchant information
+            data[ "merchant" ] = new Dictionary<string, object> {
+            {"id", settings[ "merchant.id" ]},
+            {"terms_uri", ensureFullHtmlPath(settings[ "merchant.terms_uri" ])},
+            {"checkout_uri", request.UrlReferrer.ToString()},
+            {"confirmation_uri", order.Properties[ "teaCommerceContinueUrl" ]},
+            {"push_uri", order.Properties[ "teaCommerceCallbackUrl" ]}
+          };
+
+            //Combined data
+            Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
+
+            //If the currency is not a valid iso4217 currency then throw an error
+            if ( !Iso4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
+              throw new Exception( "You must specify an ISO 4217 currency code for the " + currency.Name + " currency" );
+            }
+
+            data[ "purchase_country" ] = CountryService.Instance.Get( order.StoreId, order.PaymentInformation.CountryId ).RegionCode;
+            data[ "purchase_currency" ] = currency.IsoCode;
+            data[ "locale" ] = settings[ "locale" ];
+
+            klarnaOrder = new KlarnaOrder( connector ) {
+              BaseUri = settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ? new Uri( "https://checkout.testdrive.klarna.com/checkout/orders" ) : new Uri( "https://checkout.klarna.com/checkout/orders" ),
+              ContentType = KlarnaApiRequestContentType
+            };
+
+            //Create new order
+            klarnaOrder.Create( data );
+            klarnaOrder.Fetch();
+            order.Properties.AddOrUpdate( new CustomProperty( "klarnaLocation", klarnaOrder.Location.ToString() ) { ServerSideOnly = true } );
+            order.Save();
+          }
+        } else if ( communicationType == "confirmation" ) {
+          //get confirmation response
+          string klarnaLocation = order.Properties[ "klarnaLocation" ];
+
+          if ( !string.IsNullOrEmpty( klarnaLocation ) ) {
+            //Fetch and show confirmation page if status is not checkout_incomplete
+            klarnaOrder = new KlarnaOrder( connector, new Uri( klarnaLocation ) ) {
+              ContentType = KlarnaApiRequestContentType
             };
             klarnaOrder.Fetch();
 
-            //update order with new cartitems
-            klarnaOrder.Update( data );
-          } catch ( Exception ex ) {
-            //try and create a new order instead
-            klarnaOrder = null;
-            order.Properties.Remove( klarnaLocation );
+            if ( (string)klarnaOrder.GetValue( "status" ) == "checkout_incomplete" ) {
+              throw new Exception( "Confirmation page reached without a Klarna order that is finished" );
+            }
           }
         }
 
-        if ( klarnaOrder == null ) {
-          //Merchant information
-          Dictionary<string, object> merchant = new Dictionary<string, object> {
-            {"id", settings[ "merchant.id" ]},
-            {"terms_uri", settings[ "merchant.terms_uri" ]},
-            {"checkout_uri", settings[ "merchant.checkout_uri" ]},
-            {"confirmation_uri", order.Properties[ "teaCommerceContinueUrl" ]},
-            {"push_uri", callback}
-          };
-
-          //Combined data
-          data[ "purchase_country" ] =
-            CountryService.Instance.Get( order.StoreId, order.PaymentInformation.CountryId ).RegionCode;
-          data[ "purchase_currency" ] = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId ).IsoCode;
-          data[ "locale" ] = "sv-se";
-          data[ "merchant" ] = merchant;
-
-          Uri klarnaCheckoutUri = new Uri( settings[ "BaseUri" ] );
-          klarnaOrder = new global::Klarna.Checkout.Order( connector,
-            klarnaCheckoutUri ) {
-              BaseUri = klarnaCheckoutUri,
-              ContentType = contentType
-            };
-
-          //Create new order
-          klarnaOrder.Create( data );
-          klarnaOrder.Fetch();
-          order.Properties.AddOrUpdate( new CustomProperty( "klarnaLocation",
-            klarnaOrder.Location.ToString() ) { ServerSideOnly = true } );
-        }
-      } else if ( callbackType == "confirmation" ) {
-        //get confirmation response
-        string klarnaLocation = order.Properties[ "klarnaLocation" ];
-        if ( klarnaLocation != null ) {
-          //Fetch and show confirmation page if status is not checkout_incomplete
-          klarnaOrder = new global::Klarna.Checkout.Order( connector, new Uri( klarnaLocation ) ) {
-            ContentType = contentType
-          };
-          klarnaOrder.Fetch();
-          if ( (string)klarnaOrder.GetValue( "status" ) == "checkout_incomplete" ) {
-            LoggingService.Instance.Log( "Order with orderid: '" + order.Id + "' reached confirmation page without finishing Klarna checkout." );
-            throw new HttpException( 500, "Error in the checkout flow." );
+        //Get the JavaScript snippet from the Klarna order
+        if ( klarnaOrder != null ) {
+          JObject guiElement = klarnaOrder.GetValue( "gui" ) as JObject;
+          if ( guiElement != null ) {
+            response = guiElement[ "snippet" ].ToString();
           }
         }
+
+      } catch ( Exception exp ) {
+        LoggingService.Instance.Log( exp, "Klarna(" + order.CartNumber + ") - ProcessRequest" );
       }
 
-      JObject gui = klarnaOrder.GetValue( "gui" ) as JObject;
-
-      return gui[ "snippet" ].ToString();
+      return response;
     }
 
     public override string GetLocalizedSettingsKey( string settingsKey, CultureInfo culture ) {
       switch ( settingsKey ) {
-        case "accepturl":
+        case "paymentFormUrl":
+          return settingsKey + "<br/><small>e.g. /payment/</small>";
+        case "merchant.confirmation_uri":
           return settingsKey + "<br/><small>e.g. /continue/</small>";
-        case "declineurl":
-          return settingsKey + "<br/><small>e.g. /cancel/</small>";
-        case "cardtype":
-          return settingsKey + "<br/><small>e.g. VISA,MC</small>";
-        case "testmode":
+        case "merchant.terms_uri":
+          return settingsKey + "<br/><small>e.g. /terms/</small>";
+        case "testMode":
           return settingsKey + "<br/><small>1 = true; 0 = false</small>";
         default:
           return base.GetLocalizedSettingsKey( settingsKey, culture );
       }
+    }
+
+    private string ensureFullHtmlPath( string uri ) {
+      if ( !uri.StartsWith( "http" ) ) {
+        Uri baseUrl = new UriBuilder( HttpContext.Current.Request.Url.Scheme, HttpContext.Current.Request.Url.Host, HttpContext.Current.Request.Url.Port ).Uri;
+        uri = new Uri( baseUrl, uri ).AbsoluteUri;
+      }
+      return uri;
     }
   }
 }

@@ -3,7 +3,9 @@
 
 @{
   Order currentOrder = TC.GetCurrentOrder( long.Parse( Model._store ) );
-  string html = new WebClient().DownloadString( currentOrder.Properties[ "teaCommerceCummunicationUrl" ] + "&teaCommerceCommunicationType=checkout" );
+  WebClient webclient = new WebClient();
+  webclient.Headers[ "referer" ] = HttpContext.Current.Request.Url.AbsoluteUri;
+  string html = webclient.DownloadString( currentOrder.Properties[ "teaCommerceCommunicationUrl" ]+"?communicationType=checkout" );
 }
 
-@Html.Raw( html )
+@Html.Raw( html ) 

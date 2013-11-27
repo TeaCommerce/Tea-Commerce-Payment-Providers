@@ -3,7 +3,7 @@
 
 @{
   Order currentOrder = TC.GetCurrentFinalizedOrder( long.Parse( Model._store ) );
-  string html = new WebClient().DownloadString( currentOrder.Properties[ "teaCommerceCummunicationUrl" ] + "&teaCommerceCommunicationType=confirmation" );
+  string html = new WebClient().DownloadString( currentOrder.Properties[ "teaCommerceCommunicationUrl" ] + "?communicationType=confirmation" );
 }
 
 @Html.Raw( html )
