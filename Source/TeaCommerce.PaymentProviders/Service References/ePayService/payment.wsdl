@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<wsdl:definitions xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:tns="https://ssl.ditonlinebetalingssystem.dk/remote/payment" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" targetNamespace="https://ssl.ditonlinebetalingssystem.dk/remote/payment" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+<wsdl:definitions xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:tns="https://ssl.ditonlinebetalingssystem.dk/remote/payment" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" targetNamespace="https://ssl.ditonlinebetalingssystem.dk/remote/payment" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
   <wsdl:types>
     <s:schema elementFormDefault="qualified" targetNamespace="https://ssl.ditonlinebetalingssystem.dk/remote/payment">
       <s:element name="getPbsError">
@@ -201,6 +201,7 @@
           <s:enumeration value="PAYMENT_RENEW" />
           <s:enumeration value="PAYMENT_EUROLINE_WAIT_CAPTURE" />
           <s:enumeration value="PAYMENT_EUROLINE_WAIT_CREDIT" />
+          <s:enumeration value="PARTLY_TRANSACTION_HIDDEN" />
         </s:restriction>
       </s:simpleType>
       <s:complexType name="ArrayOfTransactionHistoryInfo">
@@ -236,6 +237,16 @@
           <s:enumeration value="PAYPAL" />
           <s:enumeration value="BABS_SWEDBANK" />
           <s:enumeration value="MOBILPENGE" />
+          <s:enumeration value="KLARNA" />
+          <s:enumeration value="SVEA" />
+          <s:enumeration value="HANDELSBANKEN" />
+          <s:enumeration value="SEB_DIREKT" />
+          <s:enumeration value="NORDEA_SE_DIREKT" />
+          <s:enumeration value="HANDELSBANKEN_DIREKT" />
+          <s:enumeration value="SWEDBANK_DIREKT" />
+          <s:enumeration value="IBILL" />
+          <s:enumeration value="NEMPAY" />
+          <s:enumeration value="IDEAL" />
           <s:enumeration value="EPAY" />
         </s:restriction>
       </s:simpleType>
@@ -322,6 +333,15 @@
           <s:enumeration value="LIC_MASTERCARD_FOREIGN" />
           <s:enumeration value="PAYPAL" />
           <s:enumeration value="MOBILPENGE" />
+          <s:enumeration value="KLARNA" />
+          <s:enumeration value="SVEA" />
+          <s:enumeration value="SEB_DIREKTBETALNINGAR" />
+          <s:enumeration value="NORDEA_SE_DIREKTBETALNING" />
+          <s:enumeration value="HANDELSBANKEN_SE_DIREKTBETALNINGAR" />
+          <s:enumeration value="SWEDBANK_DIREKTBETALNINGAR" />
+          <s:enumeration value="IBILL" />
+          <s:enumeration value="NEMPAY" />
+          <s:enumeration value="IDEAL" />
         </s:restriction>
       </s:simpleType>
       <s:element name="getcardinfoResponse">
@@ -353,6 +373,25 @@
           <s:sequence>
             <s:element minOccurs="1" maxOccurs="1" name="renewResult" type="s:boolean" />
             <s:element minOccurs="1" maxOccurs="1" name="pbsResponse" type="s:int" />
+            <s:element minOccurs="1" maxOccurs="1" name="epayresponse" type="s:int" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="movetransactiontogroup">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="merchantnumber" type="s:int" />
+            <s:element minOccurs="1" maxOccurs="1" name="transactionid" type="s:long" />
+            <s:element minOccurs="0" maxOccurs="1" name="group" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="pwd" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="epayresponse" type="s:int" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="movetransactiontogroupResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="movetransactiontogroupResult" type="s:boolean" />
             <s:element minOccurs="1" maxOccurs="1" name="epayresponse" type="s:int" />
           </s:sequence>
         </s:complexType>
@@ -425,6 +464,12 @@
   <wsdl:message name="renewSoapOut">
     <wsdl:part name="parameters" element="tns:renewResponse" />
   </wsdl:message>
+  <wsdl:message name="movetransactiontogroupSoapIn">
+    <wsdl:part name="parameters" element="tns:movetransactiontogroup" />
+  </wsdl:message>
+  <wsdl:message name="movetransactiontogroupSoapOut">
+    <wsdl:part name="parameters" element="tns:movetransactiontogroupResponse" />
+  </wsdl:message>
   <wsdl:portType name="PaymentSoap">
     <wsdl:operation name="getPbsError">
       <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Converts an error from PBS to a string description. If the returning value is false check for error codes in the pbsresponse and epayresponse reference attributes for information about errors from ePay or PBS.</wsdl:documentation>
@@ -479,6 +524,11 @@
       <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">To renew an EWIRE payment. If the returning value is false check for error codes in the pbsresponse (EWIRE result) and epayresponse reference attributes for information about errors from ePay or EWIRE.</wsdl:documentation>
       <wsdl:input message="tns:renewSoapIn" />
       <wsdl:output message="tns:renewSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="movetransactiontogroup">
+      <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Use this function to move a transaction to a specific group. If the function returns true then the transaction was successfully moved to the group. If the function returns false then look at the parameter 'epayresponse' in order to determine why the transaction could not be moved to the Group.</wsdl:documentation>
+      <wsdl:input message="tns:movetransactiontogroupSoapIn" />
+      <wsdl:output message="tns:movetransactiontogroupSoapOut" />
     </wsdl:operation>
   </wsdl:portType>
   <wsdl:binding name="PaymentSoap" type="tns:PaymentSoap">
@@ -582,6 +632,15 @@
         <soap:body use="literal" />
       </wsdl:output>
     </wsdl:operation>
+    <wsdl:operation name="movetransactiontogroup">
+      <soap:operation soapAction="https://ssl.ditonlinebetalingssystem.dk/remote/payment/movetransactiontogroup" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
   </wsdl:binding>
   <wsdl:binding name="PaymentSoap12" type="tns:PaymentSoap">
     <soap12:binding transport="http://schemas.xmlsoap.org/soap/http" />
@@ -677,6 +736,15 @@
     </wsdl:operation>
     <wsdl:operation name="renew">
       <soap12:operation soapAction="https://ssl.ditonlinebetalingssystem.dk/remote/payment/renew" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="movetransactiontogroup">
+      <soap12:operation soapAction="https://ssl.ditonlinebetalingssystem.dk/remote/payment/movetransactiontogroup" style="document" />
       <wsdl:input>
         <soap12:body use="literal" />
       </wsdl:input>
