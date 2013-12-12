@@ -30,7 +30,7 @@ namespace TeaCommerce.PaymentProviders {
     }
 
     public override string FormPostUrl { get { return "https://betaling.wannafind.dk/paymentwindow.php"; } }
-    public override string FormAttributes { get { return @" id=""wannafind"" name=""wannafind"" target=""_blank"""; } }
+    public override string FormAttributes { get { return @"id=""wannafind"" name=""wannafind"" target=""_self"""; } }
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-wannafind-with-tea-commerce/"; } }
 
     public override Dictionary<string, string> GenerateForm( Data.Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
