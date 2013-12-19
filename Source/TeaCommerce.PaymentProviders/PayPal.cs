@@ -38,7 +38,7 @@ namespace TeaCommerce.PaymentProviders {
     public override string FormPostUrl { get { return !isSandbox ? "https://www.paypal.com/cgi-bin/webscr" : "https://www.sandbox.paypal.com/cgi-bin/webscr"; } }
     protected string APIPostUrl { get { return !isSandbox ? "https://api-3t.paypal.com/nvp" : "https://api-3t.sandbox.paypal.com/nvp"; } }
 
-    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
+    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, Dictionary<string, string> settings ) {
       isSandbox = settings[ "isSandbox" ] == "1";
       List<string> settingsToExclude = new string[] { "USER", "PWD", "SIGNATURE", "isSandbox", "productNumberPropertyAlias", "productNamePropertyAlias", "shippingMethodFormatString", "paymentMethodFormatString" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );

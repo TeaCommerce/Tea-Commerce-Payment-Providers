@@ -4,11 +4,6 @@
         <name>TeaCommerce.Data</name>
     </assembly>
     <members>
-        <member name="T:TeaCommerce.Data.Order">
-            <summary>
-            The data representation of an order/cart
-            </summary>
-        </member>
         <member name="T:TeaCommerce.Data.AData">
             <summary>
             General abstract for most Tea Commerce Data objects
@@ -92,6 +87,851 @@
             <value>
             The changed.
             </value>
+        </member>
+        <member name="T:TeaCommerce.Data.Controllers.CacheController">
+            <summary>
+            The CacheController holds general information about the cache
+            </summary>
+        </member>
+        <member name="F:TeaCommerce.Data.Controllers.CacheController.OrderKey">
+            <summary>
+            All cache keys to get the objects
+            </summary>
+        </member>
+        <member name="F:TeaCommerce.Data.Controllers.CacheController.StockDictionaryKey">
+            <summary>
+            All cache keys to get the objects
+            </summary>
+        </member>
+        <member name="F:TeaCommerce.Data.Controllers.CacheController.ShippingMethodsKey">
+            <summary>
+            All cache keys to get the objects
+            </summary>
+        </member>
+        <member name="F:TeaCommerce.Data.Controllers.CacheController.PaymentMethodsKey">
+            <summary>
+            All cache keys to get the objects
+            </summary>
+        </member>
+        <member name="F:TeaCommerce.Data.Controllers.CacheController.PaymentMethodsSettingsKey">
+            <summary>
+            All cache keys to get the objects
+            </summary>
+        </member>
+        <member name="F:TeaCommerce.Data.Controllers.CacheController.CountriesKey">
+            <summary>
+            All cache keys to get the objects
+            </summary>
+        </member>
+        <member name="F:TeaCommerce.Data.Controllers.CacheController.CurrenciesKey">
+            <summary>
+            All cache keys to get the objects
+            </summary>
+        </member>
+        <member name="F:TeaCommerce.Data.Controllers.CacheController.OrderStatusesKey">
+            <summary>
+            All cache keys to get the objects
+            </summary>
+        </member>
+        <member name="F:TeaCommerce.Data.Controllers.CacheController.EmailTemplatesKey">
+            <summary>
+            All cache keys to get the objects
+            </summary>
+        </member>
+        <member name="F:TeaCommerce.Data.Controllers.CacheController.VATGroupsKey">
+            <summary>
+            All cache keys to get the objects
+            </summary>
+        </member>
+        <member name="F:TeaCommerce.Data.Controllers.CacheController.SettingsFileKey">
+            <summary>
+            All cache keys to get the objects
+            </summary>
+        </member>
+        <member name="F:TeaCommerce.Data.Controllers.CacheController.PaymentProviderKey">
+            <summary>
+            All cache keys to get the objects
+            </summary>
+        </member>
+        <member name="F:TeaCommerce.Data.Controllers.CacheController.DomainsKey">
+            <summary>
+            All cache keys to get the objects
+            </summary>
+        </member>
+        <member name="F:TeaCommerce.Data.Controllers.CacheController.OrdersXmlCacheKey">
+            <summary>
+            All cache keys to get the objects
+            </summary>
+        </member>
+        <member name="F:TeaCommerce.Data.Controllers.CacheController.DefaultTimeout">
+            <summary>
+            The default timeout for cached obejcts
+            </summary>
+        </member>
+        <member name="F:TeaCommerce.Data.Controllers.CacheController.LongTimeout">
+            <summary>
+            The timeout for objects in the cache that is used the most
+            </summary>
+        </member>
+        <member name="T:TeaCommerce.Data.DB.TeaCommerceDataContext">
+            <summary>
+            Extends the Tea Commerce Data context
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.Insert(TeaCommerce.Data.DB.IDBObject)">
+            <summary>
+            Inserts the specified instance.
+            </summary>
+            <param name="instance">The instance.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertOrder(TeaCommerce.Data.DB.Order)">
+            <summary>
+            Inserts the order.
+            </summary>
+            <param name="instance">The instance.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertOrderProperty(TeaCommerce.Data.DB.OrderProperty)">
+            <summary>
+            Inserts the order property.
+            </summary>
+            <param name="instance">The instance.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertOrderStatus(TeaCommerce.Data.DB.OrderStatus)">
+            <summary>
+            Inserts the order status.
+            </summary>
+            <param name="instance">The instance.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertOrderLine(TeaCommerce.Data.DB.OrderLine)">
+            <summary>
+            Inserts the order line.
+            </summary>
+            <param name="instance">The instance.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertOrderLineProperty(TeaCommerce.Data.DB.OrderLineProperty)">
+            <summary>
+            Inserts the order line property.
+            </summary>
+            <param name="instance">The instance.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertOrderLinePrice(TeaCommerce.Data.DB.OrderLinePrice)">
+            <summary>
+            Inserts the order line price.
+            </summary>
+            <param name="instance">The instance.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertCurrency(TeaCommerce.Data.DB.Currency)">
+            <summary>
+            Inserts the currency.
+            </summary>
+            <param name="instance">The instance.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertCountry(TeaCommerce.Data.DB.Country)">
+            <summary>
+            Inserts the country.
+            </summary>
+            <param name="instance">The instance.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertEmailTemplate(TeaCommerce.Data.DB.EmailTemplate)">
+            <summary>
+            Inserts the EmailTemplate.
+            </summary>
+            <param name="instance">The instance.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertVATGroup(TeaCommerce.Data.DB.VATGroup)">
+            <summary>
+            Inserts the VAT group.
+            </summary>
+            <param name="instance">The instance.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertPaymentMethod(TeaCommerce.Data.DB.PaymentMethod)">
+            <summary>
+            Inserts the payment method.
+            </summary>
+            <param name="instance">The instance.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertShippingMethod(TeaCommerce.Data.DB.ShippingMethod)">
+            <summary>
+            Inserts the shipping method.
+            </summary>
+            <param name="instance">The instance.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertPaymentMethodSetting(TeaCommerce.Data.DB.PaymentMethodSetting)">
+            <summary>
+            Inserts the payment method setting.
+            </summary>
+            <param name="instance">The instance.</param>
+        </member>
+        <member name="T:TeaCommerce.Data.DB.OrderLineProperty">
+            <summary>
+            db OrderLineProperty partial extention
+            </summary>
+        </member>
+        <member name="T:TeaCommerce.Data.DB.ADBObject">
+            <summary>
+            Tea Commerce db data object abstract class
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.DB.ADBObject.POCOInstance">
+            <summary>
+            Gets or sets the POCO instance.
+            Lets the db class know about it's data layer object
+            </summary>
+            <value>
+            The POCO instance.
+            </value>
+        </member>
+        <member name="T:TeaCommerce.Data.DB.IDBObject">
+            <summary>
+            Tea Commerce db data object interface
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.OrderLineProperty.#ctor(TeaCommerce.Data.IPoco)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.OrderLineProperty"/> class.
+            </summary>
+            <param name="pocoInstance">The poco instance.</param>
+        </member>
+        <member name="T:TeaCommerce.Data.DB.OrderLinePrice">
+            <summary>
+            db OrderLinePrice partial extention
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.OrderLinePrice.#ctor(TeaCommerce.Data.IPoco)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.OrderLinePrice"/> class.
+            </summary>
+            <param name="pocoInstance">The poco instance.</param>
+        </member>
+        <member name="T:TeaCommerce.Data.DB.Currency">
+            <summary>
+            db Currency partial extention
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.Currency.#ctor(TeaCommerce.Data.IPoco)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.Currency"/> class.
+            </summary>
+            <param name="pocoInstance">The poco instance.</param>
+        </member>
+        <member name="T:TeaCommerce.Data.DB.ShippingMethod">
+            <summary>
+            db ShippingMethod partial extention
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.ShippingMethod.#ctor(TeaCommerce.Data.IPoco)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.ShippingMethod"/> class.
+            </summary>
+            <param name="pocoInstance">The poco instance.</param>
+        </member>
+        <member name="T:TeaCommerce.Data.DB.VATGroup">
+            <summary>
+            db VATGroup partial extention
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.VATGroup.#ctor(TeaCommerce.Data.IPoco)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.VATGroup"/> class.
+            </summary>
+            <param name="pocoInstance">The poco instance.</param>
+        </member>
+        <member name="T:TeaCommerce.Data.DB.OrderStatus">
+            <summary>
+            db OrderStatus partial extention
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.OrderStatus.#ctor(TeaCommerce.Data.IPoco)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.OrderStatus"/> class.
+            </summary>
+            <param name="pocoInstance">The poco instance.</param>
+        </member>
+        <member name="T:TeaCommerce.Data.DB.Country">
+            <summary>
+            db Country partial extention
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.Country.#ctor(TeaCommerce.Data.IPoco)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.Country"/> class.
+            </summary>
+            <param name="pocoInstance">The poco instance.</param>
+        </member>
+        <member name="T:TeaCommerce.Data.DB.PaymentMethod">
+            <summary>
+            db PaymentMethod partial extention
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.PaymentMethod.#ctor(TeaCommerce.Data.IPoco)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.PaymentMethod"/> class.
+            </summary>
+            <param name="pocoInstance">The poco instance.</param>
+        </member>
+        <member name="T:TeaCommerce.Data.DB.Order">
+            <summary>
+            db Order partial extention
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.Order.#ctor(TeaCommerce.Data.IPoco)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.Order"/> class.
+            </summary>
+            <param name="pocoInstance">The poco instance.</param>
+        </member>
+        <member name="T:TeaCommerce.Data.DB.OrderLine">
+            <summary>
+            db OrderLine partial extention
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.OrderLine.#ctor(TeaCommerce.Data.IPoco)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.OrderLine"/> class.
+            </summary>
+            <param name="pocoInstance">The poco instance.</param>
+        </member>
+        <member name="T:TeaCommerce.Data.DB.EmailTemplate">
+            <summary>
+            db EmailTemplate partial extention
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.EmailTemplate.#ctor(TeaCommerce.Data.IPoco)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.EmailTemplate"/> class.
+            </summary>
+            <param name="pocoInstance">The poco instance.</param>
+        </member>
+        <member name="T:TeaCommerce.Data.DB.PaymentMethodSetting">
+            <summary>
+            db PaymentMethodSetting partial extention
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.PaymentMethodSetting.#ctor(TeaCommerce.Data.IPoco)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.ShippingMethod"/> class.
+            </summary>
+            <param name="pocoInstance">The poco instance.</param>
+        </member>
+        <member name="T:TeaCommerce.Data.DB.OrderProperty">
+            <summary>
+            db OrderProperty partial extention
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.DB.OrderProperty.#ctor(TeaCommerce.Data.IPoco)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.OrderProperty"/> class.
+            </summary>
+            <param name="pocoInstance">The poco instance.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.EmailTemplate.Save">
+            <summary>
+            Saves this instance.
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.EmailTemplate.Delete">
+            <summary>
+            Deletes this instance.
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.EmailTemplate.Send(TeaCommerce.Data.Order)">
+            <summary>
+            Sends the email template with information from the specified order
+            The e-mail will be sent to the customer of the order and the EmailTemplates specified recipents
+            </summary>
+            <param name="order">The order.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.EmailTemplate.Send(TeaCommerce.Data.Order,TeaCommerce.Data.EmailTemplate.EmailTemplateType)">
+            <summary>
+            Sends an e-mail using this template
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.EmailTemplate.GetEmailTemplate(System.Int64)">
+            <summary>
+            Gets the email template.
+            </summary>
+            <param name="id">The id.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.EmailTemplate.GetEmailTemplate(System.String)">
+            <summary>
+            Gets the email template.
+            </summary>
+            <param name="id">The id.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.EmailTemplate.GetEmailTemplates">
+            <summary>
+            Gets all email templates.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:TeaCommerce.Data.EmailTemplate.Name">
+            <summary>
+            Gets or sets the name.
+            </summary>
+            <value>
+            The name.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.EmailTemplate.Alias">
+            <summary>
+            Gets or sets the alias.
+            </summary>
+            <value>
+            The alias.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.EmailTemplate.Subject">
+            <summary>
+            Gets or sets the subject.
+            </summary>
+            <value>
+            The subject.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.EmailTemplate.SenderName">
+            <summary>
+            Gets or sets the name of the sender.
+            </summary>
+            <value>
+            The name of the sender.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.EmailTemplate.SenderAddress">
+            <summary>
+            Gets or sets the sender address.
+            </summary>
+            <value>
+            The sender address.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.EmailTemplate.CCAddress">
+            <summary>
+            Gets or sets the CC address.
+            </summary>
+            <value>
+            The CC address.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.EmailTemplate.BCCAddress">
+            <summary>
+            Gets or sets the BCC address.
+            </summary>
+            <value>
+            The BCC address.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.EmailTemplate.XsltTemplate">
+            <summary>
+            Gets or sets the XSLT template.
+            </summary>
+            <value>
+            The XSLT template.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.EmailTemplate.EmailTemplateLanguageSettings">
+            <summary>
+            Gets the Email Template Language Settings.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.EmailTemplateLanguageSetting.UmbracoLanguageId">
+            <summary>
+            Gets or sets the umbraco language id.
+            </summary>
+            <value>
+            The umbraco language id.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.EmailTemplateLanguageSetting.Subject">
+            <summary>
+            Gets or sets the subject.
+            </summary>
+            <value>
+            The subject.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.EmailTemplateLanguageSetting.SenderName">
+            <summary>
+            Gets or sets the name of the sender.
+            </summary>
+            <value>
+            The name of the sender.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.EmailTemplateLanguageSetting.SenderAddress">
+            <summary>
+            Gets or sets the sender address.
+            </summary>
+            <value>
+            The sender address.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.EmailTemplateLanguageSetting.CCAddress">
+            <summary>
+            Gets or sets the CC address.
+            </summary>
+            <value>
+            The CC address.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.EmailTemplateLanguageSetting.BCCAddress">
+            <summary>
+            Gets or sets the BCC address.
+            </summary>
+            <value>
+            The BCC address.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.EmailTemplateLanguageSetting.XsltTemplate">
+            <summary>
+            Gets or sets the XSLT template.
+            </summary>
+            <value>
+            The XSLT template.
+            </value>
+        </member>
+        <member name="T:TeaCommerce.Data.Extensibility.TCPaymentFormGeneratedEventHandler">
+            <summary>
+            The eventhandler for when the Payment form has been generated
+            </summary>
+            <param name="order">The order.</param>
+            <param name="paymentProviderSettings">The payment provider settings.</param>
+            <param name="paymentProviderAlias">The payment provider alias.</param>
+        </member>
+        <member name="T:TeaCommerce.Data.Extensibility.TCEventHandler`1">
+            <summary>
+            An eventhandler with three parameters
+            </summary>
+        </member>
+        <member name="T:TeaCommerce.Data.Extensibility.TCEventHandler`2">
+            <summary>
+            An eventhandler with three parameters
+            </summary>
+        </member>
+        <member name="T:TeaCommerce.Data.Extensibility.TCEventHandler`3">
+            <summary>
+            An eventhandler with three parameters
+            </summary>
+        </member>
+        <member name="T:TeaCommerce.Data.Extensibility.TCEventHandler`4">
+            <summary>
+            An eventhandler with three parameters
+            </summary>
+        </member>
+        <member name="T:TeaCommerce.Data.Extensibility.WebshopEvents">
+            <summary>
+            All the Tea Commerce events is in the class
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderCreated">
+            <summary>
+            This event is fired when the order has just been created
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderChanged">
+            <summary>
+            This event is fired when the order is changed
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderDeleted">
+            <summary>
+            This event is fired when the order is deleted
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderPropertiesUpdated">
+            <summary>
+            This event is fired when one or more order properties has been updated
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.BeforeOrderConfirmationMailSend">
+            <summary>
+            This event is fired before the confirmation e-mail is sent to the user.
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.AfterOrderConfirmationMailSend">
+            <summary>
+            This event is fired after the confirmation mail has been sent to the user
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderConfirmationMailError">
+            <summary>
+            This event is fired if the mail somehow could not be sent.
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.BeforeOrderFinalized">
+            <summary>
+            This event is fired before the order is finalized
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.AfterOrderFinalized">
+            <summary>
+            This event is fired  the order has been finalized
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.BeforeMailSend">
+            <summary>
+            This event is fired before the e-mail is sent to the user.
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.AfterMailSend">
+            <summary>
+            This event is fired after the mail has been sent to the user
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.MailError">
+            <summary>
+            This event is fired if the mail somehow could not be sent.
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderLineAdded">
+            <summary>
+            This event is fired when an order line has just been added to the order.
+            The orderline may not be new. In that case the quantity has been changed.
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderLineRemoved">
+            <summary>
+            This event is fired when an order line has just been removed to the order.
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderLineChanged">
+            <summary>
+            This event is fired when an order line has just been chnaged.
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderLinePropertiesUpdated">
+            <summary>
+            This event is fired when one or more order line properties has been updated
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.CurrencyChanged">
+            <summary>
+            This event is fired  a new currency is selected for the order
+            The new currency is passed in the eventhandler
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.CountryChanged">
+            <summary>
+            This event is fired  a new delivery country is selected for the order
+            The new country is passed in the eventhandler
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.ShippingMethodChanged">
+            <summary>
+            This event is fired  a new shippingMethod is selected for the order
+            The new shippingMethod is passed in the eventhandler
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.PaymentMethodChanged">
+            <summary>
+            This event is fired  a new paymentMethod is selected for the order
+            The new paymentMethod is passed in the eventhandler
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderStatusChanged">
+            <summary>
+            This event is fired  a new orderStatus is selected for the order
+            The new orderStatus is passed in the eventhandler
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.PaymentStatusChanged">
+            <summary>
+            This event is fired  a new payment status has been set
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.BeforePaymentFormGenerated">
+            <summary>
+            This event is fired before the payment provider generates the payment form for the javascript
+            </summary>
+        </member>
+        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderLanguageChanged">
+            <summary>
+            This event is fired  the order has been finalized
+            </summary>
+        </member>
+        <member name="T:TeaCommerce.Data.Extensibility.ITeaCommerceExtension">
+            <summary>
+            Inherit from this and implement Initialize() to use the Tea Commerce event hooks
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.Extensibility.ITeaCommerceExtension.Initialize">
+            <summary>
+            Implement this and hook into the Tea Commerce event hooks.
+            </summary>
+        </member>
+        <member name="T:TeaCommerce.Data.Install.DatabaseInstaller">
+            <summary>
+            Installs the database
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.Install.DatabaseInstaller.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.Install.DatabaseInstaller"/> class.
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.Install.DatabaseInstaller.InstallDatabase(System.Collections.Generic.List{TeaCommerce.Data.Install.SqlScript})">
+            <summary>
+            Installs the database.
+            </summary>
+            <param name="sqlScripts">The SQL scripts.</param>
+        </member>
+        <member name="T:TeaCommerce.Data.Install.SpecialVersionInstaller">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.Install.SpecialVersionInstaller.Install">
+            <summary>
+            Installs special versions
+            </summary>
+        </member>
+        <member name="T:TeaCommerce.Data.Install.SqlScript">
+            <summary>
+            Loads the sql scripts when installing Tea Commerce
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.Install.SqlScript.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.Install.SqlScript"/> class.
+            </summary>
+            <param name="filePath">The file path.</param>
+            <param name="script">The script.</param>
+        </member>
+        <member name="P:TeaCommerce.Data.Install.SqlScript.FilePath">
+            <summary>
+            Gets or sets the file path.
+            </summary>
+            <value>
+            The file path.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.Install.SqlScript.Script">
+            <summary>
+            Gets or sets the script.
+            </summary>
+            <value>
+            The script.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.Install.SqlScript.FileName">
+            <summary>
+            Gets the name of the file.
+            </summary>
+            <value>
+            The name of the file.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.Install.SqlScript.SchemaVersion">
+            <summary>
+            Gets the schema version.
+            </summary>
+        </member>
+        <member name="T:TeaCommerce.Data.PaymentMethodSetting">
+            <summary>
+            A setting for a payment method
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethodSetting.#ctor(System.Int64,System.Nullable{System.Int32})">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.PaymentMethodSetting"/> class.
+            </summary>
+            <param name="paymentMethodId">The payment method id.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethodSetting.#ctor(System.Int64,System.Int64,System.Nullable{System.Int32},System.String,System.String,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.PaymentMethodSetting"/> class.
+            </summary>
+            <param name="id">The id.</param>
+            <param name="paymentMethodId">The payment method id.</param>
+            <param name="umbracoLanguageId">The umbraco language id.</param>
+            <param name="key">The key.</param>
+            <param name="value">The value.</param>
+            <param name="sort">The sort.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethodSetting.GetJson">
+            <summary>
+            Gets this object as a Json string
+            </summary>
+            <returns>
+            This object as a Json string
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethodSetting.GetXml">
+            <summary>
+            Gets this object as a XPathNodeIterator
+            </summary>
+            <returns>
+            This object as a XPathNodeIterator
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethodSetting.GetXElement">
+            <summary>
+            Gets this object as a XElement
+            </summary>
+            <returns>
+            This object as a XElement
+            </returns>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentMethodSetting.PaymentMethodId">
+            <summary>
+            Gets the payment method id.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentMethodSetting.UmbracoLanguageId">
+            <summary>
+            Gets or sets the umbraco language id.
+            </summary>
+            <value>
+            The umbraco language id.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentMethodSetting.Key">
+            <summary>
+            Gets or sets the key.
+            </summary>
+            <value>
+            The key.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentMethodSetting.Value">
+            <summary>
+            Gets or sets the value.
+            </summary>
+            <value>
+            The value.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentMethodSetting.Sort">
+            <summary>
+            Gets or sets the sort.
+            </summary>
+            <value>
+            The sort.
+            </value>
+        </member>
+        <member name="M:TeaCommerce.Data.Licensing.LicenseValidator.HasLicense(TeaCommerce.Licensing.LicenseType,System.Boolean,System.Boolean)">
+            <summary>
+            Determines whether the specified license type has a valid license.
+            </summary>
+            <param name="licenseType">Type of the license.</param>
+            <param name="checkForOrderLimit">if set to <c>true</c> it will check for the order limit.</param>
+            <returns>
+              <c>true</c> if the specified license type has license; otherwise, <c>false</c>.
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.NodeStock.ChangeStock(System.Int32,System.Decimal)">
+            <summary>
+            Changes the stock of a product/node
+            </summary>
+            <param name="nodeId">The node to change</param>
+            <param name="stock">The maximum stock to draw</param>
+            <returns>The actual stock that has been drawn</returns>
+        </member>
+        <member name="T:TeaCommerce.Data.Order">
+            <summary>
+            The data representation of an order/cart
+            </summary>
         </member>
         <member name="M:TeaCommerce.Data.Order.GetJson">
             <summary>
@@ -223,132 +1063,207 @@
             Updates the orders XML cache file.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ShippingMethodId">
+        <member name="P:TeaCommerce.Data.Order.CountryId">
             <summary>
-            Set or get current shipping method id of the order
+            Set or get the current country id of the order
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ShippingMethod">
+        <member name="P:TeaCommerce.Data.Order.Country">
             <summary>
-            Gets the shipping method.
+            Gets the country.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ShippingMethodName">
+        <member name="P:TeaCommerce.Data.Order.CountrySerialized">
             <summary>
-            Gets the name of the shipping method.
+            Gets the country serialized.
+            Serialized objects are a simple data objects holding all necesary information.
             </summary>
-            <value>
-            The name of the shipping method.
-            </value>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ShippingMethodDictionaryItemName">
+        <member name="P:TeaCommerce.Data.Order.CurrencyId">
+            <summary>
+            Set or get the current currency id of the order
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.Order.Currency">
+            <summary>
+            Gets the currency.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.Order.CurrencyISOCode">
+            <summary>
+            Gets the current currency's ISO code.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.Order.CurrencyCultureName">
+            <summary>
+            Gets the name of the current currency's culture.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.Order.CurrencySerialized">
+            <summary>
+            Gets the currency serialized.
+            Serialized objects are a simple data objects holding all necesary information.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.Order.TransactionCurrencyISOCode">
+            <summary>
+            Gets the transaction currency ISO code.
+            This will be filled out when the order has been sent to payment.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.Order.TransactionCurrencyCultureName">
+            <summary>
+            Gets the name of the transaction currency culture.
+            This will be filled out when the order has been sent to payment.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.Order.PaymentMethodId">
+            <summary>
+            Set or get the current payment method id of the order
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.Order.PaymentMethod">
+            <summary>
+            Gets the payment method.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.Order.PaymentMethodName">
+            <summary>
+            Gets the name of the payment method.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.Order.PaymentMethodDictionaryItemName">
             <summary>
             Gets the name of the dictionary item
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ShippingMediaId">
+        <member name="P:TeaCommerce.Data.Order.PaymentMediaId">
             <summary>
-            Gets the shipping media id.
+            Gets the payment media id.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ShippingFee">
+        <member name="P:TeaCommerce.Data.Order.PaymentFee">
             <summary>
-            Gets the shipping fee.
+            Gets the Payment fee.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ShippingFeeWithoutVAT">
+        <member name="P:TeaCommerce.Data.Order.PaymentFeeWithoutVAT">
             <summary>
-            Gets the shipping fee without VAT.
+            Gets the Payment fee without VAT.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ManipulatedShippingFeeWithoutVAT">
+        <member name="P:TeaCommerce.Data.Order.ManipulatedPaymentFeeWithoutVAT">
             <summary>
             Get or sets the user manipulated unit price.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.OriginalShippingFeeWithoutVAT">
+        <member name="P:TeaCommerce.Data.Order.OriginalPaymentFeeWithoutVAT">
             <summary>
             Gets the original Fee
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ShippingFeeVAT">
+        <member name="P:TeaCommerce.Data.Order.PaymentFeeVAT">
             <summary>
-            Gets the shipping fee VAT.
+            Gets the Payment fee VAT.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ShippingFeeFormatted">
+        <member name="P:TeaCommerce.Data.Order.PaymentFeeFormatted">
             <summary>
-            Gets the shipping fee formatted.
+            Gets the payment fee formatted.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ShippingFeeWithoutVATFormatted">
+        <member name="P:TeaCommerce.Data.Order.PaymentFeeWithoutVATFormatted">
             <summary>
-            Gets the shipping fee without VAT formatted.
+            Gets the payment fee without VAT formatted.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ShippingFeeVATFormatted">
+        <member name="P:TeaCommerce.Data.Order.PaymentFeeVATFormatted">
             <summary>
-            Gets the shipping fee VAT formatted.
+            Gets the payment fee VAT formatted.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ShippingFeeFormattedNoSymbol">
+        <member name="P:TeaCommerce.Data.Order.PaymentFeeFormattedNoSymbol">
             <summary>
-            Gets the shipping fee formatted with no symbol.
+            Gets the payment fee formatted with no symbol.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ShippingFeeWithoutVATFormattedNoSymbol">
+        <member name="P:TeaCommerce.Data.Order.PaymentFeeWithoutVATFormattedNoSymbol">
             <summary>
-            Gets the shipping fee without VAT formatted with no symbol.
+            Gets the payment fee without VAT formatted with no symbol.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ShippingFeeVATFormattedNoSymbol">
+        <member name="P:TeaCommerce.Data.Order.PaymentFeeVATFormattedNoSymbol">
             <summary>
-            Gets the shipping fee VAT formatted with no symbol.
+            Gets the payment fee VAT formatted with no symbol.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ShippingVAT">
+        <member name="P:TeaCommerce.Data.Order.PaymentVAT">
             <summary>
-            Gets the shipping VAT.
+            Gets the payment VAT.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ShippingVATPercent">
+        <member name="P:TeaCommerce.Data.Order.PaymentVATPercent">
             <summary>
-            Gets the shipping VAT percent.
+            Gets the payment VAT percent.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.TransactionShippingName">
+        <member name="P:TeaCommerce.Data.Order.TransactionPaymentFee">
             <summary>
-            Gets the name of the transaction shipping.
+            Gets the transaction payment fee.
             This will be filled out when the order has been sent to payment.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.TransactionShippingFee">
+        <member name="P:TeaCommerce.Data.Order.TransactionPaymentFeeWithoutVAT">
             <summary>
-            Gets the transaction shipping fee.
+            Gets the transaction payment fee without VAT.
             This will be filled out when the order has been sent to payment.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.TransactionShippingFeeWithoutVAT">
+        <member name="P:TeaCommerce.Data.Order.TransactionPaymentVAT">
             <summary>
-            Gets the transaction shipping fee without VAT.
+            Gets the transaction payment VAT.
             This will be filled out when the order has been sent to payment.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.TransactionShippingVAT">
+        <member name="P:TeaCommerce.Data.Order.TransactionPaymentName">
             <summary>
-            Gets the transaction shipping VAT.
+            Gets the name of the transaction payment.
             This will be filled out when the order has been sent to payment.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ShippingSerialized">
+        <member name="P:TeaCommerce.Data.Order.TransactionPaymentAmount">
             <summary>
-            Gets the shipping serialized.
+            Gets the transaction payment amount.
+            This will be filled out when the order has been sent to payment.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.Order.TransactionPaymentTransactionId">
+            <summary>
+            Gets the transaction payment transaction id.
+            This will be filled out when the order has been sent to payment.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.Order.TransactionPaymentCardType">
+            <summary>
+            Gets the transaction payment card type.
+            This will be filled out when the order has been sent to payment.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.Order.TransactionPaymentCardNumber">
+            <summary>
+            Gets the transaction payment card type.
+            This will be filled out when the order has been sent to payment.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.Order.PaymentSerialized">
+            <summary>
+            Gets the payment serialized.
             Serialized objects are a simple data objects holding all necesary information.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.AllShippingSerialized">
+        <member name="P:TeaCommerce.Data.Order.AllPaymentSerialized">
             <summary>
-            Gets all shipping methods serialized.
+            Gets all payment methods serialized.
             Serialized objects are a simple data objects holding all necesary information.
             </summary>
         </member>
@@ -598,207 +1513,132 @@
             Gets the orders XML cache.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.CurrencyId">
+        <member name="P:TeaCommerce.Data.Order.ShippingMethodId">
             <summary>
-            Set or get the current currency id of the order
+            Set or get current shipping method id of the order
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.Currency">
+        <member name="P:TeaCommerce.Data.Order.ShippingMethod">
             <summary>
-            Gets the currency.
+            Gets the shipping method.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.CurrencyISOCode">
+        <member name="P:TeaCommerce.Data.Order.ShippingMethodName">
             <summary>
-            Gets the current currency's ISO code.
+            Gets the name of the shipping method.
             </summary>
+            <value>
+            The name of the shipping method.
+            </value>
         </member>
-        <member name="P:TeaCommerce.Data.Order.CurrencyCultureName">
-            <summary>
-            Gets the name of the current currency's culture.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Order.CurrencySerialized">
-            <summary>
-            Gets the currency serialized.
-            Serialized objects are a simple data objects holding all necesary information.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Order.TransactionCurrencyISOCode">
-            <summary>
-            Gets the transaction currency ISO code.
-            This will be filled out when the order has been sent to payment.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Order.TransactionCurrencyCultureName">
-            <summary>
-            Gets the name of the transaction currency culture.
-            This will be filled out when the order has been sent to payment.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Order.PaymentMethodId">
-            <summary>
-            Set or get the current payment method id of the order
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Order.PaymentMethod">
-            <summary>
-            Gets the payment method.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Order.PaymentMethodName">
-            <summary>
-            Gets the name of the payment method.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Order.PaymentMethodDictionaryItemName">
+        <member name="P:TeaCommerce.Data.Order.ShippingMethodDictionaryItemName">
             <summary>
             Gets the name of the dictionary item
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.PaymentMediaId">
+        <member name="P:TeaCommerce.Data.Order.ShippingMediaId">
             <summary>
-            Gets the payment media id.
+            Gets the shipping media id.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.PaymentFee">
+        <member name="P:TeaCommerce.Data.Order.ShippingFee">
             <summary>
-            Gets the Payment fee.
+            Gets the shipping fee.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.PaymentFeeWithoutVAT">
+        <member name="P:TeaCommerce.Data.Order.ShippingFeeWithoutVAT">
             <summary>
-            Gets the Payment fee without VAT.
+            Gets the shipping fee without VAT.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.ManipulatedPaymentFeeWithoutVAT">
+        <member name="P:TeaCommerce.Data.Order.ManipulatedShippingFeeWithoutVAT">
             <summary>
             Get or sets the user manipulated unit price.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.OriginalPaymentFeeWithoutVAT">
+        <member name="P:TeaCommerce.Data.Order.OriginalShippingFeeWithoutVAT">
             <summary>
             Gets the original Fee
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.PaymentFeeVAT">
+        <member name="P:TeaCommerce.Data.Order.ShippingFeeVAT">
             <summary>
-            Gets the Payment fee VAT.
+            Gets the shipping fee VAT.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.PaymentFeeFormatted">
+        <member name="P:TeaCommerce.Data.Order.ShippingFeeFormatted">
             <summary>
-            Gets the payment fee formatted.
+            Gets the shipping fee formatted.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.PaymentFeeWithoutVATFormatted">
+        <member name="P:TeaCommerce.Data.Order.ShippingFeeWithoutVATFormatted">
             <summary>
-            Gets the payment fee without VAT formatted.
+            Gets the shipping fee without VAT formatted.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.PaymentFeeVATFormatted">
+        <member name="P:TeaCommerce.Data.Order.ShippingFeeVATFormatted">
             <summary>
-            Gets the payment fee VAT formatted.
+            Gets the shipping fee VAT formatted.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.PaymentFeeFormattedNoSymbol">
+        <member name="P:TeaCommerce.Data.Order.ShippingFeeFormattedNoSymbol">
             <summary>
-            Gets the payment fee formatted with no symbol.
+            Gets the shipping fee formatted with no symbol.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.PaymentFeeWithoutVATFormattedNoSymbol">
+        <member name="P:TeaCommerce.Data.Order.ShippingFeeWithoutVATFormattedNoSymbol">
             <summary>
-            Gets the payment fee without VAT formatted with no symbol.
+            Gets the shipping fee without VAT formatted with no symbol.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.PaymentFeeVATFormattedNoSymbol">
+        <member name="P:TeaCommerce.Data.Order.ShippingFeeVATFormattedNoSymbol">
             <summary>
-            Gets the payment fee VAT formatted with no symbol.
+            Gets the shipping fee VAT formatted with no symbol.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.PaymentVAT">
+        <member name="P:TeaCommerce.Data.Order.ShippingVAT">
             <summary>
-            Gets the payment VAT.
+            Gets the shipping VAT.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.PaymentVATPercent">
+        <member name="P:TeaCommerce.Data.Order.ShippingVATPercent">
             <summary>
-            Gets the payment VAT percent.
+            Gets the shipping VAT percent.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.TransactionPaymentFee">
+        <member name="P:TeaCommerce.Data.Order.TransactionShippingName">
             <summary>
-            Gets the transaction payment fee.
+            Gets the name of the transaction shipping.
             This will be filled out when the order has been sent to payment.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.TransactionPaymentFeeWithoutVAT">
+        <member name="P:TeaCommerce.Data.Order.TransactionShippingFee">
             <summary>
-            Gets the transaction payment fee without VAT.
+            Gets the transaction shipping fee.
             This will be filled out when the order has been sent to payment.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.TransactionPaymentVAT">
+        <member name="P:TeaCommerce.Data.Order.TransactionShippingFeeWithoutVAT">
             <summary>
-            Gets the transaction payment VAT.
+            Gets the transaction shipping fee without VAT.
             This will be filled out when the order has been sent to payment.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.TransactionPaymentName">
+        <member name="P:TeaCommerce.Data.Order.TransactionShippingVAT">
             <summary>
-            Gets the name of the transaction payment.
+            Gets the transaction shipping VAT.
             This will be filled out when the order has been sent to payment.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.TransactionPaymentAmount">
+        <member name="P:TeaCommerce.Data.Order.ShippingSerialized">
             <summary>
-            Gets the transaction payment amount.
-            This will be filled out when the order has been sent to payment.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Order.TransactionPaymentTransactionId">
-            <summary>
-            Gets the transaction payment transaction id.
-            This will be filled out when the order has been sent to payment.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Order.TransactionPaymentCardType">
-            <summary>
-            Gets the transaction payment card type.
-            This will be filled out when the order has been sent to payment.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Order.TransactionPaymentCardNumber">
-            <summary>
-            Gets the transaction payment card type.
-            This will be filled out when the order has been sent to payment.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Order.PaymentSerialized">
-            <summary>
-            Gets the payment serialized.
+            Gets the shipping serialized.
             Serialized objects are a simple data objects holding all necesary information.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.Order.AllPaymentSerialized">
+        <member name="P:TeaCommerce.Data.Order.AllShippingSerialized">
             <summary>
-            Gets all payment methods serialized.
-            Serialized objects are a simple data objects holding all necesary information.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Order.CountryId">
-            <summary>
-            Set or get the current country id of the order
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Order.Country">
-            <summary>
-            Gets the country.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Order.CountrySerialized">
-            <summary>
-            Gets the country serialized.
+            Gets all shipping methods serialized.
             Serialized objects are a simple data objects holding all necesary information.
             </summary>
         </member>
@@ -1254,7 +2094,142 @@
             Gets the payment card number.
             </summary>
         </member>
-        <member name="M:TeaCommerce.Data.Payment.APaymentProvider.GenerateForm(TeaCommerce.Data.Order,System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+        <member name="T:TeaCommerce.Data.OrdersSortOrder">
+            <summary>
+            A class to control the sorting of orders
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.OrdersSortOrder.Ascending">
+            <summary>
+            Gets a value indicating whether this <see cref="T:TeaCommerce.Data.OrdersSortOrder"/> is ascending.
+            </summary>
+            <value>
+              <c>true</c> if ascending; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="T:TeaCommerce.Data.PaymentCountry">
+            <summary>
+            A link between a payment and a country
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentCountry.GetJson">
+            <summary>
+            Gets this object as a Json string
+            </summary>
+            <returns>
+            This object as a Json string
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentCountry.GetXml">
+            <summary>
+            Gets this object as a XPathNodeIterator
+            </summary>
+            <returns>
+            This object as a XPathNodeIterator
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentCountry.GetXElement">
+            <summary>
+            Gets this object as a XElement
+            </summary>
+            <returns>
+            This object as a XElement
+            </returns>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentCountry.CountryId">
+            <summary>
+            Gets the country id.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentCountry.Country">
+            <summary>
+            Gets the country.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentCountry.PaymentMethodId">
+            <summary>
+            Gets the payment method id.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentCountry.PaymentCurrencies">
+            <summary>
+            Gets the payment currencies.
+            </summary>
+        </member>
+        <member name="T:TeaCommerce.Data.PaymentCurrency">
+            <summary>
+            Payment currency that holds information about the fee of the payment
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentCurrency.GetFeeWithoutVAT(TeaCommerce.Data.Order)">
+            <summary>
+            Gets the fee without VAT.
+            </summary>
+            <param name="countryId">The country id.</param>
+            <param name="orderVAT">The order VAT.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentCurrency.GetVAT(TeaCommerce.Data.Order)">
+            <summary>
+            Gets the VAT.
+            </summary>
+            <param name="countryId">The country id.</param>
+            <param name="orderVAT">The order VAT.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentCurrency.GetVATPercent(TeaCommerce.Data.Order)">
+            <summary>
+            Gets the VAT formatted as percent.
+            </summary>
+            <param name="countryId">The country id.</param>
+            <param name="orderVAT">The order VAT.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentCurrency.GetJson">
+            <summary>
+            Gets this object as a Json string
+            </summary>
+            <returns>
+            This object as a Json string
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentCurrency.GetXml">
+            <summary>
+            Gets this object as a XPathNodeIterator
+            </summary>
+            <returns>
+            This object as a XPathNodeIterator
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentCurrency.GetXElement">
+            <summary>
+            Gets this object as a XElement
+            </summary>
+            <returns>
+            This object as a XElement
+            </returns>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentCurrency.VATGroupId">
+            <summary>
+            Gets the VAT group id.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentCurrency.CurrencyId">
+            <summary>
+            Gets the currency id.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentCurrency.Currency">
+            <summary>
+            Gets the currency.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentCurrency.Fee">
+            <summary>
+            Gets the fee.
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.Payment.APaymentProvider.GenerateForm(TeaCommerce.Data.Order,System.String,System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
             <summary>
             Generates key/value pairs to post as a form
             </summary>
@@ -1391,232 +2366,212 @@
             Encrypts the key/value pair supplied using HMAC-MD5
             </summary>
         </member>
-        <member name="T:TeaCommerce.Data.Install.DatabaseInstaller">
+        <member name="T:TeaCommerce.Data.ShippingCountry">
             <summary>
-            Installs the database
+            A link between a shipping and a country
             </summary>
         </member>
-        <member name="M:TeaCommerce.Data.Install.DatabaseInstaller.#ctor">
+        <member name="M:TeaCommerce.Data.ShippingCountry.GetJson">
             <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.Install.DatabaseInstaller"/> class.
+            Gets this object as a Json string
+            </summary>
+            <returns>
+            This object as a Json string
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.ShippingCountry.GetXml">
+            <summary>
+            Gets this object as a XPathNodeIterator
+            </summary>
+            <returns>
+            This object as a XPathNodeIterator
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.ShippingCountry.GetXElement">
+            <summary>
+            Gets this object as a XElement
+            </summary>
+            <returns>
+            This object as a XElement
+            </returns>
+        </member>
+        <member name="P:TeaCommerce.Data.ShippingCountry.CountryId">
+            <summary>
+            Gets the country id.
             </summary>
         </member>
-        <member name="M:TeaCommerce.Data.Install.DatabaseInstaller.InstallDatabase(System.Collections.Generic.List{TeaCommerce.Data.Install.SqlScript})">
+        <member name="P:TeaCommerce.Data.ShippingCountry.Country">
             <summary>
-            Installs the database.
-            </summary>
-            <param name="sqlScripts">The SQL scripts.</param>
-        </member>
-        <member name="T:TeaCommerce.Data.Extensibility.WebshopEvents">
-            <summary>
-            All the Tea Commerce events is in the class
+            Gets the country.
             </summary>
         </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderCreated">
+        <member name="P:TeaCommerce.Data.ShippingCountry.ShippingMethodId">
             <summary>
-            This event is fired when the order has just been created
+            Gets the shipping method id.
             </summary>
         </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderChanged">
+        <member name="P:TeaCommerce.Data.ShippingCountry.ShippingCurrencies">
             <summary>
-            This event is fired when the order is changed
+            Gets the shipping currencies.
             </summary>
         </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderDeleted">
+        <member name="T:TeaCommerce.Data.ShippingCurrency">
             <summary>
-            This event is fired when the order is deleted
+            Shipping currency that holds information about the fee of the shipping
             </summary>
         </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderPropertiesUpdated">
+        <member name="M:TeaCommerce.Data.ShippingCurrency.GetFeeWithoutVAT(TeaCommerce.Data.Order)">
             <summary>
-            This event is fired when one or more order properties has been updated
+            Gets the fee without VAT.
+            </summary>
+            <param name="countryId">The country id.</param>
+            <param name="orderVAT">The order VAT.</param>
+            <param name="totalPriceWithoutDelivery">The total price without delivery.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.ShippingCurrency.GetVAT(TeaCommerce.Data.Order)">
+            <summary>
+            Gets the VAT.
+            </summary>
+            <param name="countryId">The country id.</param>
+            <param name="orderVAT">The order VAT.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.ShippingCurrency.GetVATPercent(TeaCommerce.Data.Order)">
+            <summary>
+            Gets the VAT formatted as percent.
+            </summary>
+            <param name="countryId">The country id.</param>
+            <param name="orderVAT">The order VAT.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.ShippingCurrency.GetJson">
+            <summary>
+            Gets this object as a Json string
+            </summary>
+            <returns>
+            This object as a Json string
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.ShippingCurrency.GetXml">
+            <summary>
+            Gets this object as a XPathNodeIterator
+            </summary>
+            <returns>
+            This object as a XPathNodeIterator
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.ShippingCurrency.GetXElement">
+            <summary>
+            Gets this object as a XElement
+            </summary>
+            <returns>
+            This object as a XElement
+            </returns>
+        </member>
+        <member name="P:TeaCommerce.Data.ShippingCurrency.VATGroupId">
+            <summary>
+            Gets the VAT group id.
             </summary>
         </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.BeforeOrderConfirmationMailSend">
+        <member name="P:TeaCommerce.Data.ShippingCurrency.CurrencyId">
             <summary>
-            This event is fired before the confirmation e-mail is sent to the user.
+            Gets the currency id.
             </summary>
         </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.AfterOrderConfirmationMailSend">
+        <member name="P:TeaCommerce.Data.ShippingCurrency.Currency">
             <summary>
-            This event is fired after the confirmation mail has been sent to the user
+            Gets the currency.
             </summary>
         </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderConfirmationMailError">
+        <member name="P:TeaCommerce.Data.ShippingCurrency.Fee">
             <summary>
-            This event is fired if the mail somehow could not be sent.
+            Gets the fee.
             </summary>
         </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.BeforeOrderFinalized">
+        <member name="P:TeaCommerce.Data.ShippingCurrency.FreeShippingFromOrderTotalPrice">
             <summary>
-            This event is fired before the order is finalized
+            Gets the free shipping from order total price.
             </summary>
         </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.AfterOrderFinalized">
+        <member name="M:TeaCommerce.Data.Tools.CryptoProvider.GenerateEncryptionKey">
+            -------------- Two Utility Methods (not used but may be useful) -----------
+            Generates an encryption key.
+        </member>
+        <member name="M:TeaCommerce.Data.Tools.CryptoProvider.GenerateEncryptionVector">
+            Generates a unique encryption vector
+        </member>
+        <member name="M:TeaCommerce.Data.Tools.CryptoProvider.EncryptToString(System.String)">
+            ----------- The commonly used methods ------------------------------    
+            Encrypt some text and return a string suitable for passing in a URL.
+        </member>
+        <member name="M:TeaCommerce.Data.Tools.CryptoProvider.Encrypt(System.String)">
+            Encrypt some text and return an encrypted byte array.
+        </member>
+        <member name="T:TeaCommerce.Data.Tools.FormatHelper">
             <summary>
-            This event is fired  the order has been finalized
+            A helper class to format prices and the like
             </summary>
         </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.BeforeMailSend">
+        <member name="M:TeaCommerce.Data.Tools.FormatHelper.FormatPrice(System.Decimal,System.String)">
             <summary>
-            This event is fired before the e-mail is sent to the user.
+            Formats the price.
+            </summary>
+            <param name="price">The price.</param>
+            <param name="cultureName">Name of the culture.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.Tools.FormatHelper.FormatPrice(System.Decimal,System.String,System.String,System.Nullable{TeaCommerce.Data.CurrencySymbolPlacement})">
+            <summary>
+            Formats the price.
+            </summary>
+            <param name="price">The price.</param>
+            <param name="cultureName">Name of the culture.</param>
+            <param name="symbol">The currency symbol.</param>
+            <param name="symbolPlacement">Placement of the currency symbol.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.Tools.FormatHelper.FormatPriceNoSymbol(System.Decimal,System.String)">
+            <summary>
+            Formats the price without a symbol.
+            </summary>
+            <param name="price">The price.</param>
+            <param name="cultureName">Name of the culture.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.Tools.FormatHelper.CalcPriceWithoutVat(System.Decimal,System.Decimal)">
+            <summary>
+            Calculates the price without vat.
+            </summary>
+            <param name="price">The price.</param>
+            <param name="vat">The vat.</param>
+            <returns></returns>
+        </member>
+        <member name="P:TeaCommerce.Data.Tools.FormatHelper.DecimalFormatString">
+            <summary>
+            Gets the decimal format string.
             </summary>
         </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.AfterMailSend">
+        <member name="M:TeaCommerce.Data.Tools.ProductRelationsHelper.GetProductsForMaster(System.Int32)">
             <summary>
-            This event is fired after the mail has been sent to the user
+            Gets the product id's for the master product.
             </summary>
+            <param name="masterProductId">The master product id.</param>
+            <returns>Dictionary Key:nodeId, Value:UmbracoLanguageId></returns>
         </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.MailError">
+        <member name="M:TeaCommerce.Data.Tools.StockHelper.GetStock(System.Int32,System.Boolean)">
             <summary>
-            This event is fired if the mail somehow could not be sent.
+            Fetches the stock of a specific node id
             </summary>
+            <param name="nodeId">The product node</param>
+            <returns>The stock of the product. Returns null if there is no stock count to the product or if the product does not exist</returns>
         </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderLineAdded">
+        <member name="M:TeaCommerce.Data.Tools.StockHelper.GetStock(System.Xml.XPath.XPathNodeIterator,System.Boolean)">
             <summary>
-            This event is fired when an order line has just been added to the order.
-            The orderline may not be new. In that case the quantity has been changed.
+            Fetches the stock of a specific node id
             </summary>
-        </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderLineRemoved">
-            <summary>
-            This event is fired when an order line has just been removed to the order.
-            </summary>
-        </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderLineChanged">
-            <summary>
-            This event is fired when an order line has just been chnaged.
-            </summary>
-        </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderLinePropertiesUpdated">
-            <summary>
-            This event is fired when one or more order line properties has been updated
-            </summary>
-        </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.CurrencyChanged">
-            <summary>
-            This event is fired  a new currency is selected for the order
-            The new currency is passed in the eventhandler
-            </summary>
-        </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.CountryChanged">
-            <summary>
-            This event is fired  a new delivery country is selected for the order
-            The new country is passed in the eventhandler
-            </summary>
-        </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.ShippingMethodChanged">
-            <summary>
-            This event is fired  a new shippingMethod is selected for the order
-            The new shippingMethod is passed in the eventhandler
-            </summary>
-        </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.PaymentMethodChanged">
-            <summary>
-            This event is fired  a new paymentMethod is selected for the order
-            The new paymentMethod is passed in the eventhandler
-            </summary>
-        </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderStatusChanged">
-            <summary>
-            This event is fired  a new orderStatus is selected for the order
-            The new orderStatus is passed in the eventhandler
-            </summary>
-        </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.PaymentStatusChanged">
-            <summary>
-            This event is fired  a new payment status has been set
-            </summary>
-        </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.BeforePaymentFormGenerated">
-            <summary>
-            This event is fired before the payment provider generates the payment form for the javascript
-            </summary>
-        </member>
-        <member name="E:TeaCommerce.Data.Extensibility.WebshopEvents.OrderLanguageChanged">
-            <summary>
-            This event is fired  the order has been finalized
-            </summary>
-        </member>
-        <member name="T:TeaCommerce.Data.Controllers.CacheController">
-            <summary>
-            The CacheController holds general information about the cache
-            </summary>
-        </member>
-        <member name="F:TeaCommerce.Data.Controllers.CacheController.OrderKey">
-            <summary>
-            All cache keys to get the objects
-            </summary>
-        </member>
-        <member name="F:TeaCommerce.Data.Controllers.CacheController.StockDictionaryKey">
-            <summary>
-            All cache keys to get the objects
-            </summary>
-        </member>
-        <member name="F:TeaCommerce.Data.Controllers.CacheController.ShippingMethodsKey">
-            <summary>
-            All cache keys to get the objects
-            </summary>
-        </member>
-        <member name="F:TeaCommerce.Data.Controllers.CacheController.PaymentMethodsKey">
-            <summary>
-            All cache keys to get the objects
-            </summary>
-        </member>
-        <member name="F:TeaCommerce.Data.Controllers.CacheController.PaymentMethodsSettingsKey">
-            <summary>
-            All cache keys to get the objects
-            </summary>
-        </member>
-        <member name="F:TeaCommerce.Data.Controllers.CacheController.CountriesKey">
-            <summary>
-            All cache keys to get the objects
-            </summary>
-        </member>
-        <member name="F:TeaCommerce.Data.Controllers.CacheController.CurrenciesKey">
-            <summary>
-            All cache keys to get the objects
-            </summary>
-        </member>
-        <member name="F:TeaCommerce.Data.Controllers.CacheController.OrderStatusesKey">
-            <summary>
-            All cache keys to get the objects
-            </summary>
-        </member>
-        <member name="F:TeaCommerce.Data.Controllers.CacheController.EmailTemplatesKey">
-            <summary>
-            All cache keys to get the objects
-            </summary>
-        </member>
-        <member name="F:TeaCommerce.Data.Controllers.CacheController.VATGroupsKey">
-            <summary>
-            All cache keys to get the objects
-            </summary>
-        </member>
-        <member name="F:TeaCommerce.Data.Controllers.CacheController.SettingsFileKey">
-            <summary>
-            All cache keys to get the objects
-            </summary>
-        </member>
-        <member name="F:TeaCommerce.Data.Controllers.CacheController.PaymentProviderKey">
-            <summary>
-            All cache keys to get the objects
-            </summary>
-        </member>
-        <member name="F:TeaCommerce.Data.Controllers.CacheController.OrdersXmlCacheKey">
-            <summary>
-            All cache keys to get the objects
-            </summary>
-        </member>
-        <member name="F:TeaCommerce.Data.Controllers.CacheController.DefaultTimeout">
-            <summary>
-            The default timeout for cached obejcts
-            </summary>
-        </member>
-        <member name="F:TeaCommerce.Data.Controllers.CacheController.LongTimeout">
-            <summary>
-            The timeout for objects in the cache that is used the most
-            </summary>
+            <param name="nodeId">The product node</param>
+            <returns>The stock of the product. Returns null if there is no stock count to the product or if the product does not exist</returns>
         </member>
         <member name="T:TeaCommerce.Data.Tools.ValidationHelper">
             <summary>
@@ -1635,36 +2590,71 @@
             <param name="emailAddress">The email address.</param>
             <returns></returns>
         </member>
-        <member name="T:TeaCommerce.Data.PaymentCurrency">
+        <member name="T:TeaCommerce.Data.Tools.XSLTHelper">
             <summary>
-            Payment currency that holds information about the fee of the payment
+            Helper class for running XSLT's
             </summary>
         </member>
-        <member name="M:TeaCommerce.Data.PaymentCurrency.GetFeeWithoutVAT(TeaCommerce.Data.Order)">
+        <member name="M:TeaCommerce.Data.Tools.XSLTHelper.InvokeXSLT(System.String)">
             <summary>
-            Gets the fee without VAT.
+            Invokes a xslt file without currentPage
             </summary>
-            <param name="countryId">The country id.</param>
-            <param name="orderVAT">The order VAT.</param>
+            <param name="xsltFile">The name of the XSLT file to use as a transform</param>
+            <returns>Returns the output generated by the xslt</returns>
+        </member>
+        <member name="M:TeaCommerce.Data.Tools.XSLTHelper.InvokeXSLT(System.String,System.Nullable{System.Int32})">
+            <summary>
+            Invokes a xslt file without currentPage
+            </summary>
+            <param name="xsltFile">The name of the XSLT file to use as a transform</param>
+            <param name="nodeId">Id of an umbraco node</param>
+            <returns>Returns the output generated by the xslt</returns>
+        </member>
+        <member name="M:TeaCommerce.Data.Tools.XSLTHelper.InvokeXSLT(System.String,System.Nullable{System.Int32},System.Collections.Generic.Dictionary{System.String,System.Xml.XPath.XPathNodeIterator})">
+            <summary>
+            Invokes a xslt file with the nodeId as currentPage
+            </summary>
+            <param name="xsltFile">The name of the XSLT file to use as a transform</param>
+            <param name="nodeId">Id of an umbraco node</param>
+            <param name="parameters">Parameters to add as args to the XSLT</param>
+            <returns>Returns the output generated by the xslt</returns>
+        </member>
+        <member name="M:TeaCommerce.Data.Tools.XSLTHelper.InvokeXSLT(System.String,System.Nullable{System.Int32},System.Nullable{System.Int32},System.Collections.Generic.Dictionary{System.String,System.Xml.XPath.XPathNodeIterator},System.Boolean)">
+            <summary>
+            Invokes a xslt file with the nodeId as currentPage
+            </summary>
+            <param name="xsltFile">The name of the XSLT file to use as a transform</param>
+            <param name="nodeId">Id of an umbraco node</param>
+            <param name="parameters">Parameters to add as args to the XSLT</param>
+            <param name="checkSecurity">Check if the XSLT file is allowed</param>
+            <returns>Returns the output generated by the xslt</returns>
+        </member>
+        <member name="T:TeaCommerce.Data.VATGroup">
+            <summary>
+            The data representation of a VAT group
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.VATGroup.GetVAT(System.Int64)">
+            <summary>
+            Get the VAT for this VAT group with country specific VAT taken into account
+            </summary>
+            <param name="countryId">Id of the country</param>
+            <returns>The VAT for this VAT group - country specific VAT is taken into account</returns>
+        </member>
+        <member name="M:TeaCommerce.Data.VATGroup.GetVATGroup(System.Int64)">
+            <summary>
+            Gets a specific VAT group.
+            </summary>
+            <param name="id">The id.</param>
             <returns></returns>
         </member>
-        <member name="M:TeaCommerce.Data.PaymentCurrency.GetVAT(TeaCommerce.Data.Order)">
+        <member name="M:TeaCommerce.Data.VATGroup.GetVATGroups">
             <summary>
-            Gets the VAT.
+            Gets all VAT groups.
             </summary>
-            <param name="countryId">The country id.</param>
-            <param name="orderVAT">The order VAT.</param>
             <returns></returns>
         </member>
-        <member name="M:TeaCommerce.Data.PaymentCurrency.GetVATPercent(TeaCommerce.Data.Order)">
-            <summary>
-            Gets the VAT formatted as percent.
-            </summary>
-            <param name="countryId">The country id.</param>
-            <param name="orderVAT">The order VAT.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentCurrency.GetJson">
+        <member name="M:TeaCommerce.Data.VATGroup.GetJson">
             <summary>
             Gets this object as a Json string
             </summary>
@@ -1672,7 +2662,7 @@
             This object as a Json string
             </returns>
         </member>
-        <member name="M:TeaCommerce.Data.PaymentCurrency.GetXml">
+        <member name="M:TeaCommerce.Data.VATGroup.GetXml">
             <summary>
             Gets this object as a XPathNodeIterator
             </summary>
@@ -1680,7 +2670,7 @@
             This object as a XPathNodeIterator
             </returns>
         </member>
-        <member name="M:TeaCommerce.Data.PaymentCurrency.GetXElement">
+        <member name="M:TeaCommerce.Data.VATGroup.GetXElement">
             <summary>
             Gets this object as a XElement
             </summary>
@@ -1688,38 +2678,406 @@
             This object as a XElement
             </returns>
         </member>
-        <member name="P:TeaCommerce.Data.PaymentCurrency.VATGroupId">
+        <member name="P:TeaCommerce.Data.VATGroup.Name">
             <summary>
-            Gets the VAT group id.
+            Gets the name.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.PaymentCurrency.CurrencyId">
+        <member name="P:TeaCommerce.Data.VATGroup.IsDeleted">
             <summary>
-            Gets the currency id.
+            Gets a value indicating whether this instance is deleted.
+            </summary>
+            <value>
+            	<c>true</c> if this instance is deleted; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.VATGroup.VAT">
+            <summary>
+            Gets the VAT as a decimal - doesn't take country specific VAT into account.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.PaymentCurrency.Currency">
+        <member name="P:TeaCommerce.Data.VATGroup.CountrySpecificVAT">
             <summary>
-            Gets the currency.
+            Sets the country specific VATs.
+            </summary>
+            <value>
+            The country specific VATs.
+            </value>
+        </member>
+        <member name="T:TeaCommerce.Data.ShippingMethod">
+            <summary>
+            A shippingmethod
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.PaymentCurrency.Fee">
+        <member name="M:TeaCommerce.Data.ShippingMethod.GetShippingCurrency(TeaCommerce.Data.Order)">
+            <summary>
+            Gets the shipping currency.
+            </summary>
+            <param name="order">The order.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.ShippingMethod.GetFee(TeaCommerce.Data.Order)">
             <summary>
             Gets the fee.
             </summary>
+            <param name="order">The order.</param>
+            <returns></returns>
         </member>
-        <member name="T:TeaCommerce.Data.OrdersSortOrder">
+        <member name="M:TeaCommerce.Data.ShippingMethod.GetFeeWithoutVAT(TeaCommerce.Data.Order)">
             <summary>
-            A class to control the sorting of orders
+            Gets the fee without VAT.
             </summary>
+            <param name="order">The order.</param>
+            <returns></returns>
         </member>
-        <member name="P:TeaCommerce.Data.OrdersSortOrder.Ascending">
+        <member name="M:TeaCommerce.Data.ShippingMethod.GetFeeVAT(TeaCommerce.Data.Order)">
             <summary>
-            Gets a value indicating whether this <see cref="T:TeaCommerce.Data.OrdersSortOrder"/> is ascending.
+            Gets the fee VAT.
+            </summary>
+            <param name="order">The order.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.ShippingMethod.GetVAT(TeaCommerce.Data.Order)">
+            <summary>
+            Gets the VAT.
+            </summary>
+            <param name="order">The order.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.ShippingMethod.GetVATPercent(TeaCommerce.Data.Order)">
+            <summary>
+            Gets the VAT percent.
+            </summary>
+            <param name="order">The order.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.ShippingMethod.GetShippingMethod(System.Int64)">
+            <summary>
+            Gets a specific shipping method.
+            </summary>
+            <param name="id">The id.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.ShippingMethod.GetShippingMethods">
+            <summary>
+            Gets all shipping methods.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.ShippingMethod.GetJson">
+            <summary>
+            Gets this object as a Json string
+            </summary>
+            <returns>
+            This object as a Json string
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.ShippingMethod.GetXml">
+            <summary>
+            Gets this object as a XPathNodeIterator
+            </summary>
+            <returns>
+            This object as a XPathNodeIterator
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.ShippingMethod.GetXElement">
+            <summary>
+            Gets this object as a XElement
+            </summary>
+            <returns>
+            This object as a XElement
+            </returns>
+        </member>
+        <member name="P:TeaCommerce.Data.ShippingMethod.IsDeleted">
+            <summary>
+            Gets a value indicating whether this instance has been deleted from the database.
             </summary>
             <value>
-              <c>true</c> if ascending; otherwise, <c>false</c>.
+            	<c>true</c> if this instance is deleted; otherwise, <c>false</c>.
             </value>
+        </member>
+        <member name="P:TeaCommerce.Data.ShippingMethod.Name">
+            <summary>
+            Gets the name.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.ShippingMethod.DictionaryItemName">
+            <summary>
+            Name of the Umbraco Dictionary item that holds translations for this entity
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.ShippingMethod.MediaNodeId">
+            <summary>
+            Gets the media node id.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.ShippingMethod.ShippingCountries">
+            <summary>
+            Gets the shipping countries.
+            </summary>
+        </member>
+        <member name="T:TeaCommerce.Data.OrderStatus">
+            <summary>
+            An order status
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.OrderStatus.GetOrderStatus(System.Int64)">
+            <summary>
+            Gets the order status.
+            </summary>
+            <param name="id">The id.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.OrderStatus.GetDefaultOrderStatus">
+            <summary>
+            Gets the default order status.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.OrderStatus.GetOrderStatuses">
+            <summary>
+            Gets all order statuses.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.OrderStatus.GetJson">
+            <summary>
+            Gets this object as a Json string
+            </summary>
+            <returns>
+            This object as a Json string
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.OrderStatus.GetXml">
+            <summary>
+            Gets this object as a XPathNodeIterator
+            </summary>
+            <returns>
+            This object as a XPathNodeIterator
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.OrderStatus.GetXElement">
+            <summary>
+            Gets this object as a XElement
+            </summary>
+            <returns>
+            This object as a XElement
+            </returns>
+        </member>
+        <member name="P:TeaCommerce.Data.OrderStatus.Name">
+            <summary>
+            Gets the name.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.OrderStatus.DictionaryItemName">
+            <summary>
+            Name of the Umbraco Dictionary item that holds translations for this entity
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.OrderStatus.IsDefault">
+            <summary>
+            Gets a value indicating whether this instance is default.
+            </summary>
+            <value>
+            	<c>true</c> if this instance is default; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.OrderStatus.IsDeleted">
+            <summary>
+            Gets a value indicating whether this instance has been deleted from the database.
+            </summary>
+            <value>
+            	<c>true</c> if this instance is deleted; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="T:TeaCommerce.Data.PaymentMethod">
+            <summary>
+            A payment method
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethod.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.PaymentMethod"/> class.
+            </summary>
+            <param name="name">The name.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethod.#ctor(System.Int64,System.String,System.String,System.Int32,System.String,System.Nullable{System.Int32},System.Collections.Generic.List{TeaCommerce.Data.PaymentMethodSetting},System.Collections.Generic.List{TeaCommerce.Data.PaymentCountry},System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.PaymentMethod"/> class.
+            </summary>
+            <param name="id">The id.</param>
+            <param name="name">The name.</param>
+            <param name="dictionaryItemName">Name of the dictionary item.</param>
+            <param name="sort">The sort.</param>
+            <param name="paymentProviderAlias">The payment provider alias.</param>
+            <param name="mediaNodeId">The media node id.</param>
+            <param name="settings">The settings.</param>
+            <param name="paymentCountries">The payment countries.</param>
+            <param name="allowsGetStatus">if set to <c>true</c> [allows get status].</param>
+            <param name="allowsCapturePayment">if set to <c>true</c> [allows capture payment].</param>
+            <param name="allowsRefundPayment">if set to <c>true</c> [allows refund payment].</param>
+            <param name="allowsCancelPayment">if set to <c>true</c> [allows cancel payment].</param>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethod.AddPaymentCountry(TeaCommerce.Data.PaymentCountry)">
+            <summary>
+            Adds the payment country.
+            </summary>
+            <param name="paymentCountry">The payment country.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethod.RemovePaymentCountry(TeaCommerce.Data.PaymentCountry)">
+            <summary>
+            Removes the payment country.
+            </summary>
+            <param name="paymentCountry">The payment country.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethod.GetPaymentCurrency(TeaCommerce.Data.Order)">
+            <summary>
+            Gets the shipping currency.
+            </summary>
+            <param name="order">The order.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethod.GetFee(TeaCommerce.Data.Order)">
+            <summary>
+            Gets the fee.
+            </summary>
+            <param name="order">The order.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethod.GetFeeWithoutVAT(TeaCommerce.Data.Order)">
+            <summary>
+            Gets the fee without VAT.
+            </summary>
+            <param name="order">The order.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethod.GetFeeVAT(TeaCommerce.Data.Order)">
+            <summary>
+            Gets the fee VAT.
+            </summary>
+            <param name="order">The order.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethod.GetVAT(TeaCommerce.Data.Order)">
+            <summary>
+            Gets the VAT.
+            </summary>
+            <param name="order">The order.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethod.GetVATPercent(TeaCommerce.Data.Order)">
+            <summary>
+            Gets the VAT percent.
+            </summary>
+            <param name="order">The order.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethod.GetPaymentMethod(System.Int64)">
+            <summary>
+            Gets a payment method.
+            </summary>
+            <param name="id">The id.</param>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethod.GetPaymentMethods">
+            <summary>
+            Gets all payment methods.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethod.GetJson">
+            <summary>
+            Gets this object as a Json string
+            </summary>
+            <returns>
+            This object as a Json string
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethod.GetXml">
+            <summary>
+            Gets this object as a XPathNodeIterator
+            </summary>
+            <returns>
+            This object as a XPathNodeIterator
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.PaymentMethod.GetXElement">
+            <summary>
+            Gets this object as a XElement
+            </summary>
+            <returns>
+            This object as a XElement
+            </returns>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentMethod.IsDeleted">
+            <summary>
+            Gets a value indicating whether this instance has been deleted from the database.
+            </summary>
+            <value>
+            	<c>true</c> if this instance is deleted; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentMethod.Name">
+            <summary>
+            Gets the name.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentMethod.DictionaryItemName">
+            <summary>
+            Name of the Umbraco Dictionary item that holds translations for this entity
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentMethod.AllowsGetStatus">
+            <summary>
+            Gets a value indicating whether this payment method allows the payment provider to get the status.
+            </summary>
+            <value>
+              <c>true</c> if this payment method allows the payment provider to get the status; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentMethod.AllowsCapturePayment">
+            <summary>
+            Gets a value indicating whether this payment method allows the payment provider to capture the payment.
+            </summary>
+            <value>
+              <c>true</c> if this payment method allows the payment provider to capture the payment; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentMethod.AllowsRefundPayment">
+            <summary>
+            Gets a value indicating whether this payment method allows the payment provider to refund the payment.
+            </summary>
+            <value>
+              <c>true</c> if this payment method allows the payment provider to refund the payment; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentMethod.AllowsCancelPayment">
+            <summary>
+            Gets a value indicating whether this payment method allows the payment provider to cancel the payment.
+            </summary>
+            <value>
+              <c>true</c> if this payment method allows the payment provider to cancel the payment; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentMethod.PaymentProviderAlias">
+            <summary>
+            Gets the payment provider alias.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentMethod.MediaNodeId">
+            <summary>
+            Gets the umbraco media node id.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentMethod.Settings">
+            <summary>
+            Gets the payment method settings for this payment method.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.PaymentMethod.PaymentCountries">
+            <summary>
+            Gets the payment countries for this payment method.
+            </summary>
         </member>
         <member name="T:TeaCommerce.Data.Country">
             <summary>
@@ -1840,107 +3198,35 @@
             The default payment method for this country
             </summary>
         </member>
-        <member name="M:TeaCommerce.Data.Tools.ProductRelationsHelper.GetProductsForMaster(System.Int32)">
+        <member name="T:TeaCommerce.Data.Currency">
             <summary>
-            Gets the product id's for the master product.
-            </summary>
-            <param name="masterProductId">The master product id.</param>
-            <returns>Dictionary Key:nodeId, Value:UmbracoLanguageId></returns>
-        </member>
-        <member name="T:TeaCommerce.Data.Tools.FormatHelper">
-            <summary>
-            A helper class to format prices and the like
+            A currency
             </summary>
         </member>
-        <member name="M:TeaCommerce.Data.Tools.FormatHelper.FormatPrice(System.Decimal,System.String)">
+        <member name="M:TeaCommerce.Data.Currency.Save">
             <summary>
-            Formats the price.
+            Saves the currency to the database
             </summary>
-            <param name="price">The price.</param>
-            <param name="cultureName">Name of the culture.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.Currency.Delete">
+            <summary>
+            Deletes the currency from the database
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.Currency.GetCurrency(System.Int64)">
+            <summary>
+            Gets a specific currency.
+            </summary>
+            <param name="id">The id of the currency.</param>
             <returns></returns>
         </member>
-        <member name="M:TeaCommerce.Data.Tools.FormatHelper.FormatPrice(System.Decimal,System.String,System.String,System.Nullable{TeaCommerce.Data.CurrencySymbolPlacement})">
+        <member name="M:TeaCommerce.Data.Currency.GetCurrencies">
             <summary>
-            Formats the price.
-            </summary>
-            <param name="price">The price.</param>
-            <param name="cultureName">Name of the culture.</param>
-            <param name="symbol">The currency symbol.</param>
-            <param name="symbolPlacement">Placement of the currency symbol.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.Tools.FormatHelper.FormatPriceNoSymbol(System.Decimal,System.String)">
-            <summary>
-            Formats the price without a symbol.
-            </summary>
-            <param name="price">The price.</param>
-            <param name="cultureName">Name of the culture.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.Tools.FormatHelper.CalcPriceWithoutVat(System.Decimal,System.Decimal)">
-            <summary>
-            Calculates the price without vat.
-            </summary>
-            <param name="price">The price.</param>
-            <param name="vat">The vat.</param>
-            <returns></returns>
-        </member>
-        <member name="P:TeaCommerce.Data.Tools.FormatHelper.DecimalFormatString">
-            <summary>
-            Gets the decimal format string.
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.Tools.CryptoProvider.GenerateEncryptionKey">
-            -------------- Two Utility Methods (not used but may be useful) -----------
-            Generates an encryption key.
-        </member>
-        <member name="M:TeaCommerce.Data.Tools.CryptoProvider.GenerateEncryptionVector">
-            Generates a unique encryption vector
-        </member>
-        <member name="M:TeaCommerce.Data.Tools.CryptoProvider.EncryptToString(System.String)">
-            ----------- The commonly used methods ------------------------------    
-            Encrypt some text and return a string suitable for passing in a URL.
-        </member>
-        <member name="M:TeaCommerce.Data.Tools.CryptoProvider.Encrypt(System.String)">
-            Encrypt some text and return an encrypted byte array.
-        </member>
-        <member name="T:TeaCommerce.Data.Install.SpecialVersionInstaller">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.Install.SpecialVersionInstaller.Install">
-            <summary>
-            Installs special versions
-            </summary>
-        </member>
-        <member name="T:TeaCommerce.Data.VATGroup">
-            <summary>
-            The data representation of a VAT group
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.VATGroup.GetVAT(System.Int64)">
-            <summary>
-            Get the VAT for this VAT group with country specific VAT taken into account
-            </summary>
-            <param name="countryId">Id of the country</param>
-            <returns>The VAT for this VAT group - country specific VAT is taken into account</returns>
-        </member>
-        <member name="M:TeaCommerce.Data.VATGroup.GetVATGroup(System.Int64)">
-            <summary>
-            Gets a specific VAT group.
-            </summary>
-            <param name="id">The id.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.VATGroup.GetVATGroups">
-            <summary>
-            Gets all VAT groups.
+            Gets all the available currencies.
             </summary>
             <returns></returns>
         </member>
-        <member name="M:TeaCommerce.Data.VATGroup.GetJson">
+        <member name="M:TeaCommerce.Data.Currency.GetJson">
             <summary>
             Gets this object as a Json string
             </summary>
@@ -1948,7 +3234,7 @@
             This object as a Json string
             </returns>
         </member>
-        <member name="M:TeaCommerce.Data.VATGroup.GetXml">
+        <member name="M:TeaCommerce.Data.Currency.GetXml">
             <summary>
             Gets this object as a XPathNodeIterator
             </summary>
@@ -1956,7 +3242,7 @@
             This object as a XPathNodeIterator
             </returns>
         </member>
-        <member name="M:TeaCommerce.Data.VATGroup.GetXElement">
+        <member name="M:TeaCommerce.Data.Currency.GetXElement">
             <summary>
             Gets this object as a XElement
             </summary>
@@ -1964,80 +3250,74 @@
             This object as a XElement
             </returns>
         </member>
-        <member name="P:TeaCommerce.Data.VATGroup.Name">
+        <member name="P:TeaCommerce.Data.Currency.ISOCode">
             <summary>
-            Gets the name.
+            Gets the ISO code.
             </summary>
         </member>
-        <member name="P:TeaCommerce.Data.VATGroup.IsDeleted">
+        <member name="P:TeaCommerce.Data.Currency.PricePropertyAlias">
             <summary>
-            Gets a value indicating whether this instance is deleted.
+            Gets the price property alias. This is the alias of the price's property on the page node
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.Currency.CultureName">
+            <summary>
+            Gets the name of the culture.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.Currency.Symbol">
+            <summary>
+            Gets the currency symbol
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.Currency.SymbolPlacement">
+            <summary>
+            Gets the currency symbol placement
+            </summary>
+        </member>
+        <member name="T:TeaCommerce.Data.ISerializableHelper">
+            <summary>
+            A helper class for all serializables
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.ISerializableHelper.ToJson(TeaCommerce.Data.ISerializable)">
+            <summary>
+            Serializes the target to Json
+            </summary>
+            <param name="target">The target.</param>
+            <returns></returns>
+        </member>
+        <member name="T:TeaCommerce.Data.OrderLinePrice">
+            <summary>
+            A price for a specific orderline.
+            Links to one currency.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.OrderLinePrice.Id">
+            <summary>
+            Gets the id.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.OrderLinePrice.CurrencyId">
+            <summary>
+            Gets the currency id.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.OrderLinePrice.UnitPrice">
+            <summary>
+            Gets or sets the unit price.
             </summary>
             <value>
-            	<c>true</c> if this instance is deleted; otherwise, <c>false</c>.
+            The unit price.
             </value>
         </member>
-        <member name="P:TeaCommerce.Data.VATGroup.VAT">
+        <member name="P:TeaCommerce.Data.OrderLinePrice.IsDirty">
             <summary>
-            Gets the VAT as a decimal - doesn't take country specific VAT into account.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.VATGroup.CountrySpecificVAT">
-            <summary>
-            Sets the country specific VATs.
+            Gets or sets a value indicating whether this instance is dirty.
             </summary>
             <value>
-            The country specific VATs.
+              <c>true</c> if this instance is dirty; otherwise, <c>false</c>.
             </value>
-        </member>
-        <member name="T:TeaCommerce.Data.ShippingCountry">
-            <summary>
-            A link between a shipping and a country
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingCountry.GetJson">
-            <summary>
-            Gets this object as a Json string
-            </summary>
-            <returns>
-            This object as a Json string
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingCountry.GetXml">
-            <summary>
-            Gets this object as a XPathNodeIterator
-            </summary>
-            <returns>
-            This object as a XPathNodeIterator
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingCountry.GetXElement">
-            <summary>
-            Gets this object as a XElement
-            </summary>
-            <returns>
-            This object as a XElement
-            </returns>
-        </member>
-        <member name="P:TeaCommerce.Data.ShippingCountry.CountryId">
-            <summary>
-            Gets the country id.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.ShippingCountry.Country">
-            <summary>
-            Gets the country.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.ShippingCountry.ShippingMethodId">
-            <summary>
-            Gets the shipping method id.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.ShippingCountry.ShippingCurrencies">
-            <summary>
-            Gets the shipping currencies.
-            </summary>
         </member>
         <member name="T:TeaCommerce.Data.OrderLine">
             <summary>
@@ -2257,41 +3537,103 @@
             </summary>
             <value>The output properties.</value>
         </member>
-        <member name="T:TeaCommerce.Data.ISerializableHelper">
+        <member name="T:TeaCommerce.Data.OrderProperty">
             <summary>
-            A helper class for all serializables
+            A property for a specific order
             </summary>
         </member>
-        <member name="M:TeaCommerce.Data.ISerializableHelper.ToJson(TeaCommerce.Data.ISerializable)">
+        <member name="M:TeaCommerce.Data.OrderProperty.#ctor(System.String,System.String)">
             <summary>
-            Serializes the target to Json
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.OrderProperty"/> class.
             </summary>
-            <param name="target">The target.</param>
-            <returns></returns>
+            <param name="alias">The alias/key.</param>
+            <param name="value">The value.</param>
         </member>
-        <member name="M:TeaCommerce.Data.Tools.StockHelper.GetStock(System.Int32,System.Boolean)">
+        <member name="M:TeaCommerce.Data.OrderProperty.#ctor(System.String,System.String,System.Boolean)">
             <summary>
-            Fetches the stock of a specific node id
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.OrderProperty"/> class.
             </summary>
-            <param name="nodeId">The product node</param>
-            <returns>The stock of the product. Returns null if there is no stock count to the product or if the product does not exist</returns>
+            <param name="alias">The alias/key.</param>
+            <param name="value">The value.</param>
+            <param name="serverSideOnly">The property is only available serverside.</param>
         </member>
-        <member name="M:TeaCommerce.Data.Tools.StockHelper.GetStock(System.Xml.XPath.XPathNodeIterator,System.Boolean)">
+        <member name="M:TeaCommerce.Data.OrderProperty.#ctor(System.String,System.String,System.Boolean,System.Boolean)">
             <summary>
-            Fetches the stock of a specific node id
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.OrderProperty"/> class.
             </summary>
-            <param name="nodeId">The product node</param>
-            <returns>The stock of the product. Returns null if there is no stock count to the product or if the product does not exist</returns>
+            <param name="alias">The alias/key.</param>
+            <param name="value">The value.</param>
+            <param name="serverSideOnly">The property is only available serverside.</param>
+            <param name="isReadOnly">The property can only be changed serverside.</param>
         </member>
-        <member name="M:TeaCommerce.Data.Licensing.LicenseValidator.HasLicense(TeaCommerce.Licensing.LicenseType,System.Boolean,System.Boolean)">
+        <member name="M:TeaCommerce.Data.OrderProperty.GetJson">
             <summary>
-            Determines whether the specified license type has a valid license.
+            Gets this object as a Json string
             </summary>
-            <param name="licenseType">Type of the license.</param>
-            <param name="checkForOrderLimit">if set to <c>true</c> it will check for the order limit.</param>
             <returns>
-              <c>true</c> if the specified license type has license; otherwise, <c>false</c>.
+            This object as a Json string
             </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.OrderProperty.GetXml">
+            <summary>
+            Gets this object as a XPathNodeIterator
+            </summary>
+            <returns>
+            This object as a XPathNodeIterator
+            </returns>
+        </member>
+        <member name="M:TeaCommerce.Data.OrderProperty.GetXElement">
+            <summary>
+            Gets this object as a XElement
+            </summary>
+            <returns>
+            This object as a XElement
+            </returns>
+        </member>
+        <member name="P:TeaCommerce.Data.OrderProperty.Alias">
+            <summary>
+            Gets or sets the alias/key of the property.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.OrderProperty.Value">
+            <summary>
+            Gets or sets the value of the property.
+            </summary>
+        </member>
+        <member name="P:TeaCommerce.Data.OrderProperty.ServerSideOnly">
+            <summary>
+            Gets or sets the server side only property.
+            </summary>
+            <value>The server side only property.</value>
+        </member>
+        <member name="T:TeaCommerce.Data.OrderLineProperty">
+            <summary>
+            A property for a specific order line
+            </summary>
+        </member>
+        <member name="M:TeaCommerce.Data.OrderLineProperty.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.OrderLineProperty"/> class.
+            </summary>
+            <param name="alias">The alias/key.</param>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.OrderLineProperty.#ctor(System.String,System.String,System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.OrderLineProperty"/> class.
+            </summary>
+            <param name="alias">The alias/key.</param>
+            <param name="value">The value.</param>
+            <param name="serverSideOnly">The property is only available serverside.</param>
+        </member>
+        <member name="M:TeaCommerce.Data.OrderLineProperty.#ctor(System.String,System.String,System.Boolean,System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:TeaCommerce.Data.OrderLineProperty"/> class.
+            </summary>
+            <param name="alias">The alias/key.</param>
+            <param name="value">The value.</param>
+            <param name="serverSideOnly">The property is only available serverside.</param>
+            <param name="isReadOnly">The property can only be changed serverside.</param>
         </member>
         <member name="T:TeaCommerce.Data.PaymentProvider">
             <summary>
@@ -2321,1056 +3663,6 @@
         <member name="P:TeaCommerce.Data.PaymentProvider.Alias">
             <summary>
             Gets the alias of the provider.
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.NodeStock.ChangeStock(System.Int32,System.Decimal)">
-            <summary>
-            Changes the stock of a product/node
-            </summary>
-            <param name="nodeId">The node to change</param>
-            <param name="stock">The maximum stock to draw</param>
-            <returns>The actual stock that has been drawn</returns>
-        </member>
-        <member name="T:TeaCommerce.Data.DB.TeaCommerceDataContext">
-            <summary>
-            Extends the Tea Commerce Data context
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.Insert(TeaCommerce.Data.DB.IDBObject)">
-            <summary>
-            Inserts the specified instance.
-            </summary>
-            <param name="instance">The instance.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertOrder(TeaCommerce.Data.DB.Order)">
-            <summary>
-            Inserts the order.
-            </summary>
-            <param name="instance">The instance.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertOrderProperty(TeaCommerce.Data.DB.OrderProperty)">
-            <summary>
-            Inserts the order property.
-            </summary>
-            <param name="instance">The instance.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertOrderStatus(TeaCommerce.Data.DB.OrderStatus)">
-            <summary>
-            Inserts the order status.
-            </summary>
-            <param name="instance">The instance.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertOrderLine(TeaCommerce.Data.DB.OrderLine)">
-            <summary>
-            Inserts the order line.
-            </summary>
-            <param name="instance">The instance.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertOrderLineProperty(TeaCommerce.Data.DB.OrderLineProperty)">
-            <summary>
-            Inserts the order line property.
-            </summary>
-            <param name="instance">The instance.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertOrderLinePrice(TeaCommerce.Data.DB.OrderLinePrice)">
-            <summary>
-            Inserts the order line price.
-            </summary>
-            <param name="instance">The instance.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertCurrency(TeaCommerce.Data.DB.Currency)">
-            <summary>
-            Inserts the currency.
-            </summary>
-            <param name="instance">The instance.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertCountry(TeaCommerce.Data.DB.Country)">
-            <summary>
-            Inserts the country.
-            </summary>
-            <param name="instance">The instance.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertEmailTemplate(TeaCommerce.Data.DB.EmailTemplate)">
-            <summary>
-            Inserts the EmailTemplate.
-            </summary>
-            <param name="instance">The instance.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertVATGroup(TeaCommerce.Data.DB.VATGroup)">
-            <summary>
-            Inserts the VAT group.
-            </summary>
-            <param name="instance">The instance.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertPaymentMethod(TeaCommerce.Data.DB.PaymentMethod)">
-            <summary>
-            Inserts the payment method.
-            </summary>
-            <param name="instance">The instance.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertShippingMethod(TeaCommerce.Data.DB.ShippingMethod)">
-            <summary>
-            Inserts the shipping method.
-            </summary>
-            <param name="instance">The instance.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.TeaCommerceDataContext.InsertPaymentMethodSetting(TeaCommerce.Data.DB.PaymentMethodSetting)">
-            <summary>
-            Inserts the payment method setting.
-            </summary>
-            <param name="instance">The instance.</param>
-        </member>
-        <member name="T:TeaCommerce.Data.DB.IDBObject">
-            <summary>
-            Tea Commerce db data object interface
-            </summary>
-        </member>
-        <member name="T:TeaCommerce.Data.DB.ADBObject">
-            <summary>
-            Tea Commerce db data object abstract class
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.DB.ADBObject.POCOInstance">
-            <summary>
-            Gets or sets the POCO instance.
-            Lets the db class know about it's data layer object
-            </summary>
-            <value>
-            The POCO instance.
-            </value>
-        </member>
-        <member name="T:TeaCommerce.Data.DB.Order">
-            <summary>
-            db Order partial extention
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.Order.#ctor(TeaCommerce.Data.IPoco)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.Order"/> class.
-            </summary>
-            <param name="pocoInstance">The poco instance.</param>
-        </member>
-        <member name="T:TeaCommerce.Data.DB.OrderProperty">
-            <summary>
-            db OrderProperty partial extention
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.OrderProperty.#ctor(TeaCommerce.Data.IPoco)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.OrderProperty"/> class.
-            </summary>
-            <param name="pocoInstance">The poco instance.</param>
-        </member>
-        <member name="T:TeaCommerce.Data.DB.OrderStatus">
-            <summary>
-            db OrderStatus partial extention
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.OrderStatus.#ctor(TeaCommerce.Data.IPoco)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.OrderStatus"/> class.
-            </summary>
-            <param name="pocoInstance">The poco instance.</param>
-        </member>
-        <member name="T:TeaCommerce.Data.DB.OrderLine">
-            <summary>
-            db OrderLine partial extention
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.OrderLine.#ctor(TeaCommerce.Data.IPoco)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.OrderLine"/> class.
-            </summary>
-            <param name="pocoInstance">The poco instance.</param>
-        </member>
-        <member name="T:TeaCommerce.Data.DB.OrderLineProperty">
-            <summary>
-            db OrderLineProperty partial extention
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.OrderLineProperty.#ctor(TeaCommerce.Data.IPoco)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.OrderLineProperty"/> class.
-            </summary>
-            <param name="pocoInstance">The poco instance.</param>
-        </member>
-        <member name="T:TeaCommerce.Data.DB.OrderLinePrice">
-            <summary>
-            db OrderLinePrice partial extention
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.OrderLinePrice.#ctor(TeaCommerce.Data.IPoco)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.OrderLinePrice"/> class.
-            </summary>
-            <param name="pocoInstance">The poco instance.</param>
-        </member>
-        <member name="T:TeaCommerce.Data.DB.Currency">
-            <summary>
-            db Currency partial extention
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.Currency.#ctor(TeaCommerce.Data.IPoco)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.Currency"/> class.
-            </summary>
-            <param name="pocoInstance">The poco instance.</param>
-        </member>
-        <member name="T:TeaCommerce.Data.DB.Country">
-            <summary>
-            db Country partial extention
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.Country.#ctor(TeaCommerce.Data.IPoco)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.Country"/> class.
-            </summary>
-            <param name="pocoInstance">The poco instance.</param>
-        </member>
-        <member name="T:TeaCommerce.Data.DB.EmailTemplate">
-            <summary>
-            db EmailTemplate partial extention
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.EmailTemplate.#ctor(TeaCommerce.Data.IPoco)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.EmailTemplate"/> class.
-            </summary>
-            <param name="pocoInstance">The poco instance.</param>
-        </member>
-        <member name="T:TeaCommerce.Data.DB.VATGroup">
-            <summary>
-            db VATGroup partial extention
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.VATGroup.#ctor(TeaCommerce.Data.IPoco)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.VATGroup"/> class.
-            </summary>
-            <param name="pocoInstance">The poco instance.</param>
-        </member>
-        <member name="T:TeaCommerce.Data.DB.PaymentMethod">
-            <summary>
-            db PaymentMethod partial extention
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.PaymentMethod.#ctor(TeaCommerce.Data.IPoco)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.PaymentMethod"/> class.
-            </summary>
-            <param name="pocoInstance">The poco instance.</param>
-        </member>
-        <member name="T:TeaCommerce.Data.DB.ShippingMethod">
-            <summary>
-            db ShippingMethod partial extention
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.ShippingMethod.#ctor(TeaCommerce.Data.IPoco)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.ShippingMethod"/> class.
-            </summary>
-            <param name="pocoInstance">The poco instance.</param>
-        </member>
-        <member name="T:TeaCommerce.Data.DB.PaymentMethodSetting">
-            <summary>
-            db PaymentMethodSetting partial extention
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.DB.PaymentMethodSetting.#ctor(TeaCommerce.Data.IPoco)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.DB.ShippingMethod"/> class.
-            </summary>
-            <param name="pocoInstance">The poco instance.</param>
-        </member>
-        <member name="T:TeaCommerce.Data.ShippingMethod">
-            <summary>
-            A shippingmethod
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingMethod.GetShippingCurrency(TeaCommerce.Data.Order)">
-            <summary>
-            Gets the shipping currency.
-            </summary>
-            <param name="order">The order.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingMethod.GetFee(TeaCommerce.Data.Order)">
-            <summary>
-            Gets the fee.
-            </summary>
-            <param name="order">The order.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingMethod.GetFeeWithoutVAT(TeaCommerce.Data.Order)">
-            <summary>
-            Gets the fee without VAT.
-            </summary>
-            <param name="order">The order.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingMethod.GetFeeVAT(TeaCommerce.Data.Order)">
-            <summary>
-            Gets the fee VAT.
-            </summary>
-            <param name="order">The order.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingMethod.GetVAT(TeaCommerce.Data.Order)">
-            <summary>
-            Gets the VAT.
-            </summary>
-            <param name="order">The order.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingMethod.GetVATPercent(TeaCommerce.Data.Order)">
-            <summary>
-            Gets the VAT percent.
-            </summary>
-            <param name="order">The order.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingMethod.GetShippingMethod(System.Int64)">
-            <summary>
-            Gets a specific shipping method.
-            </summary>
-            <param name="id">The id.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingMethod.GetShippingMethods">
-            <summary>
-            Gets all shipping methods.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingMethod.GetJson">
-            <summary>
-            Gets this object as a Json string
-            </summary>
-            <returns>
-            This object as a Json string
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingMethod.GetXml">
-            <summary>
-            Gets this object as a XPathNodeIterator
-            </summary>
-            <returns>
-            This object as a XPathNodeIterator
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingMethod.GetXElement">
-            <summary>
-            Gets this object as a XElement
-            </summary>
-            <returns>
-            This object as a XElement
-            </returns>
-        </member>
-        <member name="P:TeaCommerce.Data.ShippingMethod.IsDeleted">
-            <summary>
-            Gets a value indicating whether this instance has been deleted from the database.
-            </summary>
-            <value>
-            	<c>true</c> if this instance is deleted; otherwise, <c>false</c>.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.ShippingMethod.Name">
-            <summary>
-            Gets the name.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.ShippingMethod.DictionaryItemName">
-            <summary>
-            Name of the Umbraco Dictionary item that holds translations for this entity
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.ShippingMethod.MediaNodeId">
-            <summary>
-            Gets the media node id.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.ShippingMethod.ShippingCountries">
-            <summary>
-            Gets the shipping countries.
-            </summary>
-        </member>
-        <member name="T:TeaCommerce.Data.PaymentCountry">
-            <summary>
-            A link between a payment and a country
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentCountry.GetJson">
-            <summary>
-            Gets this object as a Json string
-            </summary>
-            <returns>
-            This object as a Json string
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentCountry.GetXml">
-            <summary>
-            Gets this object as a XPathNodeIterator
-            </summary>
-            <returns>
-            This object as a XPathNodeIterator
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentCountry.GetXElement">
-            <summary>
-            Gets this object as a XElement
-            </summary>
-            <returns>
-            This object as a XElement
-            </returns>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentCountry.CountryId">
-            <summary>
-            Gets the country id.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentCountry.Country">
-            <summary>
-            Gets the country.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentCountry.PaymentMethodId">
-            <summary>
-            Gets the payment method id.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentCountry.PaymentCurrencies">
-            <summary>
-            Gets the payment currencies.
-            </summary>
-        </member>
-        <member name="T:TeaCommerce.Data.Extensibility.ITeaCommerceExtension">
-            <summary>
-            Inherit from this and implement Initialize() to use the Tea Commerce event hooks
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.Extensibility.ITeaCommerceExtension.Initialize">
-            <summary>
-            Implement this and hook into the Tea Commerce event hooks.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.EmailTemplateLanguageSetting.UmbracoLanguageId">
-            <summary>
-            Gets or sets the umbraco language id.
-            </summary>
-            <value>
-            The umbraco language id.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.EmailTemplateLanguageSetting.Subject">
-            <summary>
-            Gets or sets the subject.
-            </summary>
-            <value>
-            The subject.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.EmailTemplateLanguageSetting.SenderName">
-            <summary>
-            Gets or sets the name of the sender.
-            </summary>
-            <value>
-            The name of the sender.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.EmailTemplateLanguageSetting.SenderAddress">
-            <summary>
-            Gets or sets the sender address.
-            </summary>
-            <value>
-            The sender address.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.EmailTemplateLanguageSetting.CCAddress">
-            <summary>
-            Gets or sets the CC address.
-            </summary>
-            <value>
-            The CC address.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.EmailTemplateLanguageSetting.BCCAddress">
-            <summary>
-            Gets or sets the BCC address.
-            </summary>
-            <value>
-            The BCC address.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.EmailTemplateLanguageSetting.XsltTemplate">
-            <summary>
-            Gets or sets the XSLT template.
-            </summary>
-            <value>
-            The XSLT template.
-            </value>
-        </member>
-        <member name="M:TeaCommerce.Data.EmailTemplate.Save">
-            <summary>
-            Saves this instance.
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.EmailTemplate.Delete">
-            <summary>
-            Deletes this instance.
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.EmailTemplate.Send(TeaCommerce.Data.Order)">
-            <summary>
-            Sends the email template with information from the specified order
-            The e-mail will be sent to the customer of the order and the EmailTemplates specified recipents
-            </summary>
-            <param name="order">The order.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.EmailTemplate.Send(TeaCommerce.Data.Order,TeaCommerce.Data.EmailTemplate.EmailTemplateType)">
-            <summary>
-            Sends an e-mail using this template
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.EmailTemplate.GetEmailTemplate(System.Int64)">
-            <summary>
-            Gets the email template.
-            </summary>
-            <param name="id">The id.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.EmailTemplate.GetEmailTemplate(System.String)">
-            <summary>
-            Gets the email template.
-            </summary>
-            <param name="id">The id.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.EmailTemplate.GetEmailTemplates">
-            <summary>
-            Gets all email templates.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="P:TeaCommerce.Data.EmailTemplate.Name">
-            <summary>
-            Gets or sets the name.
-            </summary>
-            <value>
-            The name.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.EmailTemplate.Alias">
-            <summary>
-            Gets or sets the alias.
-            </summary>
-            <value>
-            The alias.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.EmailTemplate.Subject">
-            <summary>
-            Gets or sets the subject.
-            </summary>
-            <value>
-            The subject.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.EmailTemplate.SenderName">
-            <summary>
-            Gets or sets the name of the sender.
-            </summary>
-            <value>
-            The name of the sender.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.EmailTemplate.SenderAddress">
-            <summary>
-            Gets or sets the sender address.
-            </summary>
-            <value>
-            The sender address.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.EmailTemplate.CCAddress">
-            <summary>
-            Gets or sets the CC address.
-            </summary>
-            <value>
-            The CC address.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.EmailTemplate.BCCAddress">
-            <summary>
-            Gets or sets the BCC address.
-            </summary>
-            <value>
-            The BCC address.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.EmailTemplate.XsltTemplate">
-            <summary>
-            Gets or sets the XSLT template.
-            </summary>
-            <value>
-            The XSLT template.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.EmailTemplate.EmailTemplateLanguageSettings">
-            <summary>
-            Gets the Email Template Language Settings.
-            </summary>
-        </member>
-        <member name="T:TeaCommerce.Data.Currency">
-            <summary>
-            A currency
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.Currency.Save">
-            <summary>
-            Saves the currency to the database
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.Currency.Delete">
-            <summary>
-            Deletes the currency from the database
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.Currency.GetCurrency(System.Int64)">
-            <summary>
-            Gets a specific currency.
-            </summary>
-            <param name="id">The id of the currency.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.Currency.GetCurrencies">
-            <summary>
-            Gets all the available currencies.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.Currency.GetJson">
-            <summary>
-            Gets this object as a Json string
-            </summary>
-            <returns>
-            This object as a Json string
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.Currency.GetXml">
-            <summary>
-            Gets this object as a XPathNodeIterator
-            </summary>
-            <returns>
-            This object as a XPathNodeIterator
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.Currency.GetXElement">
-            <summary>
-            Gets this object as a XElement
-            </summary>
-            <returns>
-            This object as a XElement
-            </returns>
-        </member>
-        <member name="P:TeaCommerce.Data.Currency.ISOCode">
-            <summary>
-            Gets the ISO code.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Currency.PricePropertyAlias">
-            <summary>
-            Gets the price property alias. This is the alias of the price's property on the page node
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Currency.CultureName">
-            <summary>
-            Gets the name of the culture.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Currency.Symbol">
-            <summary>
-            Gets the currency symbol
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.Currency.SymbolPlacement">
-            <summary>
-            Gets the currency symbol placement
-            </summary>
-        </member>
-        <member name="T:TeaCommerce.Data.Tools.XSLTHelper">
-            <summary>
-            Helper class for running XSLT's
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.Tools.XSLTHelper.InvokeXSLT(System.String)">
-            <summary>
-            Invokes a xslt file without currentPage
-            </summary>
-            <param name="xsltFile">The name of the XSLT file to use as a transform</param>
-            <returns>Returns the output generated by the xslt</returns>
-        </member>
-        <member name="M:TeaCommerce.Data.Tools.XSLTHelper.InvokeXSLT(System.String,System.Nullable{System.Int32})">
-            <summary>
-            Invokes a xslt file without currentPage
-            </summary>
-            <param name="xsltFile">The name of the XSLT file to use as a transform</param>
-            <param name="nodeId">Id of an umbraco node</param>
-            <returns>Returns the output generated by the xslt</returns>
-        </member>
-        <member name="M:TeaCommerce.Data.Tools.XSLTHelper.InvokeXSLT(System.String,System.Nullable{System.Int32},System.Collections.Generic.Dictionary{System.String,System.Xml.XPath.XPathNodeIterator})">
-            <summary>
-            Invokes a xslt file with the nodeId as currentPage
-            </summary>
-            <param name="xsltFile">The name of the XSLT file to use as a transform</param>
-            <param name="nodeId">Id of an umbraco node</param>
-            <param name="parameters">Parameters to add as args to the XSLT</param>
-            <returns>Returns the output generated by the xslt</returns>
-        </member>
-        <member name="M:TeaCommerce.Data.Tools.XSLTHelper.InvokeXSLT(System.String,System.Nullable{System.Int32},System.Nullable{System.Int32},System.Collections.Generic.Dictionary{System.String,System.Xml.XPath.XPathNodeIterator},System.Boolean)">
-            <summary>
-            Invokes a xslt file with the nodeId as currentPage
-            </summary>
-            <param name="xsltFile">The name of the XSLT file to use as a transform</param>
-            <param name="nodeId">Id of an umbraco node</param>
-            <param name="parameters">Parameters to add as args to the XSLT</param>
-            <param name="checkSecurity">Check if the XSLT file is allowed</param>
-            <returns>Returns the output generated by the xslt</returns>
-        </member>
-        <member name="T:TeaCommerce.Data.PaymentMethod">
-            <summary>
-            A payment method
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethod.#ctor(System.String)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.PaymentMethod"/> class.
-            </summary>
-            <param name="name">The name.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethod.#ctor(System.Int64,System.String,System.String,System.Int32,System.String,System.Nullable{System.Int32},System.Collections.Generic.List{TeaCommerce.Data.PaymentMethodSetting},System.Collections.Generic.List{TeaCommerce.Data.PaymentCountry},System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.PaymentMethod"/> class.
-            </summary>
-            <param name="id">The id.</param>
-            <param name="name">The name.</param>
-            <param name="dictionaryItemName">Name of the dictionary item.</param>
-            <param name="sort">The sort.</param>
-            <param name="paymentProviderAlias">The payment provider alias.</param>
-            <param name="mediaNodeId">The media node id.</param>
-            <param name="settings">The settings.</param>
-            <param name="paymentCountries">The payment countries.</param>
-            <param name="allowsGetStatus">if set to <c>true</c> [allows get status].</param>
-            <param name="allowsCapturePayment">if set to <c>true</c> [allows capture payment].</param>
-            <param name="allowsRefundPayment">if set to <c>true</c> [allows refund payment].</param>
-            <param name="allowsCancelPayment">if set to <c>true</c> [allows cancel payment].</param>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethod.AddPaymentCountry(TeaCommerce.Data.PaymentCountry)">
-            <summary>
-            Adds the payment country.
-            </summary>
-            <param name="paymentCountry">The payment country.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethod.RemovePaymentCountry(TeaCommerce.Data.PaymentCountry)">
-            <summary>
-            Removes the payment country.
-            </summary>
-            <param name="paymentCountry">The payment country.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethod.GetPaymentCurrency(TeaCommerce.Data.Order)">
-            <summary>
-            Gets the shipping currency.
-            </summary>
-            <param name="order">The order.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethod.GetFee(TeaCommerce.Data.Order)">
-            <summary>
-            Gets the fee.
-            </summary>
-            <param name="order">The order.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethod.GetFeeWithoutVAT(TeaCommerce.Data.Order)">
-            <summary>
-            Gets the fee without VAT.
-            </summary>
-            <param name="order">The order.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethod.GetFeeVAT(TeaCommerce.Data.Order)">
-            <summary>
-            Gets the fee VAT.
-            </summary>
-            <param name="order">The order.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethod.GetVAT(TeaCommerce.Data.Order)">
-            <summary>
-            Gets the VAT.
-            </summary>
-            <param name="order">The order.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethod.GetVATPercent(TeaCommerce.Data.Order)">
-            <summary>
-            Gets the VAT percent.
-            </summary>
-            <param name="order">The order.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethod.GetPaymentMethod(System.Int64)">
-            <summary>
-            Gets a payment method.
-            </summary>
-            <param name="id">The id.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethod.GetPaymentMethods">
-            <summary>
-            Gets all payment methods.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethod.GetJson">
-            <summary>
-            Gets this object as a Json string
-            </summary>
-            <returns>
-            This object as a Json string
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethod.GetXml">
-            <summary>
-            Gets this object as a XPathNodeIterator
-            </summary>
-            <returns>
-            This object as a XPathNodeIterator
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethod.GetXElement">
-            <summary>
-            Gets this object as a XElement
-            </summary>
-            <returns>
-            This object as a XElement
-            </returns>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentMethod.IsDeleted">
-            <summary>
-            Gets a value indicating whether this instance has been deleted from the database.
-            </summary>
-            <value>
-            	<c>true</c> if this instance is deleted; otherwise, <c>false</c>.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentMethod.Name">
-            <summary>
-            Gets the name.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentMethod.DictionaryItemName">
-            <summary>
-            Name of the Umbraco Dictionary item that holds translations for this entity
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentMethod.AllowsGetStatus">
-            <summary>
-            Gets a value indicating whether this payment method allows the payment provider to get the status.
-            </summary>
-            <value>
-              <c>true</c> if this payment method allows the payment provider to get the status; otherwise, <c>false</c>.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentMethod.AllowsCapturePayment">
-            <summary>
-            Gets a value indicating whether this payment method allows the payment provider to capture the payment.
-            </summary>
-            <value>
-              <c>true</c> if this payment method allows the payment provider to capture the payment; otherwise, <c>false</c>.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentMethod.AllowsRefundPayment">
-            <summary>
-            Gets a value indicating whether this payment method allows the payment provider to refund the payment.
-            </summary>
-            <value>
-              <c>true</c> if this payment method allows the payment provider to refund the payment; otherwise, <c>false</c>.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentMethod.AllowsCancelPayment">
-            <summary>
-            Gets a value indicating whether this payment method allows the payment provider to cancel the payment.
-            </summary>
-            <value>
-              <c>true</c> if this payment method allows the payment provider to cancel the payment; otherwise, <c>false</c>.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentMethod.PaymentProviderAlias">
-            <summary>
-            Gets the payment provider alias.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentMethod.MediaNodeId">
-            <summary>
-            Gets the umbraco media node id.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentMethod.Settings">
-            <summary>
-            Gets the payment method settings for this payment method.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentMethod.PaymentCountries">
-            <summary>
-            Gets the payment countries for this payment method.
-            </summary>
-        </member>
-        <member name="T:TeaCommerce.Data.Install.SqlScript">
-            <summary>
-            Loads the sql scripts when installing Tea Commerce
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.Install.SqlScript.#ctor(System.String,System.String)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.Install.SqlScript"/> class.
-            </summary>
-            <param name="filePath">The file path.</param>
-            <param name="script">The script.</param>
-        </member>
-        <member name="P:TeaCommerce.Data.Install.SqlScript.FilePath">
-            <summary>
-            Gets or sets the file path.
-            </summary>
-            <value>
-            The file path.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.Install.SqlScript.Script">
-            <summary>
-            Gets or sets the script.
-            </summary>
-            <value>
-            The script.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.Install.SqlScript.FileName">
-            <summary>
-            Gets the name of the file.
-            </summary>
-            <value>
-            The name of the file.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.Install.SqlScript.SchemaVersion">
-            <summary>
-            Gets the schema version.
-            </summary>
-        </member>
-        <member name="T:TeaCommerce.Data.ShippingCurrency">
-            <summary>
-            Shipping currency that holds information about the fee of the shipping
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingCurrency.GetFeeWithoutVAT(TeaCommerce.Data.Order)">
-            <summary>
-            Gets the fee without VAT.
-            </summary>
-            <param name="countryId">The country id.</param>
-            <param name="orderVAT">The order VAT.</param>
-            <param name="totalPriceWithoutDelivery">The total price without delivery.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingCurrency.GetVAT(TeaCommerce.Data.Order)">
-            <summary>
-            Gets the VAT.
-            </summary>
-            <param name="countryId">The country id.</param>
-            <param name="orderVAT">The order VAT.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingCurrency.GetVATPercent(TeaCommerce.Data.Order)">
-            <summary>
-            Gets the VAT formatted as percent.
-            </summary>
-            <param name="countryId">The country id.</param>
-            <param name="orderVAT">The order VAT.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingCurrency.GetJson">
-            <summary>
-            Gets this object as a Json string
-            </summary>
-            <returns>
-            This object as a Json string
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingCurrency.GetXml">
-            <summary>
-            Gets this object as a XPathNodeIterator
-            </summary>
-            <returns>
-            This object as a XPathNodeIterator
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.ShippingCurrency.GetXElement">
-            <summary>
-            Gets this object as a XElement
-            </summary>
-            <returns>
-            This object as a XElement
-            </returns>
-        </member>
-        <member name="P:TeaCommerce.Data.ShippingCurrency.VATGroupId">
-            <summary>
-            Gets the VAT group id.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.ShippingCurrency.CurrencyId">
-            <summary>
-            Gets the currency id.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.ShippingCurrency.Currency">
-            <summary>
-            Gets the currency.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.ShippingCurrency.Fee">
-            <summary>
-            Gets the fee.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.ShippingCurrency.FreeShippingFromOrderTotalPrice">
-            <summary>
-            Gets the free shipping from order total price.
-            </summary>
-        </member>
-        <member name="T:TeaCommerce.Data.Extensibility.TCPaymentFormGeneratedEventHandler">
-            <summary>
-            The eventhandler for when the Payment form has been generated
-            </summary>
-            <param name="order">The order.</param>
-            <param name="paymentProviderSettings">The payment provider settings.</param>
-            <param name="paymentProviderAlias">The payment provider alias.</param>
-        </member>
-        <member name="T:TeaCommerce.Data.Extensibility.TCEventHandler`1">
-            <summary>
-            An eventhandler with three parameters
-            </summary>
-        </member>
-        <member name="T:TeaCommerce.Data.Extensibility.TCEventHandler`2">
-            <summary>
-            An eventhandler with three parameters
-            </summary>
-        </member>
-        <member name="T:TeaCommerce.Data.Extensibility.TCEventHandler`3">
-            <summary>
-            An eventhandler with three parameters
-            </summary>
-        </member>
-        <member name="T:TeaCommerce.Data.Extensibility.TCEventHandler`4">
-            <summary>
-            An eventhandler with three parameters
             </summary>
         </member>
         <member name="T:TeaCommerce.Data.TeaCommerceSettings">
@@ -3483,293 +3775,6 @@
             <summary>
             Get or set the number of hours a Tea Commerce cookie should live
             </summary>
-        </member>
-        <member name="T:TeaCommerce.Data.OrderProperty">
-            <summary>
-            A property for a specific order
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.OrderProperty.#ctor(System.String,System.String)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.OrderProperty"/> class.
-            </summary>
-            <param name="alias">The alias/key.</param>
-            <param name="value">The value.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.OrderProperty.#ctor(System.String,System.String,System.Boolean)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.OrderProperty"/> class.
-            </summary>
-            <param name="alias">The alias/key.</param>
-            <param name="value">The value.</param>
-            <param name="serverSideOnly">The property is only available serverside.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.OrderProperty.#ctor(System.String,System.String,System.Boolean,System.Boolean)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.OrderProperty"/> class.
-            </summary>
-            <param name="alias">The alias/key.</param>
-            <param name="value">The value.</param>
-            <param name="serverSideOnly">The property is only available serverside.</param>
-            <param name="isReadOnly">The property can only be changed serverside.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.OrderProperty.GetJson">
-            <summary>
-            Gets this object as a Json string
-            </summary>
-            <returns>
-            This object as a Json string
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.OrderProperty.GetXml">
-            <summary>
-            Gets this object as a XPathNodeIterator
-            </summary>
-            <returns>
-            This object as a XPathNodeIterator
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.OrderProperty.GetXElement">
-            <summary>
-            Gets this object as a XElement
-            </summary>
-            <returns>
-            This object as a XElement
-            </returns>
-        </member>
-        <member name="P:TeaCommerce.Data.OrderProperty.Alias">
-            <summary>
-            Gets or sets the alias/key of the property.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.OrderProperty.Value">
-            <summary>
-            Gets or sets the value of the property.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.OrderProperty.ServerSideOnly">
-            <summary>
-            Gets or sets the server side only property.
-            </summary>
-            <value>The server side only property.</value>
-        </member>
-        <member name="T:TeaCommerce.Data.OrderLineProperty">
-            <summary>
-            A property for a specific order line
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.OrderLineProperty.#ctor(System.String,System.String)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.OrderLineProperty"/> class.
-            </summary>
-            <param name="alias">The alias/key.</param>
-            <param name="value">The value.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.OrderLineProperty.#ctor(System.String,System.String,System.Boolean)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.OrderLineProperty"/> class.
-            </summary>
-            <param name="alias">The alias/key.</param>
-            <param name="value">The value.</param>
-            <param name="serverSideOnly">The property is only available serverside.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.OrderLineProperty.#ctor(System.String,System.String,System.Boolean,System.Boolean)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.OrderLineProperty"/> class.
-            </summary>
-            <param name="alias">The alias/key.</param>
-            <param name="value">The value.</param>
-            <param name="serverSideOnly">The property is only available serverside.</param>
-            <param name="isReadOnly">The property can only be changed serverside.</param>
-        </member>
-        <member name="T:TeaCommerce.Data.OrderLinePrice">
-            <summary>
-            A price for a specific orderline.
-            Links to one currency.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.OrderLinePrice.Id">
-            <summary>
-            Gets the id.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.OrderLinePrice.CurrencyId">
-            <summary>
-            Gets the currency id.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.OrderLinePrice.UnitPrice">
-            <summary>
-            Gets or sets the unit price.
-            </summary>
-            <value>
-            The unit price.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.OrderLinePrice.IsDirty">
-            <summary>
-            Gets or sets a value indicating whether this instance is dirty.
-            </summary>
-            <value>
-              <c>true</c> if this instance is dirty; otherwise, <c>false</c>.
-            </value>
-        </member>
-        <member name="T:TeaCommerce.Data.OrderStatus">
-            <summary>
-            An order status
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.OrderStatus.GetOrderStatus(System.Int64)">
-            <summary>
-            Gets the order status.
-            </summary>
-            <param name="id">The id.</param>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.OrderStatus.GetDefaultOrderStatus">
-            <summary>
-            Gets the default order status.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.OrderStatus.GetOrderStatuses">
-            <summary>
-            Gets all order statuses.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:TeaCommerce.Data.OrderStatus.GetJson">
-            <summary>
-            Gets this object as a Json string
-            </summary>
-            <returns>
-            This object as a Json string
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.OrderStatus.GetXml">
-            <summary>
-            Gets this object as a XPathNodeIterator
-            </summary>
-            <returns>
-            This object as a XPathNodeIterator
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.OrderStatus.GetXElement">
-            <summary>
-            Gets this object as a XElement
-            </summary>
-            <returns>
-            This object as a XElement
-            </returns>
-        </member>
-        <member name="P:TeaCommerce.Data.OrderStatus.Name">
-            <summary>
-            Gets the name.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.OrderStatus.DictionaryItemName">
-            <summary>
-            Name of the Umbraco Dictionary item that holds translations for this entity
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.OrderStatus.IsDefault">
-            <summary>
-            Gets a value indicating whether this instance is default.
-            </summary>
-            <value>
-            	<c>true</c> if this instance is default; otherwise, <c>false</c>.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.OrderStatus.IsDeleted">
-            <summary>
-            Gets a value indicating whether this instance has been deleted from the database.
-            </summary>
-            <value>
-            	<c>true</c> if this instance is deleted; otherwise, <c>false</c>.
-            </value>
-        </member>
-        <member name="T:TeaCommerce.Data.PaymentMethodSetting">
-            <summary>
-            A setting for a payment method
-            </summary>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethodSetting.#ctor(System.Int64,System.Nullable{System.Int32})">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.PaymentMethodSetting"/> class.
-            </summary>
-            <param name="paymentMethodId">The payment method id.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethodSetting.#ctor(System.Int64,System.Int64,System.Nullable{System.Int32},System.String,System.String,System.Int32)">
-            <summary>
-            Initializes a new instance of the <see cref="T:TeaCommerce.Data.PaymentMethodSetting"/> class.
-            </summary>
-            <param name="id">The id.</param>
-            <param name="paymentMethodId">The payment method id.</param>
-            <param name="umbracoLanguageId">The umbraco language id.</param>
-            <param name="key">The key.</param>
-            <param name="value">The value.</param>
-            <param name="sort">The sort.</param>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethodSetting.GetJson">
-            <summary>
-            Gets this object as a Json string
-            </summary>
-            <returns>
-            This object as a Json string
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethodSetting.GetXml">
-            <summary>
-            Gets this object as a XPathNodeIterator
-            </summary>
-            <returns>
-            This object as a XPathNodeIterator
-            </returns>
-        </member>
-        <member name="M:TeaCommerce.Data.PaymentMethodSetting.GetXElement">
-            <summary>
-            Gets this object as a XElement
-            </summary>
-            <returns>
-            This object as a XElement
-            </returns>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentMethodSetting.PaymentMethodId">
-            <summary>
-            Gets the payment method id.
-            </summary>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentMethodSetting.UmbracoLanguageId">
-            <summary>
-            Gets or sets the umbraco language id.
-            </summary>
-            <value>
-            The umbraco language id.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentMethodSetting.Key">
-            <summary>
-            Gets or sets the key.
-            </summary>
-            <value>
-            The key.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentMethodSetting.Value">
-            <summary>
-            Gets or sets the value.
-            </summary>
-            <value>
-            The value.
-            </value>
-        </member>
-        <member name="P:TeaCommerce.Data.PaymentMethodSetting.Sort">
-            <summary>
-            Gets or sets the sort.
-            </summary>
-            <value>
-            The sort.
-            </value>
         </member>
     </members>
 </doc>

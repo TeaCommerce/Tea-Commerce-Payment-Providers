@@ -36,7 +36,7 @@ namespace TeaCommerce.PaymentProviders {
     public override string FormPostUrl { get { return formPostUrl; } }
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-quickpay-wit-tea-commerce/"; } }
 
-    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
+    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, Dictionary<string, string> settings ) {
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
       inputFields[ "protocol" ] = "4";

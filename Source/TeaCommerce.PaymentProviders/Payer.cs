@@ -43,7 +43,7 @@ namespace TeaCommerce.PaymentProviders {
     public override string FormPostUrl { get { return "https://secure.pay-read.se/PostAPI_V1/InitPayFlow"; } }
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-payer-with-tea-commerce/"; } }
 
-    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
+    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, Dictionary<string, string> settings ) {
       HttpServerUtility server = HttpContext.Current.Server;
 
       Dictionary<string, string> inputFields = new Dictionary<string, string>();

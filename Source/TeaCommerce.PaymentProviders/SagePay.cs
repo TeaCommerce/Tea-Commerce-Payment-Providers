@@ -39,7 +39,7 @@ namespace TeaCommerce.PaymentProviders {
 
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-sage-pay-with-tea-commerce/"; } }
 
-    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
+    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, Dictionary<string, string> settings ) {
       List<string> settingsToExclude = new string[] { "streetAddressPropertyAlias", "cityPropertyAlias", "zipCodePropertyAlias", "statePropertyAlias", "shippingFirstNamePropertyAlias", "shippingLastNamePropertyAlias", "shippingStreetAddressPropertyAlias", "shippingCityPropertyAlias", "shippingZipCodePropertyAlias", "shippingStatePropertyAlias", "testMode" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 

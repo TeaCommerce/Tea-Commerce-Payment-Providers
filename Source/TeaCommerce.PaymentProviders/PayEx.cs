@@ -39,7 +39,7 @@ namespace TeaCommerce.PaymentProviders {
     public override bool FinalizeAtContinueUrl { get { return true; } }
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-payex-with-tea-commerce/"; } }
 
-    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
+    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, Dictionary<string, string> settings ) {
       long accountNumber = long.Parse( settings[ "accountNumber" ] );
       string purchaseOperation = settings[ "purchaseOperation" ];
       int price = (int)Math.Round( order.TotalPrice * 100M, 0 );

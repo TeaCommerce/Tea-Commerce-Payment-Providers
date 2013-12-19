@@ -42,7 +42,7 @@ namespace TeaCommerce.PaymentProviders {
 
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-ogone-with-tea-commerce/"; } }
 
-    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallbackUrl, Dictionary<string, string> settings ) {
+    public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallbackUrl, string teaCommerceCommunicationUrl, Dictionary<string, string> settings ) {
       List<string> settingsToExclude = new string[] { "SHAINPASSPHRASE", "SHAOUTPASSPHRASE", "APIUSERID", "APIPASSWORD", "TESTMODE" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !string.IsNullOrEmpty( i.Value ) && !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key.ToUpperInvariant(), i => i.Value );
 

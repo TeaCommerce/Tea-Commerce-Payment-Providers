@@ -48,7 +48,7 @@ namespace TeaCommerce.PaymentProviders {
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-2checkout-with-tea-commerce/"; } }
     public override bool FinalizeAtContinueUrl { get { return true; } }
 
-    public override Dictionary<string, string> GenerateForm( Data.Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, Dictionary<string, string> settings ) {
+    public override Dictionary<string, string> GenerateForm( Data.Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, Dictionary<string, string> settings ) {
       List<string> settingsToExclude = new string[] { "secretWord", "productNumberPropertyAlias", "productNamePropertyAlias", "shippingMethodProductNumber", "shippingMethodFormatString", "paymentMethodProductNumber", "paymentMethodFormatString", "streetAddressPropertyAlias", "cityPropertyAlias", "statePropertyAlias", "zipCodePropertyAlias", "phonePropertyAlias", "phoneExtensionPropertyAlias" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
