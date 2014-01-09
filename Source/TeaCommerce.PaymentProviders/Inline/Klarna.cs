@@ -120,7 +120,7 @@ namespace TeaCommerce.PaymentProviders {
               { "name", string.Format( settings[ "paymentMethodFormatString" ], order.PaymentMethod.Name )},
               { "quantity", 1},
               { "unit_price", (int) (order.PaymentFee * 100M) },
-              { "tax_rate", (int) (order.PaymentFeeVAT * 10000M) }
+              { "tax_rate", (int) (order.PaymentVAT * 10000M) }
             } );
         }
         if ( order.ShippingFee != 0 ) {
@@ -130,7 +130,7 @@ namespace TeaCommerce.PaymentProviders {
               { "name", string.Format( settings[ "shippingMethodFormatString" ], order.ShippingMethod.Name )},
               { "quantity", 1},
               { "unit_price", (int) (order.ShippingFee * 100M) },
-              { "tax_rate",  (int) (order.ShippingFeeVAT * 10000M) }
+              { "tax_rate",  (int) (order.ShippingVAT * 10000M) }
             } );
         }
 
