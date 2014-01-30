@@ -77,6 +77,9 @@ namespace TeaCommerce.PaymentProviders {
       klarnaOrder.Fetch();
 
       if ( (string)klarnaOrder.GetValue( "status" ) == "checkout_complete" ) {
+
+        //We need to populate the order with the information entered into Klarna.
+        SaveOrderPropertiesFromKlarnaCallback( order, klarnaOrder );
         decimal amount = ( (JObject)klarnaOrder.GetValue( "cart" ) )[ "total_price_including_tax" ].Value<decimal>() / 100M;
         string klarnaId = klarnaOrder.GetValue( "id" ).ToString();
 
@@ -91,6 +94,73 @@ namespace TeaCommerce.PaymentProviders {
 
 
       return callbackInfo;
+    }
+
+    protected virtual void SaveOrderPropertiesFromKlarnaCallback( Order order, KlarnaOrder klarnaOrder ) {
+
+      //Some order properties in Tea Commerce comes with a special alias, 
+      //defining a mapping of klarna propteries to these aliases.
+      //Store store = StoreService.Instance.Get( order.StoreId );
+      Dictionary<string, string> magicOrderPropertyAliases = new Dictionary<string, string>{
+		    { "billing_address.given_name", TeaCommerceSettings.FirstNamePropertyAlias },
+		    { "billing_address.family_name", TeaCommerceSettings.LastNamePropertyAlias },
+		    { "billing_address.email", TeaCommerceSettings.EmailPropertyAlias },
+	    };
+
+
+      //The klarna properties we wish to save on the order.
+
+      List<string> klarnaPropertyAliases = new List<string>{ 
+		    "billing_address.given_name",
+		    "billing_address.family_name",
+		    "billing_address.care_of",
+		    "billing_address.street_address",
+		    "billing_address.postal_code",
+		    "billing_address.city",
+		    "billing_address.email",
+		    "billing_address.phone",
+		    "shipping_address.given_name",
+		    "shipping_address.family_name",            
+		    "shipping_address.care_of",
+		    "shipping_address.street_address",
+		    "shipping_address.postal_code",
+		    "shipping_address.city",
+		    "shipping_address.email",
+		    "shipping_address.phone" ,
+  	  };
+
+      Dictionary<string, object> klarnaProperties = klarnaOrder.Marshal();
+
+      foreach ( string klarnaPropertyAlias in klarnaPropertyAliases ) {
+        //if a property mapping exists then use the magic alias, otherwise use the property name itself.
+        string tcOrderPropertyAlias = magicOrderPropertyAliases.ContainsKey( klarnaPropertyAlias ) ? magicOrderPropertyAliases[ klarnaPropertyAlias ] : klarnaPropertyAlias;
+
+        string klarnaPropertyValue = "";
+        /* Some klarna properties are of the form parent.child 
+         * in which case the lookup in klarnaProperties 
+         * needs to be (in pseudocode) 
+         * klarnaProperties[parent].getValue(child) .
+         * In the case that there is no '.' we assume that 
+         * klarnaProperties[klarnaPropertyAlias].ToString() 
+         * contains what we need. 
+         */
+        string[] klarnaPropertyParts = klarnaPropertyAlias.Split( '.' );
+        if ( klarnaPropertyParts.Length == 1 && klarnaProperties.ContainsKey( klarnaPropertyAlias ) ) {
+          klarnaPropertyValue = klarnaProperties[ klarnaPropertyAlias ].ToString();
+        } else if ( klarnaPropertyParts.Length == 2 && klarnaProperties.ContainsKey( klarnaPropertyParts[ 0 ] ) ) {
+          JObject parent = klarnaProperties[ klarnaPropertyParts[ 0 ] ] as JObject;
+          if ( parent != null ) {
+            JToken value = parent.GetValue( klarnaPropertyParts[ 1 ] );
+            klarnaPropertyValue = value != null ? value.ToString() : "";
+          }
+        }
+
+        if ( !string.IsNullOrEmpty( klarnaPropertyValue ) ) {
+          order.AddProperty( new OrderProperty( tcOrderPropertyAlias, klarnaPropertyValue ) );
+        }
+      }
+      // order was passed as reference and updated. Saving it now.
+      order.Save();
     }
 
     public override string ProcessRequest( Order order, HttpRequest request, IDictionary<string, string> settings ) {
