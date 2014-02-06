@@ -1,4 +1,5 @@
-﻿using Klarna.Checkout;
+﻿using System.Diagnostics;
+using Klarna.Checkout;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -94,7 +95,6 @@ namespace TeaCommerce.PaymentProviders {
         callbackInfo = new CallbackInfo( errorMessage );
         Log.Add( LogTypes.Error, -1, errorMessage );
       }
-
 
       return callbackInfo;
     }
@@ -229,6 +229,10 @@ namespace TeaCommerce.PaymentProviders {
             {"checkout_uri", request.UrlReferrer.ToString()},
             {"confirmation_uri", order.Properties.First( i => i.Alias.Equals( "teaCommerceContinueUrl" ) ).Value},
             {"push_uri", order.Properties.First( i => i.Alias.Equals( "teaCommerceCallbackUrl" ) ).Value}
+          };
+
+          data[ "merchant_reference" ] = new Dictionary<string, object>() {
+            {"orderid1", order.Name}
           };
 
           data[ "purchase_country" ] = order.Country.CountryCode;
