@@ -237,12 +237,16 @@ namespace TeaCommerce.PaymentProviders.Inline {
 
             //Merchant information
             data[ "merchant" ] = new Dictionary<string, object> {
-            {"id", settings[ "merchant.id" ]},
-            {"terms_uri", merchantTermsUri},
-            {"checkout_uri", request.UrlReferrer.ToString()},
-            {"confirmation_uri", order.Properties[ "teaCommerceContinueUrl" ]},
-            {"push_uri", order.Properties[ "teaCommerceCallbackUrl" ]}
-          };
+              {"id", settings[ "merchant.id" ]},
+              {"terms_uri", merchantTermsUri},
+              {"checkout_uri", request.UrlReferrer.ToString()},
+              {"confirmation_uri", order.Properties[ "teaCommerceContinueUrl" ]},
+              {"push_uri", order.Properties[ "teaCommerceCallbackUrl" ]}
+            };
+
+            data[ "merchant_reference" ] = new Dictionary<string, object>() {
+              {"orderid1", order.CartNumber}
+            };
 
             //Combined data
             Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
