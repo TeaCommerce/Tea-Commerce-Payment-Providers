@@ -50,6 +50,9 @@ namespace TeaCommerce.PaymentProviders {
       Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
       formPostUrl = settings[ "paymentFormUrl" ];
+      if ( order.PaymentFeeVAT != 0 ) {
+        throw new ArgumentException( "The Klarna payment provider does not accept a payment provider price." );
+      }
 
       order.AddProperty( new OrderProperty( "teaCommerceCommunicationUrl", teaCommerceCommunicationUrl, true ) );
       order.AddProperty( new OrderProperty( "teaCommerceContinueUrl", teaCommerceContinueUrl, true ) );
@@ -184,15 +187,6 @@ namespace TeaCommerce.PaymentProviders {
             } )
         .ToList();
 
-        if ( order.PaymentFee != 0 ) {
-          cartItems.Add( new Dictionary<string, object> {
-              { "reference", settings[ "paymentMethodProductNumber" ]},
-              { "name", string.Format( settings[ "paymentMethodFormatString" ], order.PaymentMethod.Name )},
-              { "quantity", 1},
-              { "unit_price", (int) (order.PaymentFee * 100M) },
-              { "tax_rate", (int) (order.PaymentVAT * 10000M) }
-            } );
-        }
         if ( order.ShippingFee != 0 ) {
           cartItems.Add( new Dictionary<string, object> {
               { "type", "shipping_fee" },
