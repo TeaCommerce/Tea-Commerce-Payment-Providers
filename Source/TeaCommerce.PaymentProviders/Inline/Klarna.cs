@@ -1,5 +1,4 @@
 ﻿using Klarna.Checkout;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -42,6 +41,11 @@ namespace TeaCommerce.PaymentProviders.Inline {
       PaymentHtmlForm htmlForm = new PaymentHtmlForm {
         Action = settings[ "paymentFormUrl" ]
       };
+
+      if ( order.PaymentInformation != null && order.PaymentInformation.TotalPrice != null && order.PaymentInformation.TotalPrice.WithVat != 0 ) {
+        throw new ArgumentException( "The Klarna payment provider does not accept a payment provider price." );
+      }
+
 
       order.Properties.AddOrUpdate( new CustomProperty( "teaCommerceCommunicationUrl", teaCommerceCommunicationUrl ) { ServerSideOnly = true } );
       order.Properties.AddOrUpdate( new CustomProperty( "teaCommerceContinueUrl", teaCommerceContinueUrl ) { ServerSideOnly = true } );
@@ -193,16 +197,6 @@ namespace TeaCommerce.PaymentProviders.Inline {
             } )
           .ToList();
 
-          if ( order.PaymentInformation.PaymentMethodId != null ) {
-            PaymentMethod paymentMethod = PaymentMethodService.Instance.Get( order.StoreId, order.PaymentInformation.PaymentMethodId.Value );
-            cartItems.Add( new Dictionary<string, object> {
-              { "reference", paymentMethod.Sku},
-              { "name", paymentMethod.Name},
-              { "quantity", 1},
-              { "unit_price", (int) (order.PaymentInformation.TotalPrice.WithVat * 100M) },
-              { "tax_rate", (int) (order.PaymentInformation.VatRate * 10000M) }
-            } );
-          }
           if ( order.ShipmentInformation.ShippingMethodId != null ) {
             ShippingMethod shippingMethod = ShippingMethodService.Instance.Get( order.StoreId, order.ShipmentInformation.ShippingMethodId.Value );
             cartItems.Add( new Dictionary<string, object> {
@@ -247,6 +241,10 @@ namespace TeaCommerce.PaymentProviders.Inline {
               {"checkout_uri", request.UrlReferrer.ToString()},
               {"confirmation_uri", order.Properties[ "teaCommerceContinueUrl" ]},
               {"push_uri", order.Properties[ "teaCommerceCallbackUrl" ]}
+            };
+
+            data[ "merchant_reference" ] = new Dictionary<string, object>() {
+              {"orderid1", order.CartNumber}
             };
 
             //Combined data
