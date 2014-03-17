@@ -30,7 +30,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         defaultSettings[ "streetAddressPropertyAlias" ] = "streetAddress";
         defaultSettings[ "cityPropertyAlias" ] = "city";
         defaultSettings[ "zipCodePropertyAlias" ] = "zipCode";
-        defaultSettings[ "testMode" ] = "1";
+        defaultSettings[ "testMode" ] = "100";
         return defaultSettings;
       }
     }
@@ -48,10 +48,10 @@ namespace TeaCommerce.PaymentProviders.Classic {
       order.Properties[ settings[ "zipCodePropertyAlias" ] ].MustNotBeNullOrEmpty( "zip code" );
 
       PaymentHtmlForm htmlForm = new PaymentHtmlForm {
-        Action = settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ? "https://secure-test.worldpay.com/wcc/purchase" : "https://secure.worldpay.com/wcc/purchase"
+        Action = settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "100" ? "https://secure-test.worldpay.com/wcc/purchase" : "https://secure.worldpay.com/wcc/purchase"
       };
 
-      string[] settingsToExclude = new[] { "md5Secret", "callbackPW", "streetAddressPropertyAlias", "cityPropertyAlias", "zipCodePropertyAlias", "testMode" };
+      string[] settingsToExclude = new[] { "md5Secret", "callbackPW", "streetAddressPropertyAlias", "cityPropertyAlias", "zipCodePropertyAlias" };
       htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
       //cartId
@@ -133,7 +133,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         settings.MustContainKey( "paymentResponsePassword", "settings" );
 
         //Write data when testing
-        if ( settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ) {
+        if ( settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "100" ) {
           LogRequestToFile( request, HostingEnvironment.MapPath( "~/world-pay-get-cart-number-data.txt" ), logPostData: true );
         }
 
@@ -162,7 +162,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         settings.MustContainKey( "paymentResponsePassword", "settings" );
 
         //Write data when testing
-        if ( settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ) {
+        if ( settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "100" ) {
           LogRequestToFile( request, HostingEnvironment.MapPath( "~/world-pay-callback-data.txt" ), logPostData: true );
         }
 
@@ -200,7 +200,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         case "authMode":
           return settingsKey + "<br/><small>A = automatic, E = manual</small>";
         case "testMode":
-          return settingsKey + "<br/><small>1 = true; 0 = false</small>";
+          return settingsKey + "<br/><small>100 = true; 0 = false</small>";
         default:
           return base.GetLocalizedSettingsKey( settingsKey, culture );
       }
