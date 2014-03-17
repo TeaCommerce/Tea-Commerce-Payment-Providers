@@ -98,9 +98,9 @@ namespace TeaCommerce.PaymentProviders.Inline {
     }
 
     protected virtual void SaveOrderPropertiesFromKlarnaCallback( Order order, KlarnaOrder klarnaOrder ) {
-      
-       //Some order properties in Tea Commerce comes with a special alias, 
-       //defining a mapping of klarna propteries to these aliases.
+
+      //Some order properties in Tea Commerce comes with a special alias, 
+      //defining a mapping of klarna propteries to these aliases.
       Store store = StoreService.Instance.Get( order.StoreId );
       Dictionary<string, string> magicOrderPropertyAliases = new Dictionary<string, string>{
             { "billing_address.given_name", store.FirstNamePropertyAlias },
@@ -108,9 +108,9 @@ namespace TeaCommerce.PaymentProviders.Inline {
             { "billing_address.email", store.EmailPropertyAlias },
           };
 
-      
+
       //The klarna properties we wish to save on the order.
-       
+
       List<string> klarnaPropertyAliases = new List<string>{ 
             "billing_address.given_name",
             "billing_address.family_name",
@@ -242,12 +242,12 @@ namespace TeaCommerce.PaymentProviders.Inline {
 
             //Merchant information
             data[ "merchant" ] = new Dictionary<string, object> {
-            {"id", settings[ "merchant.id" ]},
-            {"terms_uri", merchantTermsUri},
-            {"checkout_uri", request.UrlReferrer.ToString()},
-            {"confirmation_uri", order.Properties[ "teaCommerceContinueUrl" ]},
-            {"push_uri", order.Properties[ "teaCommerceCallbackUrl" ]}
-          };
+              {"id", settings[ "merchant.id" ]},
+              {"terms_uri", merchantTermsUri},
+              {"checkout_uri", request.UrlReferrer.ToString()},
+              {"confirmation_uri", order.Properties[ "teaCommerceContinueUrl" ]},
+              {"push_uri", order.Properties[ "teaCommerceCallbackUrl" ]}
+            };
 
             //Combined data
             Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
