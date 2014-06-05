@@ -46,7 +46,6 @@ namespace TeaCommerce.PaymentProviders.Inline {
         throw new ArgumentException( "The Klarna payment provider does not accept a payment provider price." );
       }
 
-
       order.Properties.AddOrUpdate( new CustomProperty( "teaCommerceCommunicationUrl", teaCommerceCommunicationUrl ) { ServerSideOnly = true } );
       order.Properties.AddOrUpdate( new CustomProperty( "teaCommerceContinueUrl", teaCommerceContinueUrl ) { ServerSideOnly = true } );
       order.Properties.AddOrUpdate( new CustomProperty( "teaCommerceCallbackUrl", teaCommerceCallBackUrl ) { ServerSideOnly = true } );

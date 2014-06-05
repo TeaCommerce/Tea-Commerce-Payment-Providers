@@ -43,6 +43,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Newtonsoft.Json.6.0.3\lib\net40\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="Paynova.Api.Client">
+      <HintPath>..\packages\Paynova.Api.Client.1.0.0\lib\net35\Paynova.Api.Client.dll</HintPath>
+    </Reference>
     <Reference Include="Stripe.net">
       <HintPath>..\..\Lib\StripeDotNet\Stripe.net.dll</HintPath>
     </Reference>
@@ -69,6 +72,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Classic\Axcess.cs" />
+    <Compile Include="Classic\Paynova.cs" />
     <Compile Include="Inline\Klarna.cs" />
     <Compile Include="Inline\CyberSource.cs" />
     <Compile Include="Classic\PaymentSense.cs" />
