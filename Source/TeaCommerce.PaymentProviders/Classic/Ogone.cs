@@ -77,7 +77,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
       //Ogone dont support to show order line information to the shopper
 
-      string strToHash = string.Join( "", htmlForm.InputFields.OrderBy( i => i.Key ).Select( i => i.Key + "=" + i.Value + settings[ "SHAINPASSPHRASE" ] ) );
+      string strToHash = string.Join( "", htmlForm.InputFields.OrderBy( i => i.Key ).Select( i => i.Key.ToUpperInvariant() + "=" + i.Value + settings[ "SHAINPASSPHRASE" ] ) );
       htmlForm.InputFields[ "SHASIGN" ] = new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ).ToHex();
 
       return htmlForm;
