@@ -283,9 +283,8 @@ namespace TeaCommerce.PaymentProviders.Classic {
       settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "merchantId", "settings" );
       settings.MustContainKey( "apiPassword", "settings" );
-      //TODO: test mode
 
-      return new PaynovaClient( "https://testapi.paynova.com/", settings[ "merchantId" ], settings[ "apiPassword" ] );
+      return new PaynovaClient( settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ? "https://testapi.paynova.com/" : "https://api.paynova.com", settings[ "merchantId" ], settings[ "apiPassword" ] );
     }
   }
 }
