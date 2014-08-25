@@ -77,7 +77,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
       //Ogone dont support to show order line information to the shopper
 
-      string strToHash = string.Join( "", htmlForm.InputFields.OrderBy( i => i.Key ).Select( i => i.Key.ToUpperInvariant() + "=" + i.Value + settings[ "SHAINPASSPHRASE" ] ) );
+      string strToHash = string.Join( "", htmlForm.InputFields.OrderBy( i => i.Key ).Select( i => i.Key + "=" + i.Value + settings[ "SHAINPASSPHRASE" ] ) );
       htmlForm.InputFields[ "SHASIGN" ] = new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ).ToHex();
 
       return htmlForm;
@@ -126,7 +126,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         }
 
         string strToHash = string.Join( "", inputFields.OrderBy( i => i.Key ).Select( i => i.Key.ToUpperInvariant() + "=" + i.Value + settings[ "SHAOUTPASSPHRASE" ] ) );
-        string digest = new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ).ToHex();
+        string digest = new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ).ToHex().ToUpperInvariant();
 
         if ( digest.Equals( shaSign ) ) {
           callbackInfo = new CallbackInfo( decimal.Parse( strAmount, CultureInfo.InvariantCulture ), transaction, status == "5" || status == "51" ? PaymentState.Authorized : PaymentState.Captured, cardType, cardNo );
