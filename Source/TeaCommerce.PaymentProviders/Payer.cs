@@ -96,7 +96,7 @@ namespace TeaCommerce.PaymentProviders {
           new XElement( "line_number", lineCounter.ToString() ),
           new XElement( "description", server.HtmlEncode( productNameProp != null ? productNameProp.Value : string.Empty ) ),
           new XElement( "item_number", server.HtmlEncode( productNumberProp != null ? productNumberProp.Value : string.Empty ) ),
-          new XElement( "price_including_vat", server.HtmlEncode( orderLine.TotalPrice.ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "price_including_vat", server.HtmlEncode( orderLine.UnitPrice.ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "vat_percentage", server.HtmlEncode( ( orderLine.VAT * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "quantity", server.HtmlEncode( orderLine.Quantity.ToString( CultureInfo.InvariantCulture ) ) )
         ) );

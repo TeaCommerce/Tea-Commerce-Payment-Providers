@@ -103,7 +103,6 @@ namespace TeaCommerce.PaymentProviders {
 
       //Some order properties in Tea Commerce comes with a special alias, 
       //defining a mapping of klarna propteries to these aliases.
-      //Store store = StoreService.Instance.Get( order.StoreId );
       Dictionary<string, string> magicOrderPropertyAliases = new Dictionary<string, string>{
 		    { "billing_address.given_name", TeaCommerceSettings.FirstNamePropertyAlias },
 		    { "billing_address.family_name", TeaCommerceSettings.LastNamePropertyAlias },
@@ -199,7 +198,7 @@ namespace TeaCommerce.PaymentProviders {
         }
 
         Dictionary<string, object> data = new Dictionary<string, object> { { "cart", new Dictionary<string, object> { { "items", cartItems } } } };
-        OrderProperty klarnaLocation = order.Properties.FirstOrDefault(i => i.Alias == "klarnaLocation" );
+        OrderProperty klarnaLocation = order.Properties.FirstOrDefault( i => i.Alias == "klarnaLocation" );
 
         //Check if the order has a Klarna location URI property - then we try and update the order
         if ( klarnaLocation != null && !string.IsNullOrEmpty( klarnaLocation.Value ) ) {

@@ -43,7 +43,7 @@ namespace TeaCommerce.PaymentProviders {
     public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-ogone-with-tea-commerce/"; } }
 
     public override Dictionary<string, string> GenerateForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallbackUrl, string teaCommerceCommunicationUrl, Dictionary<string, string> settings ) {
-      List<string> settingsToExclude = new string[] { "SHAINPASSPHRASE", "SHAOUTPASSPHRASE", "APIUSERID", "APIPASSWORD", "TESTMODE" }.ToList();
+      List<string> settingsToExclude = new [] { "SHAINPASSPHRASE", "SHAOUTPASSPHRASE", "APIUSERID", "APIPASSWORD", "TESTMODE" }.ToList();
       Dictionary<string, string> inputFields = settings.Where( i => !string.IsNullOrEmpty( i.Value ) && !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key.ToUpperInvariant(), i => i.Value );
 
       inputFields[ "ORDERID" ] = order.Name;
@@ -100,7 +100,7 @@ namespace TeaCommerce.PaymentProviders {
       }
 
       string strToHash = inputFields.OrderBy( i => i.Key ).Select( i => i.Key.ToUpperInvariant() + "=" + i.Value + settings[ "SHAOUTPASSPHRASE" ] ).Join( "" );
-      string digest = CryptoProvider.ConvertToHexString( new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ) );
+      string digest = CryptoProvider.ConvertToHexString( new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ) ).ToUpperInvariant();
 
       if ( digest.Equals( SHASign ) ) {
         return new CallbackInfo( orderName, decimal.Parse( strAmount, CultureInfo.InvariantCulture ), transaction, status.Equals( "5" ) || status.Equals( "51" ) ? PaymentStatus.Authorized : PaymentStatus.Captured, cardType, cardNo );
