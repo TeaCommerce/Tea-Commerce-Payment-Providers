@@ -27,7 +27,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
     public override IDictionary<string, string> DefaultSettings {
       get {
         Dictionary<string, string> defaultSettings = new Dictionary<string, string>();
-        defaultSettings[ "merchantnumber" ] = string.Empty;
+        defaultSettings[ "merchantnumber" ] = "";
         defaultSettings[ "language" ] = "2";
         defaultSettings[ "accepturl" ] = "";
         defaultSettings[ "cancelurl" ] = "";
