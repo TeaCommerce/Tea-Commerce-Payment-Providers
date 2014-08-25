@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>Paynova.Api.Client</id>
+    <version>1.0.0</version>
+    <title>Paynova-API-Client</title>
+    <authors>Paynova</authors>
+    <owners>Paynova</owners>
+    <licenseUrl>https://github.com/Paynova/paynova-api-net-client/blob/master/LICENCE.md</licenseUrl>
+    <projectUrl>https://github.com/paynova/paynova-api-net-client</projectUrl>
+    <iconUrl>http://www.paynova.com/images/paynova-logo-nuget.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>API Client library that helps you get up and running and consuming Paynovas restful API. 
+
+      Offers a simple client that handles the HTTP communication with Paynova. It also offers typed requests and responses
+      to assist you in discovering the Paynova API, validating digests etc.</description>
+    <summary>API Client library assisting you with consuming Paynovas restful API.</summary>
+    <releaseNotes>Can be found on project site: https://github.com/Paynova/paynova-api-net-client/wiki/release-notes</releaseNotes>
+    <copyright>Copyright 2014 Paynova</copyright>
+    <tags>paynova psp payments</tags>
+  </metadata>
+</package>

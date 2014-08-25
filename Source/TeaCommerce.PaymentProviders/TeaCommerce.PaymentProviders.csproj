@@ -40,6 +40,10 @@
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.5.0.8\lib\net40\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="Paynova.Api.Client, Version=1.0.0.15873, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Paynova.Api.Client.1.0.0\lib\net35\Paynova.Api.Client.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.EnterpriseServices" />
@@ -67,6 +71,7 @@
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Ogone.cs" />
     <Compile Include="PayEx.cs" />
+    <Compile Include="Paynova.cs" />
     <Compile Include="PayPal.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuickPay.cs" />
