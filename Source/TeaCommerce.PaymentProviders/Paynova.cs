@@ -20,20 +20,22 @@ namespace TeaCommerce.PaymentProviders {
 
     public override Dictionary<string, string> DefaultSettings {
       get {
-        Dictionary<string, string> defaultSettings = new Dictionary<string, string>();
-        defaultSettings[ "merchantId" ] = "";
-        defaultSettings[ "customerLanguageCode" ] = "ENG";
-        defaultSettings[ "urlRedirectSuccess" ] = "";
-        defaultSettings[ "urlRedirectCancel" ] = "";
-        defaultSettings[ "paymentMethods" ] = "";
-        defaultSettings[ "secretKey" ] = "";
-        defaultSettings[ "apiPassword" ] = "";
-        defaultSettings[ "unitMeasure" ] = "pcs";
-        defaultSettings[ "testMode" ] = "1";
-        defaultSettings[ "productNumberPropertyAlias" ] = "productNumber";
-        defaultSettings[ "productNamePropertyAlias" ] = "productName";
-        defaultSettings[ "shippingMethodProductNumber" ] = "1000";
-        defaultSettings[ "paymentMethodProductNumber" ] = "2000";
+        if ( defaultSettings == null ) {
+          defaultSettings = new Dictionary<string, string>();
+          defaultSettings[ "merchantId" ] = "";
+          defaultSettings[ "customerLanguageCode" ] = "ENG";
+          defaultSettings[ "urlRedirectSuccess" ] = "";
+          defaultSettings[ "urlRedirectCancel" ] = "";
+          defaultSettings[ "paymentMethods" ] = "";
+          defaultSettings[ "secretKey" ] = "";
+          defaultSettings[ "apiPassword" ] = "";
+          defaultSettings[ "unitMeasure" ] = "pcs";
+          defaultSettings[ "testMode" ] = "1";
+          defaultSettings[ "productNumberPropertyAlias" ] = "productNumber";
+          defaultSettings[ "productNamePropertyAlias" ] = "productName";
+          defaultSettings[ "shippingMethodProductNumber" ] = "1000";
+          defaultSettings[ "paymentMethodProductNumber" ] = "2000";
+        }
         return defaultSettings;
       }
     }
@@ -88,10 +90,10 @@ namespace TeaCommerce.PaymentProviders {
 
       createOrderRequest.ShipTo.Name.CompanyName = GetOrderProperty( order, settings, "shipping_company" );
       createOrderRequest.ShipTo.Name.Title = GetOrderProperty( order, settings, "shipping_title" );
-      createOrderRequest.ShipTo.Name.FirstName =GetOrderProperty( order, settings, "shipping_firstName" );
+      createOrderRequest.ShipTo.Name.FirstName = GetOrderProperty( order, settings, "shipping_firstName" );
       createOrderRequest.ShipTo.Name.MiddleNames = GetOrderProperty( order, settings, "shipping_middleNames" );
       createOrderRequest.ShipTo.Name.LastName = GetOrderProperty( order, settings, "shipping_lastName" );
-      createOrderRequest.ShipTo.Name.Suffix =GetOrderProperty( order, settings, "shipping_suffix" );
+      createOrderRequest.ShipTo.Name.Suffix = GetOrderProperty( order, settings, "shipping_suffix" );
       createOrderRequest.ShipTo.Address.Street1 = GetOrderProperty( order, settings, "shipping_streetAddress" );
       createOrderRequest.ShipTo.Address.Street2 = GetOrderProperty( order, settings, "shipping_streetAddress2" );
       createOrderRequest.ShipTo.Address.Street3 = GetOrderProperty( order, settings, "shipping_streetAddress3" );
