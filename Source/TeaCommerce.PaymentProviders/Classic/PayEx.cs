@@ -135,11 +135,12 @@ namespace TeaCommerce.PaymentProviders.Classic {
         }
 
         XDocument xmlDoc = XDocument.Parse( xmlReturn, LoadOptions.PreserveWhitespace );
+        //string cartNumber = xmlDoc.XPathSelectElement( "//transactionStatus" ).Value;
         string transactionStatus = xmlDoc.XPathSelectElement( "//transactionStatus" ).Value;
         string errorCode = xmlDoc.XPathSelectElement( "//status/errorCode" ).Value;
 
         //0 = Sale | 3 = Authorize
-        if ( errorCode == "OK" && ( transactionStatus == "0" || transactionStatus == "3" ) && !bool.Parse( xmlDoc.XPathSelectElement( "//alreadyCompleted" ).Value ) ) {
+        if ( /*order.CartNumber == cartNumber &&*/ errorCode == "OK" && ( transactionStatus == "0" || transactionStatus == "3" ) && !bool.Parse( xmlDoc.XPathSelectElement( "//alreadyCompleted" ).Value ) ) {
           decimal amount = decimal.Parse( xmlDoc.XPathSelectElement( "//amount" ).Value, CultureInfo.InvariantCulture );
           string transactionNumber = xmlDoc.XPathSelectElement( "//transactionNumber" ).Value;
           PaymentState paymentState = transactionStatus.Equals( "3" ) ? PaymentState.Authorized : PaymentState.Captured;
