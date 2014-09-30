@@ -93,7 +93,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
           new XElement( "line_number", lineCounter ),
           new XElement( "description", server.HtmlEncode( orderLine.Name ) ),
           new XElement( "item_number", server.HtmlEncode( orderLine.Sku ) ),
-          new XElement( "price_including_vat", server.HtmlEncode( orderLine.TotalPrice.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "price_including_vat", server.HtmlEncode( orderLine.UnitPrice.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "vat_percentage", server.HtmlEncode( ( orderLine.VatRate * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "quantity", server.HtmlEncode( orderLine.Quantity.ToString( CultureInfo.InvariantCulture ) ) )
         ) );
