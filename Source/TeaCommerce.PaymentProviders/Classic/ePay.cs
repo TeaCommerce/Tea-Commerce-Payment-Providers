@@ -176,7 +176,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
           md5CheckValue += settings[ "md5securitykey" ];
         }
 
-        if ( GenerateMD5Hash( md5CheckValue ) == hash ) {
+        if ( order.CartNumber == request.QueryString[ "orderid" ] && GenerateMD5Hash( md5CheckValue ) == hash ) {
           string fee = request.QueryString[ "txnfee" ];
           string cardid = request.QueryString[ "paymenttype" ];
           string cardnopostfix = request.QueryString[ "cardno" ];

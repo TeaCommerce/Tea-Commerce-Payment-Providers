@@ -89,6 +89,9 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
       #endregion
 
+      if ( order.CartNumber.Length > 40 ) {
+        throw new Exception( "Cart number of the order can not exceed 40 characters." );
+      }
       inputFields[ "VendorTxCode" ] = order.CartNumber;
       inputFields[ "Amount" ] = order.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
 
@@ -185,14 +188,14 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         string transaction = request.Form[ "VPSTxId" ];
         string status = request.Form[ "Status" ];
-        string vendorTxCode = request.Form[ "VendorTxCode" ];
+        string cartNumber = request.Form[ "VendorTxCode" ];
         string txAuthNo = request.Form[ "TxAuthNo" ];
         string cardType = request.Form[ "CardType" ];
         string last4Digits = request.Form[ "Last4Digits" ];
 
         string md5CheckValue = string.Empty;
         md5CheckValue += transaction;
-        md5CheckValue += vendorTxCode;
+        md5CheckValue += cartNumber;
         md5CheckValue += status;
         md5CheckValue += txAuthNo;
         md5CheckValue += settings[ "Vendor" ].ToLowerInvariant();
@@ -212,7 +215,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         string calcedMd5Hash = GenerateMD5Hash( md5CheckValue ).ToUpperInvariant();
         string vpsSignature = request.Form[ "VPSSignature" ];
 
-        if ( calcedMd5Hash == vpsSignature ) {
+        if ( order.CartNumber == cartNumber && calcedMd5Hash == vpsSignature ) {
 
           Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
@@ -222,7 +225,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
             if ( status == "OK" ) {
               order.Properties.AddOrUpdate( new CustomProperty( "txAuthNo", txAuthNo ) { ServerSideOnly = true } );
             }
-            order.Properties.AddOrUpdate( new CustomProperty( "vendorTxCode", vendorTxCode ) { ServerSideOnly = true } );
+            order.Properties.AddOrUpdate( new CustomProperty( "vendorTxCode", cartNumber ) { ServerSideOnly = true } );
             order.Save();
 
             inputFields[ "Status" ] = "OK";

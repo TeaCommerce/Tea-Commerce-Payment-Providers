@@ -97,10 +97,6 @@ namespace TeaCommerce.PaymentProviders.Classic {
       return settings[ "CANCELURL" ];
     }
 
-    public override string GetCartNumber( HttpRequest request, IDictionary<string, string> settings ) {
-
-    }
-
     public override CallbackInfo ProcessCallback( Order order, HttpRequest request, IDictionary<string, string> settings ) {
       CallbackInfo callbackInfo = null;
 
@@ -117,7 +113,6 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
-        string cartNumber = request.QueryString[ "ORDERID" ];
         string shaSign = request.QueryString[ "SHASIGN" ];
         string strAmount = request.QueryString[ "AMOUNT" ];
         string transaction = request.QueryString[ "PAYID" ];
@@ -133,7 +128,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         string strToHash = string.Join( "", inputFields.OrderBy( i => i.Key ).Select( i => i.Key.ToUpperInvariant() + "=" + i.Value + settings[ "SHAOUTPASSPHRASE" ] ) );
         string digest = new SHA512Managed().ComputeHash( Encoding.UTF8.GetBytes( strToHash ) ).ToHex().ToUpperInvariant();
 
-        if ( order.CartNumber == cartNumber && digest.Equals( shaSign ) ) {
+        if ( order.CartNumber == request.QueryString[ "ORDERID" ] && digest.Equals( shaSign ) ) {
           callbackInfo = new CallbackInfo( decimal.Parse( strAmount, CultureInfo.InvariantCulture ), transaction, status == "5" || status == "51" ? PaymentState.Authorized : PaymentState.Captured, cardType, cardNo );
         } else {
           LoggingService.Instance.Log( "Ogone(" + order.CartNumber + ") - SHASIGN check isn't valid - Calculated digest: " + digest + " - Ogone SHASIGN: " + shaSign );

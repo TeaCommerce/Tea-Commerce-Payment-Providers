@@ -59,7 +59,10 @@ namespace TeaCommerce.PaymentProviders.Classic {
       string orderName = order.CartNumber;
       while ( orderName.Length < 4 )
         orderName = "0" + orderName;
-      htmlForm.InputFields[ "ordernumber" ] = orderName.Truncate( 20 );
+      if ( orderName.Length > 20 ) {
+        throw new Exception( "Cart number of the order can not exceed 20 characters." );
+      }
+      htmlForm.InputFields[ "ordernumber" ] = orderName;
       htmlForm.InputFields[ "amount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
 
       //Check that the Iso code exists
@@ -144,7 +147,11 @@ namespace TeaCommerce.PaymentProviders.Classic {
         md5CheckValue += request.Form[ "fee" ];
         md5CheckValue += settings[ "md5secret" ];
 
-        if ( GenerateMD5Hash( md5CheckValue ) == request.Form[ "md5check" ] ) {
+        string orderName = order.CartNumber;
+        while ( orderName.Length < 4 )
+          orderName = "0" + orderName;
+
+        if ( orderName == request.Form[ "ordernumber" ] && GenerateMD5Hash( md5CheckValue ) == request.Form[ "md5check" ] ) {
           string qpstat = request.Form[ "qpstat" ];
 
           if ( qpstat == "000" ) {

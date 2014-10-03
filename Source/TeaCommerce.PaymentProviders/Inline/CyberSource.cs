@@ -86,7 +86,8 @@ namespace TeaCommerce.PaymentProviders.Inline {
         }
 
         string calculatedSignature = CreateSignature( request.Form[ "signed_field_names" ].Split( new[] { ',' }, StringSplitOptions.RemoveEmptyEntries ).ToDictionary( k => k, k => request.Form[ k ] ), settings );
-        if ( request.Form[ "signature" ] == calculatedSignature ) {
+
+        if ( order.CartNumber == request.Form[ "reference_number" ] && request.Form[ "signature" ] == calculatedSignature ) {
           //Both errors and successful callbacks will go here
 
           if ( request.Form[ "decision" ] == "ACCEPT" ) {

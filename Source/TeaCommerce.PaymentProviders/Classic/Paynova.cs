@@ -176,7 +176,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         }
 
         PostbackDigest postbackDigest = new PostbackDigest( settings[ "secretKey" ] );
-        if ( postbackDigest.Validate( request.Form ) ) {
+        if ( order.CartNumber == request.Form[ "ORDER_NUMBER" ] && postbackDigest.Validate( request.Form ) ) {
           decimal amountAuthorized = decimal.Parse( request.Form[ "PAYMENT_1_AMOUNT" ], CultureInfo.InvariantCulture );
           string transaction = request.Form[ "PAYMENT_1_TRANSACTION_ID" ];
           string paymentType = request.Form[ "PAYMENT_1_PAYMENT_METHOD_NAME" ];

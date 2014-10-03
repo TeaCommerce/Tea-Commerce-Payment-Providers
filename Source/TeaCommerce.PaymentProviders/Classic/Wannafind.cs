@@ -132,14 +132,14 @@ namespace TeaCommerce.PaymentProviders.Classic {
           LogRequestToFile( request, HostingEnvironment.MapPath( "~/wannafind-callback-data.txt" ), logGetData: true );
         }
 
-        string orderId = request.QueryString[ "orderid" ];
+        string cartNumber = request.QueryString[ "orderid" ];
         string currency = request.QueryString[ "currency" ];
         string amount = request.QueryString[ "amount" ];
         string cardType = settings.ContainsKey( "cardtype" ) ? settings[ "cardtype" ] : string.Empty;
 
-        string md5CheckValue = GenerateMD5Hash( orderId + currency + cardType + amount + settings[ "md5CallbackSecret" ] );
+        string md5CheckValue = GenerateMD5Hash( cartNumber + currency + cardType + amount + settings[ "md5CallbackSecret" ] );
 
-        if ( md5CheckValue.Equals( request.QueryString[ "checkmd5callback" ] ) ) {
+        if ( order.CartNumber.Replace( StoreService.Instance.Get( order.StoreId ).CartNumberPrefix, "" ) == cartNumber && md5CheckValue.Equals( request.QueryString[ "checkmd5callback" ] ) ) {
 
           string transaction = request.QueryString[ "transacknum" ];
           string cardtype = request.QueryString[ "cardtype" ];

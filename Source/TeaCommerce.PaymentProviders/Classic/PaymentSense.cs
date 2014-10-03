@@ -49,7 +49,10 @@ namespace TeaCommerce.PaymentProviders.Classic {
       string[] settingsToExclude = new[] { "CancelURL", "streetAddressPropertyAlias", "cityPropertyAlias", "zipCodePropertyAlias", "PreSharedKey", "Password", "Testing" };
       htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
-      htmlForm.InputFields[ "OrderID" ] = order.CartNumber.Truncate( 50 );
+      if ( order.CartNumber.Length > 50 ) {
+        throw new Exception( "Cart number of the order can not exceed 50 characters." );
+      }
+      htmlForm.InputFields[ "OrderID" ] = order.CartNumber;
 
       Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
       if ( !Iso4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
@@ -207,7 +210,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
           string hashDigest = CreateHashDigest( keysToHash, settings, request.Form.AllKeys.ToDictionary( k => k, k => request.Form[ k ] ) );
 
-          if ( hashDigest == request.Form[ "HashDigest" ] ) {
+          if ( order.CartNumber == request.Form[ "OrderID" ] && hashDigest == request.Form[ "HashDigest" ] ) {
             if ( request.Form[ "StatusCode" ] == "0" || ( request.Form[ "StatusCode" ] == "20" && request.Form[ "PreviousStatusCode" ] == "0" ) ) {
               callbackInfo = new CallbackInfo( decimal.Parse( request.Form[ "Amount" ], CultureInfo.InvariantCulture ) / 100M, request.Form[ "CrossReference" ], request.Form[ "TransactionType" ] != "SALE" ? PaymentState.Authorized : PaymentState.Captured );
               HttpContext.Current.Response.Write( "StatusCode=0" );
