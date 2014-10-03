@@ -70,12 +70,12 @@ namespace TeaCommerce.PaymentProviders.Classic {
       #region Order line information + shipping + payment
 
       int itemIndex = 1;
-
+      //TODO: tjek hvad vi kan gøre med at kommunikere discounts
       foreach ( OrderLine orderLine in order.OrderLines ) {
         htmlForm.InputFields[ "item_name_" + itemIndex ] = orderLine.Name;
         htmlForm.InputFields[ "item_number_" + itemIndex ] = orderLine.Sku;
-        htmlForm.InputFields[ "amount_" + itemIndex ] = orderLine.UnitPrice.Value.ToString( "0.00", CultureInfo.InvariantCulture );
-        htmlForm.InputFields[ "tax_" + itemIndex ] = orderLine.UnitPrice.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "amount_" + itemIndex ] = orderLine.UnitPrice.Value.Value.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "tax_" + itemIndex ] = orderLine.UnitPrice.Value.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
         htmlForm.InputFields[ "quantity_" + itemIndex ] = orderLine.Quantity.ToString( "0", CultureInfo.InvariantCulture );
 
         itemIndex++;
@@ -87,8 +87,8 @@ namespace TeaCommerce.PaymentProviders.Classic {
         if ( !string.IsNullOrEmpty( shippingMethod.Sku ) ) {
           htmlForm.InputFields[ "item_number_" + itemIndex ] = shippingMethod.Sku;
         }
-        htmlForm.InputFields[ "amount_" + itemIndex ] = order.ShipmentInformation.TotalPrice.Value.ToString( "0.00", CultureInfo.InvariantCulture );
-        htmlForm.InputFields[ "tax_" + itemIndex ] = order.ShipmentInformation.TotalPrice.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "amount_" + itemIndex ] = order.ShipmentInformation.TotalPrice.Value.Value.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "tax_" + itemIndex ] = order.ShipmentInformation.TotalPrice.Value.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
         itemIndex++;
       }
 
@@ -98,8 +98,8 @@ namespace TeaCommerce.PaymentProviders.Classic {
         if ( !string.IsNullOrEmpty( paymentMethod.Sku ) ) {
           htmlForm.InputFields[ "item_number_" + itemIndex ] = paymentMethod.Sku;
         }
-        htmlForm.InputFields[ "amount_" + itemIndex ] = order.PaymentInformation.TotalPrice.Value.ToString( "0.00", CultureInfo.InvariantCulture );
-        htmlForm.InputFields[ "tax_" + itemIndex ] = order.PaymentInformation.TotalPrice.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "amount_" + itemIndex ] = order.PaymentInformation.TotalPrice.Value.Value.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "tax_" + itemIndex ] = order.PaymentInformation.TotalPrice.Value.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
       }
 
       #endregion

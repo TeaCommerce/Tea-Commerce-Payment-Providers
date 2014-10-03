@@ -85,6 +85,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         //new XElement( "options", server.HtmlEncode( string.Empty ) )
       ) );
 
+      //TODO: kast exception hvis der er rabat på nogle total priser
       //Purchase
       XElement purchaseList = new XElement( "purchase_list" );
       int lineCounter = 1;
@@ -93,7 +94,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
           new XElement( "line_number", lineCounter ),
           new XElement( "description", server.HtmlEncode( orderLine.Name ) ),
           new XElement( "item_number", server.HtmlEncode( orderLine.Sku ) ),
-          new XElement( "price_including_vat", server.HtmlEncode( orderLine.UnitPrice.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "price_including_vat", server.HtmlEncode( orderLine.UnitPrice.Value.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "vat_percentage", server.HtmlEncode( ( orderLine.VatRate * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "quantity", server.HtmlEncode( orderLine.Quantity.ToString( CultureInfo.InvariantCulture ) ) )
         ) );
@@ -107,7 +108,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
           new XElement( "line_number", lineCounter ),
           new XElement( "description", server.HtmlEncode( shippingMethod.Name ) ),
           new XElement( "item_number", server.HtmlEncode( shippingMethod.Sku ) ),
-          new XElement( "price_including_vat", server.HtmlEncode( order.ShipmentInformation.TotalPrice.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "price_including_vat", server.HtmlEncode( order.ShipmentInformation.TotalPrice.Value.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "vat_percentage", server.HtmlEncode( ( order.ShipmentInformation.VatRate * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "quantity", "1" )
         ) );
@@ -121,7 +122,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
           new XElement( "line_number", lineCounter ),
           new XElement( "description", server.HtmlEncode( paymentMethod.Name ) ),
           new XElement( "item_number", server.HtmlEncode( paymentMethod.Sku ) ),
-          new XElement( "price_including_vat", server.HtmlEncode( order.PaymentInformation.TotalPrice.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "price_including_vat", server.HtmlEncode( order.PaymentInformation.TotalPrice.Value.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "vat_percentage", server.HtmlEncode( ( order.PaymentInformation.VatRate * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "quantity", "1" )
         ) );
@@ -217,7 +218,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
             string callbackType = request.QueryString[ "payer_callback_type" ];
             PaymentState paymentState = callbackType == "auth" ? PaymentState.Authorized : PaymentState.Captured;
 
-            callbackInfo = new CallbackInfo( order.TotalPrice.WithVat, transaction, paymentState, paymentType );
+            callbackInfo = new CallbackInfo( order.TotalPrice.Value.WithVat, transaction, paymentState, paymentType );
           } else {
             LoggingService.Instance.Log( "Payer(" + order.CartNumber + ") - MD5Sum security check failed" );
           }

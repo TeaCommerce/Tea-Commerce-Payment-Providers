@@ -51,7 +51,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
       htmlForm.InputFields[ "cart_order_id" ] = order.CartNumber;
 
       //amount
-      htmlForm.InputFields[ "total" ] = order.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
+      htmlForm.InputFields[ "total" ] = order.TotalPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
 
       htmlForm.InputFields[ "x_receipt_link_url" ] = teaCommerceContinueUrl;
 
@@ -140,14 +140,14 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
       int itemIndex = 1;
       //Lines are added in reverse order of the UI
-
+      //TODO: find ud af hvordan vi sender rabat med
       //Payment fee
       if ( order.PaymentInformation.PaymentMethodId != null ) {
         PaymentMethod paymentMethod = PaymentMethodService.Instance.Get( order.StoreId, order.PaymentInformation.PaymentMethodId.Value );
         htmlForm.InputFields[ "c_prod_" + itemIndex ] = paymentMethod.Sku + ",1";
         htmlForm.InputFields[ "c_name_" + itemIndex ] = paymentMethod.Name.Truncate( 128 );
         htmlForm.InputFields[ "c_description_" + itemIndex ] = string.Empty;
-        htmlForm.InputFields[ "c_price_" + itemIndex ] = order.PaymentInformation.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "c_price_" + itemIndex ] = order.PaymentInformation.TotalPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
         itemIndex++;
       }
 
@@ -157,7 +157,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         htmlForm.InputFields[ "c_prod_" + itemIndex ] = shippingMethod.Sku + ",1";
         htmlForm.InputFields[ "c_name_" + itemIndex ] = shippingMethod.Name.Truncate( 128 );
         htmlForm.InputFields[ "c_description_" + itemIndex ] = string.Empty;
-        htmlForm.InputFields[ "c_price_" + itemIndex ] = order.ShipmentInformation.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "c_price_" + itemIndex ] = order.ShipmentInformation.TotalPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
         itemIndex++;
       }
 
@@ -168,7 +168,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         htmlForm.InputFields[ "c_prod_" + itemIndex ] = orderLine.Sku + "," + orderLine.Quantity;
         htmlForm.InputFields[ "c_name_" + itemIndex ] = orderLine.Name.Truncate( 128 );
         htmlForm.InputFields[ "c_description_" + itemIndex ] = string.Empty;
-        htmlForm.InputFields[ "c_price_" + itemIndex ] = orderLine.UnitPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "c_price_" + itemIndex ] = orderLine.UnitPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
 
         itemIndex++;
       }

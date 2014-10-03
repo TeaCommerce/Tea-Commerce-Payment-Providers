@@ -63,7 +63,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         throw new Exception( "Cart number of the order can not exceed 20 characters." );
       }
       htmlForm.InputFields[ "ordernumber" ] = orderName;
-      htmlForm.InputFields[ "amount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
+      htmlForm.InputFields[ "amount" ] = ( order.TotalPrice.Value.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
 
       //Check that the Iso code exists
       Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );

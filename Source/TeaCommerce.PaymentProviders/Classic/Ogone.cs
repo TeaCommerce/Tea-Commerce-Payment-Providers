@@ -59,7 +59,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
       htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) && !string.IsNullOrEmpty( i.Value ) ).ToDictionary( i => i.Key.ToUpperInvariant(), i => i.Value );
 
       htmlForm.InputFields[ "ORDERID" ] = order.CartNumber;
-      htmlForm.InputFields[ "AMOUNT" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
+      htmlForm.InputFields[ "AMOUNT" ] = ( order.TotalPrice.Value.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
 
       //Check that the Iso code exists
       Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );

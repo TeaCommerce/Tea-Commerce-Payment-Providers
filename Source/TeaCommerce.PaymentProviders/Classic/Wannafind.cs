@@ -55,7 +55,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
       htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
 
       //orderid
-      string orderId = order.CartNumber.Replace( StoreService.Instance.Get( order.StoreId ).CartNumberPrefix, "" );
+      string orderId = order.CartNumber.Replace( StoreService.Instance.Get( order.StoreId ).OrderSettings.CartNumberPrefix, "" );
       htmlForm.InputFields[ "orderid" ] = orderId;
 
       //currency
@@ -68,7 +68,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
       htmlForm.InputFields[ "currency" ] = currencyStr;
 
       //amount
-      string amount = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
+      string amount = ( order.TotalPrice.Value.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
       htmlForm.InputFields[ "amount" ] = amount;
 
       htmlForm.InputFields[ "accepturl" ] = teaCommerceContinueUrl;
@@ -139,7 +139,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         string md5CheckValue = GenerateMD5Hash( cartNumber + currency + cardType + amount + settings[ "md5CallbackSecret" ] );
 
-        if ( order.CartNumber.Replace( StoreService.Instance.Get( order.StoreId ).CartNumberPrefix, "" ) == cartNumber && md5CheckValue.Equals( request.QueryString[ "checkmd5callback" ] ) ) {
+        if ( order.CartNumber.Replace( StoreService.Instance.Get( order.StoreId ).OrderSettings.CartNumberPrefix, "" ) == cartNumber && md5CheckValue.Equals( request.QueryString[ "checkmd5callback" ] ) ) {
 
           string transaction = request.QueryString[ "transacknum" ];
           string cardtype = request.QueryString[ "cardtype" ];

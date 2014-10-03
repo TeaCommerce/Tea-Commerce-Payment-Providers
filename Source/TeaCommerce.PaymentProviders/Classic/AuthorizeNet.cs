@@ -59,7 +59,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
       htmlForm.InputFields[ "x_invoice_num" ] = order.CartNumber;
 
-      string amount = order.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
+      string amount = order.TotalPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
       htmlForm.InputFields[ "x_amount" ] = amount;
 
       htmlForm.InputFields[ "x_receipt_link_url" ] = teaCommerceContinueUrl;

@@ -53,7 +53,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
       long accountNumber = long.Parse( settings[ "accountNumber" ] );
       string purchaseOperation = settings[ "purchaseOperation" ];
-      int price = (int)Math.Round( order.TotalPrice.WithVat * 100M, 0 );
+      int price = (int)Math.Round( order.TotalPrice.Value.WithVat * 100M, 0 );
       string priceArgList = string.Empty;
 
       //Check that the Iso code exists

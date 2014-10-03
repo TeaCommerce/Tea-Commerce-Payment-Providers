@@ -62,23 +62,23 @@ namespace TeaCommerce.PaymentProviders.Classic {
       }
       try {
         //Create order request
-        CreateOrderRequest createOrderRequest = new CreateOrderRequest( order.CartNumber, currency.IsoCode, order.TotalPrice.WithVat );
+        CreateOrderRequest createOrderRequest = new CreateOrderRequest( order.CartNumber, currency.IsoCode, order.TotalPrice.Value.WithVat );
 
         //Add line items
         //TODO: kast exception hvis der er rabat på nogle total priser
         string unitMeasure = settings[ "unitMeasure" ];
         foreach ( OrderLine orderLine in order.OrderLines ) {
-          createOrderRequest.AddLineItem( new LineItem( orderLine.Id.ToString( CultureInfo.InvariantCulture ), orderLine.Sku, orderLine.Name, unitMeasure, orderLine.VatRate.Value, orderLine.Quantity, orderLine.UnitPrice.Value, orderLine.TotalPrice.WithVat, orderLine.TotalPrice.Vat ) );
+          createOrderRequest.AddLineItem( new LineItem( orderLine.Id.ToString( CultureInfo.InvariantCulture ), orderLine.Sku, orderLine.Name, unitMeasure, orderLine.VatRate.Value, orderLine.Quantity, orderLine.UnitPrice.Value.Value, orderLine.TotalPrice.Value.WithVat, orderLine.TotalPrice.Value.Vat ) );
         }
 
-        if ( order.ShipmentInformation.ShippingMethodId != null && order.ShipmentInformation.TotalPrice.Value > 0M ) {
+        if ( order.ShipmentInformation.ShippingMethodId != null && order.ShipmentInformation.TotalPrice.Value.Value > 0M ) {
           ShippingMethod shippingMethod = ShippingMethodService.Instance.Get( order.StoreId, order.ShipmentInformation.ShippingMethodId.Value );
-          createOrderRequest.AddLineItem( new LineItem( "shipping_" + shippingMethod.Id, shippingMethod.Sku, shippingMethod.Name, unitMeasure, order.ShipmentInformation.VatRate.Value, 1M, order.ShipmentInformation.TotalPrice.Value, order.ShipmentInformation.TotalPrice.WithVat, order.ShipmentInformation.TotalPrice.Vat ) );
+          createOrderRequest.AddLineItem( new LineItem( "shipping_" + shippingMethod.Id, shippingMethod.Sku, shippingMethod.Name, unitMeasure, order.ShipmentInformation.VatRate.Value, 1M, order.ShipmentInformation.TotalPrice.Value.Value, order.ShipmentInformation.TotalPrice.Value.WithVat, order.ShipmentInformation.TotalPrice.Value.Vat ) );
         }
 
-        if ( order.PaymentInformation.PaymentMethodId != null && order.PaymentInformation.TotalPrice.Value > 0M ) {
+        if ( order.PaymentInformation.PaymentMethodId != null && order.PaymentInformation.TotalPrice.Value.Value > 0M ) {
           TeaCommercePaymentMethod paymentMethod = PaymentMethodService.Instance.Get( order.StoreId, order.PaymentInformation.PaymentMethodId.Value );
-          createOrderRequest.AddLineItem( new LineItem( "payment_" + paymentMethod.Id, paymentMethod.Sku, paymentMethod.Name, unitMeasure, order.PaymentInformation.VatRate.Value, 1M, order.PaymentInformation.TotalPrice.Value, order.PaymentInformation.TotalPrice.WithVat, order.PaymentInformation.TotalPrice.Vat ) );
+          createOrderRequest.AddLineItem( new LineItem( "payment_" + paymentMethod.Id, paymentMethod.Sku, paymentMethod.Name, unitMeasure, order.PaymentInformation.VatRate.Value, 1M, order.PaymentInformation.TotalPrice.Value.Value, order.PaymentInformation.TotalPrice.Value.WithVat, order.PaymentInformation.TotalPrice.Value.Vat ) );
         }
 
         #region Customer information
@@ -131,7 +131,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Initialize payment request
         InterfaceOptions interfaceOptions = new InterfaceOptions( InterfaceId.Aero, settings[ "customerLanguageCode" ], new Uri( teaCommerceContinueUrl ), new Uri( teaCommerceCancelUrl ), new Uri( teaCommerceContinueUrl ) );
-        InitializePaymentRequest initializePaymentRequest = new InitializePaymentRequest( createOrderResponse.OrderId, order.TotalPrice.WithVat, PaymentChannelId.Web, interfaceOptions );
+        InitializePaymentRequest initializePaymentRequest = new InitializePaymentRequest( createOrderResponse.OrderId, order.TotalPrice.Value.WithVat, PaymentChannelId.Web, interfaceOptions );
 
         if ( settings.ContainsKey( "paymentMethods" ) && !string.IsNullOrEmpty( settings[ "paymentMethods" ] ) ) {
           initializePaymentRequest.WithPaymentMethods( settings[ "paymentMethods" ].Split( ',' ).Select( i => PaynovaPaymentMethod.Custom( int.Parse( i ) ) ) );

@@ -122,7 +122,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
         }
 
         StripeChargeCreateOptions chargeOptions = new StripeChargeCreateOptions {
-          AmountInCents = (int)( order.TotalPrice.WithVat * 100 ),
+          AmountInCents = (int)( order.TotalPrice.Value.WithVat * 100 ),
           Currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId ).IsoCode,
           TokenId = request.Form[ "stripeToken" ],
           Description = order.CartNumber,

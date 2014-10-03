@@ -73,7 +73,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         throw new Exception( "You must specify an ISO 4217 currency code for the " + currency.Name + " currency" );
       }
       inputFields[ "PRESENTATION.CURRENCY" ] = currency.IsoCode;
-      inputFields[ "PRESENTATION.AMOUNT" ] = ( order.TotalPrice.WithVat ).ToString( "0.00", CultureInfo.InvariantCulture );
+      inputFields[ "PRESENTATION.AMOUNT" ] = ( order.TotalPrice.Value.WithVat ).ToString( "0.00", CultureInfo.InvariantCulture );
 
       inputFields[ "FRONTEND.RESPONSE_URL" ] = teaCommerceCallBackUrl;
 

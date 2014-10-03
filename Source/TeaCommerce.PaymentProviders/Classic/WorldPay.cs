@@ -65,7 +65,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
       htmlForm.InputFields[ "currency" ] = currency.IsoCode;
 
       //amount
-      string amount = order.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
+      string amount = order.TotalPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
       htmlForm.InputFields[ "amount" ] = amount;
 
       htmlForm.InputFields[ "successURL" ] = teaCommerceContinueUrl;

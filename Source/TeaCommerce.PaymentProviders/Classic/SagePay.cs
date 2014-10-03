@@ -93,7 +93,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         throw new Exception( "Cart number of the order can not exceed 40 characters." );
       }
       inputFields[ "VendorTxCode" ] = order.CartNumber;
-      inputFields[ "Amount" ] = order.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
+      inputFields[ "Amount" ] = order.TotalPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
 
       //Check that the Iso code exists
       Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
@@ -220,7 +220,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
           Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
           if ( status == "OK" || status == "AUTHENTICATED" || status == "REGISTERED" ) {
-            callbackInfo = new CallbackInfo( order.TotalPrice.WithVat, transaction, request.Form[ "TxType" ] != "PAYMENT" ? PaymentState.Authorized : PaymentState.Captured, cardType, last4Digits );
+            callbackInfo = new CallbackInfo( order.TotalPrice.Value.WithVat, transaction, request.Form[ "TxType" ] != "PAYMENT" ? PaymentState.Authorized : PaymentState.Captured, cardType, last4Digits );
 
             if ( status == "OK" ) {
               order.Properties.AddOrUpdate( new CustomProperty( "txAuthNo", txAuthNo ) { ServerSideOnly = true } );

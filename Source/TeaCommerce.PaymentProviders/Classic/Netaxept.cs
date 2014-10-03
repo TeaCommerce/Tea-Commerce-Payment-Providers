@@ -60,7 +60,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
       htmlForm.InputFields[ "currencyCode" ] = currency.IsoCode;
 
       //amount
-      htmlForm.InputFields[ "amount" ] = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
+      htmlForm.InputFields[ "amount" ] = ( order.TotalPrice.Value.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
 
       //redirectUrl
       htmlForm.InputFields[ "redirectUrl" ] = teaCommerceCallBackUrl;

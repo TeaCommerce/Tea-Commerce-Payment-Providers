@@ -158,7 +158,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
         inputFields[ "signed_date_time" ] = DateTime.UtcNow.ToString( "yyyy-MM-dd'T'HH:mm:ss'Z'" );
         inputFields[ "transaction_type" ] = settings[ "transaction_type" ];
         inputFields[ "transaction_uuid" ] = Guid.NewGuid().ToString();
-        inputFields[ "amount" ] = order.TotalPrice.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
+        inputFields[ "amount" ] = order.TotalPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
         Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
         if ( !Iso4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
           throw new Exception( "You must specify an ISO 4217 currency code for the " + currency.Name + " currency" );

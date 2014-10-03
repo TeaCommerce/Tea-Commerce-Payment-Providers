@@ -59,7 +59,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
       htmlForm.InputFields[ "orderid" ] = order.CartNumber;
 
-      string strAmount = ( order.TotalPrice.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
+      string strAmount = ( order.TotalPrice.Value.WithVat * 100M ).ToString( "0", CultureInfo.InvariantCulture );
       htmlForm.InputFields[ "amount" ] = strAmount;
 
       Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );

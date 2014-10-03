@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Web;
+using TeaCommerce.Api;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
@@ -42,7 +43,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
         Action = settings[ "paymentFormUrl" ]
       };
 
-      if ( order.PaymentInformation != null && order.PaymentInformation.TotalPrice != null && order.PaymentInformation.TotalPrice.WithVat != 0 ) {
+      if ( order.PaymentInformation != null && order.PaymentInformation.TotalPrice != null && order.PaymentInformation.TotalPrice.Value.WithVat != 0 ) {
         throw new ArgumentException( "The Klarna payment provider does not accept a payment provider price." );
       }
 
@@ -106,9 +107,9 @@ namespace TeaCommerce.PaymentProviders.Inline {
       //defining a mapping of klarna propteries to these aliases.
       Store store = StoreService.Instance.Get( order.StoreId );
       Dictionary<string, string> magicOrderPropertyAliases = new Dictionary<string, string>{
-            { "billing_address.given_name", store.FirstNamePropertyAlias },
-            { "billing_address.family_name", store.LastNamePropertyAlias },
-            { "billing_address.email", store.EmailPropertyAlias },
+            { "billing_address.given_name", Constants.OrderPropertyAliases.FirstNamePropertyAlias },
+            { "billing_address.family_name", Constants.OrderPropertyAliases.LastNamePropertyAlias },
+            { "billing_address.email", Constants.OrderPropertyAliases.EmailPropertyAlias },
           };
 
 
@@ -191,7 +192,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
               { "reference", orderLine.Sku }, 
               { "name", orderLine.Name }, 
               { "quantity", (int) orderLine.Quantity },
-              { "unit_price", (int) (orderLine.UnitPrice.WithVat * 100M) },
+              { "unit_price", (int) (orderLine.UnitPrice.Value.WithVat * 100M) },
               { "tax_rate", (int) (orderLine.VatRate.Value * 10000M) }
             } )
           .ToList();
@@ -203,7 +204,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
               { "reference", shippingMethod.Sku},
               { "name", shippingMethod.Name},
               { "quantity", 1},
-              { "unit_price", (int) (order.ShipmentInformation.TotalPrice.WithVat * 100M) },
+              { "unit_price", (int) (order.ShipmentInformation.TotalPrice.Value.WithVat * 100M) },
               { "tax_rate",  (int) (order.ShipmentInformation.VatRate * 10000M) }
             } );
           }
