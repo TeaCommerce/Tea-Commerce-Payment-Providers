@@ -121,6 +121,9 @@
     <None Include="Web References\AuthorizeNetService\ARBCreateSubscriptionResponseType.datasource">
       <DependentUpon>Reference.map</DependentUpon>
     </None>
+    <None Include="Web References\AuthorizeNetService\ARBGetSubscriptionListResponseType.datasource">
+      <DependentUpon>Reference.map</DependentUpon>
+    </None>
     <None Include="Web References\AuthorizeNetService\ARBGetSubscriptionStatusResponseType.datasource">
       <DependentUpon>Reference.map</DependentUpon>
     </None>
