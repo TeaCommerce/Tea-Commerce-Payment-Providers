@@ -185,7 +185,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
           settings.MustContainKey( "merchant.id", "settings" );
           settings.MustContainKey( "merchant.terms_uri", "settings" );
           settings.MustContainKey( "locale", "settings" );
-
+          //TODO: find ud af rabat
           //Cart information
           List<Dictionary<string, object>> cartItems = order.OrderLines.Select( orderLine =>
             new Dictionary<string, object> {

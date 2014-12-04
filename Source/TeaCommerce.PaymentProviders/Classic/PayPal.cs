@@ -60,7 +60,6 @@ namespace TeaCommerce.PaymentProviders.Classic {
       htmlForm.InputFields[ "currency_code" ] = currency.IsoCode;
 
       htmlForm.InputFields[ "invoice" ] = order.CartNumber;
-      htmlForm.InputFields[ "no_shipping" ] = "1";
 
       htmlForm.InputFields[ "return" ] = teaCommerceContinueUrl;
       htmlForm.InputFields[ "rm" ] = "2";
@@ -69,13 +68,19 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
       #region Order line information + shipping + payment
 
+      bool onlyOrderLineDiscounts = !order.SubtotalPrice.Discounts.Any() && !order.TotalPrice.Discounts.Any() && !order.GiftCards.Any();
+
+      if ( !onlyOrderLineDiscounts ) {
+        htmlForm.InputFields[ "tax_cart" ] = order.TotalPrice.Value.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "discount_amount_cart" ] = ( order.TotalPrice.TotalDiscount.Value + order.TotalPrice.GiftCardsAmount.Value ).ToString( "0.00", CultureInfo.InvariantCulture );
+      }
+      
       int itemIndex = 1;
-      //TODO: tjek hvad vi kan gøre med at kommunikere discounts
       foreach ( OrderLine orderLine in order.OrderLines ) {
         htmlForm.InputFields[ "item_name_" + itemIndex ] = orderLine.Name;
         htmlForm.InputFields[ "item_number_" + itemIndex ] = orderLine.Sku;
-        htmlForm.InputFields[ "amount_" + itemIndex ] = orderLine.UnitPrice.Value.Value.ToString( "0.00", CultureInfo.InvariantCulture );
-        htmlForm.InputFields[ "tax_" + itemIndex ] = orderLine.UnitPrice.Value.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "amount_" + itemIndex ] = ( onlyOrderLineDiscounts ? orderLine.UnitPrice.Value : orderLine.UnitPrice.WithoutDiscounts ).Value.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "tax_" + itemIndex ] = ( onlyOrderLineDiscounts ? orderLine.UnitPrice.Value : orderLine.UnitPrice.WithoutDiscounts ).Vat.ToString( "0.00", CultureInfo.InvariantCulture );
         htmlForm.InputFields[ "quantity_" + itemIndex ] = orderLine.Quantity.ToString( "0", CultureInfo.InvariantCulture );
 
         itemIndex++;
@@ -87,8 +92,8 @@ namespace TeaCommerce.PaymentProviders.Classic {
         if ( !string.IsNullOrEmpty( shippingMethod.Sku ) ) {
           htmlForm.InputFields[ "item_number_" + itemIndex ] = shippingMethod.Sku;
         }
-        htmlForm.InputFields[ "amount_" + itemIndex ] = order.ShipmentInformation.TotalPrice.Value.Value.ToString( "0.00", CultureInfo.InvariantCulture );
-        htmlForm.InputFields[ "tax_" + itemIndex ] = order.ShipmentInformation.TotalPrice.Value.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "amount_" + itemIndex ] = ( onlyOrderLineDiscounts ? order.ShipmentInformation.TotalPrice.Value : order.ShipmentInformation.TotalPrice.WithoutDiscounts ).Value.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "tax_" + itemIndex ] = ( onlyOrderLineDiscounts ? order.ShipmentInformation.TotalPrice.Value : order.ShipmentInformation.TotalPrice.WithoutDiscounts ).Vat.ToString( "0.00", CultureInfo.InvariantCulture );
         itemIndex++;
       }
 
@@ -98,8 +103,8 @@ namespace TeaCommerce.PaymentProviders.Classic {
         if ( !string.IsNullOrEmpty( paymentMethod.Sku ) ) {
           htmlForm.InputFields[ "item_number_" + itemIndex ] = paymentMethod.Sku;
         }
-        htmlForm.InputFields[ "amount_" + itemIndex ] = order.PaymentInformation.TotalPrice.Value.Value.ToString( "0.00", CultureInfo.InvariantCulture );
-        htmlForm.InputFields[ "tax_" + itemIndex ] = order.PaymentInformation.TotalPrice.Value.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "amount_" + itemIndex ] = ( onlyOrderLineDiscounts ? order.PaymentInformation.TotalPrice.Value : order.PaymentInformation.TotalPrice.WithoutDiscounts ).Value.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "tax_" + itemIndex ] = ( onlyOrderLineDiscounts ? order.PaymentInformation.TotalPrice.Value : order.PaymentInformation.TotalPrice.WithoutDiscounts ).Vat.ToString( "0.00", CultureInfo.InvariantCulture );
       }
 
       #endregion

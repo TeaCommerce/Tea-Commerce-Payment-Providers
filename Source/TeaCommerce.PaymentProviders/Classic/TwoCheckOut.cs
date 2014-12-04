@@ -137,7 +137,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
       //fixed
       htmlForm.InputFields[ "id_type" ] = "1";
-
+      
       int itemIndex = 1;
       //Lines are added in reverse order of the UI
       //TODO: find ud af hvordan vi sender rabat med
@@ -168,7 +168,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         htmlForm.InputFields[ "c_prod_" + itemIndex ] = orderLine.Sku + "," + orderLine.Quantity;
         htmlForm.InputFields[ "c_name_" + itemIndex ] = orderLine.Name.Truncate( 128 );
         htmlForm.InputFields[ "c_description_" + itemIndex ] = string.Empty;
-        htmlForm.InputFields[ "c_price_" + itemIndex ] = orderLine.UnitPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
+        htmlForm.InputFields[ "c_price_" + itemIndex ] = orderLine.TotalPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
 
         itemIndex++;
       }
