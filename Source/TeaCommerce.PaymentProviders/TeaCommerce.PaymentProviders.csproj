@@ -50,6 +50,7 @@
       <HintPath>..\..\Lib\StripeDotNet\Stripe.net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Data" />
     <Reference Include="System.EnterpriseServices" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
@@ -132,6 +133,9 @@
       <DependentUpon>Reference.map</DependentUpon>
     </None>
     <None Include="Web References\AuthorizeNetService\ARBCreateSubscriptionResponseType.datasource">
+      <DependentUpon>Reference.map</DependentUpon>
+    </None>
+    <None Include="Web References\AuthorizeNetService\ARBGetSubscriptionListResponseType.datasource">
       <DependentUpon>Reference.map</DependentUpon>
     </None>
     <None Include="Web References\AuthorizeNetService\ARBGetSubscriptionStatusResponseType.datasource">
