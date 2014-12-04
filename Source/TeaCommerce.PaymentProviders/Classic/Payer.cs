@@ -86,6 +86,8 @@ namespace TeaCommerce.PaymentProviders.Classic {
       ) );
 
       //TODO: kast exception hvis der er rabat på nogle total priser
+      bool onlyOrderLineDiscounts = !order.SubtotalPrice.Discounts.Any() && !order.TotalPrice.Discounts.Any() && !order.GiftCards.Any();
+
       //Purchase
       XElement purchaseList = new XElement( "purchase_list" );
       int lineCounter = 1;
@@ -94,7 +96,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
           new XElement( "line_number", lineCounter ),
           new XElement( "description", server.HtmlEncode( orderLine.Name ) ),
           new XElement( "item_number", server.HtmlEncode( orderLine.Sku ) ),
-          new XElement( "price_including_vat", server.HtmlEncode( orderLine.UnitPrice.Value.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "price_including_vat", server.HtmlEncode( ( onlyOrderLineDiscounts ? orderLine.UnitPrice.Value : orderLine.UnitPrice.WithoutDiscounts ).WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "vat_percentage", server.HtmlEncode( ( orderLine.VatRate * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "quantity", server.HtmlEncode( orderLine.Quantity.ToString( CultureInfo.InvariantCulture ) ) )
         ) );
@@ -108,7 +110,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
           new XElement( "line_number", lineCounter ),
           new XElement( "description", server.HtmlEncode( shippingMethod.Name ) ),
           new XElement( "item_number", server.HtmlEncode( shippingMethod.Sku ) ),
-          new XElement( "price_including_vat", server.HtmlEncode( order.ShipmentInformation.TotalPrice.Value.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "price_including_vat", server.HtmlEncode( ( onlyOrderLineDiscounts ? order.ShipmentInformation.TotalPrice.Value : order.ShipmentInformation.TotalPrice.WithoutDiscounts ).WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "vat_percentage", server.HtmlEncode( ( order.ShipmentInformation.VatRate * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "quantity", "1" )
         ) );
@@ -122,8 +124,32 @@ namespace TeaCommerce.PaymentProviders.Classic {
           new XElement( "line_number", lineCounter ),
           new XElement( "description", server.HtmlEncode( paymentMethod.Name ) ),
           new XElement( "item_number", server.HtmlEncode( paymentMethod.Sku ) ),
-          new XElement( "price_including_vat", server.HtmlEncode( order.PaymentInformation.TotalPrice.Value.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "price_including_vat", server.HtmlEncode( ( onlyOrderLineDiscounts ? order.PaymentInformation.TotalPrice.Value : order.PaymentInformation.TotalPrice.WithoutDiscounts ).WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "vat_percentage", server.HtmlEncode( ( order.PaymentInformation.VatRate * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "quantity", "1" )
+        ) );
+        lineCounter++;
+      }
+
+      if ( order.SubtotalPrice.Discounts.Any() || order.TotalPrice.Discounts.Any() ) {
+        purchaseList.Add( new XElement( "freeform_purchase",
+          new XElement( "line_number", lineCounter ),
+          new XElement( "description", server.HtmlEncode( settings.ContainsKey( "discountName" ) ? settings[ "discountName" ] : "Rabatt" ) ),
+          new XElement( "item_number", server.HtmlEncode( settings.ContainsKey( "discountSku" ) ? settings[ "discountSku" ] : "0001" ) ),
+          new XElement( "price_including_vat", server.HtmlEncode( ( -order.TotalPrice.TotalDiscount.WithVat ).ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "vat_percentage", server.HtmlEncode( ( ( -order.TotalPrice.TotalDiscount.Vat / -order.TotalPrice.TotalDiscount.Value ) * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "quantity", "1" )
+        ) );
+        lineCounter++;
+      }
+
+      if ( order.GiftCards.Any() ) {
+        purchaseList.Add( new XElement( "freeform_purchase",
+          new XElement( "line_number", lineCounter ),
+          new XElement( "description", server.HtmlEncode( settings.ContainsKey( "giftCardName" ) ? settings[ "giftCardName" ] : "Gåvokort" ) ),
+          new XElement( "item_number", server.HtmlEncode( settings.ContainsKey( "giftCardSku" ) ? settings[ "giftCardSku" ] : "0002" ) ),
+          new XElement( "price_including_vat", server.HtmlEncode( ( -order.TotalPrice.GiftCardsAmount.Value ).ToString( CultureInfo.InvariantCulture ) ) ),
+          new XElement( "vat_percentage", server.HtmlEncode( ( 0M ).ToString( CultureInfo.InvariantCulture ) ) ),
           new XElement( "quantity", "1" )
         ) );
       }
@@ -206,7 +232,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         if ( remoteServerIpAddress == "217.151.207.84" || remoteServerIpAddress == "79.136.103.5" || remoteServerIpAddress == "79.136.103.9" || remoteServerIpAddress == "94.140.57.180" || remoteServerIpAddress == "94.140.57.181" || remoteServerIpAddress == "94.140.57.184" || remoteServerIpAddress == "192.168.100.1" ) {
 
           string url = request.Url.Scheme + "://" + request.Url.Host + request.ServerVariables[ "REQUEST_URI" ];
-          string urlExceptMd5Sum = url.Substring( 0, url.IndexOf("&md5sum", StringComparison.Ordinal) );
+          string urlExceptMd5Sum = url.Substring( 0, url.IndexOf( "&md5sum", StringComparison.Ordinal ) );
 
           string md5CheckValue = GenerateMD5Hash( settings[ "md5Key1" ] + urlExceptMd5Sum + settings[ "md5Key2" ] ).ToUpperInvariant();
 

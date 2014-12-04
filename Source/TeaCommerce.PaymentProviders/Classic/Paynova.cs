@@ -185,7 +185,6 @@ namespace TeaCommerce.PaymentProviders.Classic {
           string paymentType = request.Form[ "PAYMENT_1_PAYMENT_METHOD_NAME" ];
           string paymentIdentifier = request.Form[ "PAYMENT_1_CARD_LAST_FOUR" ];
 
-          //TODO: test de forskellige statuser der kommer
           PaymentState? paymentState = null;
           switch ( request.Form[ "PAYMENT_1_STATUS" ] ) {
             case "Pending":
