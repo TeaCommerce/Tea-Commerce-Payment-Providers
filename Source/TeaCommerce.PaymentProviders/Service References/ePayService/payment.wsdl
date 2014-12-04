@@ -247,6 +247,21 @@
           <s:enumeration value="IBILL" />
           <s:enumeration value="NEMPAY" />
           <s:enumeration value="IDEAL" />
+          <s:enumeration value="OBETUR" />
+          <s:enumeration value="EVRY_NORDEA_SE" />
+          <s:enumeration value="EVRY_NORDEA_DK" />
+          <s:enumeration value="EVRY_NORDEA_NO" />
+          <s:enumeration value="EVRY_NORDEA_FI" />
+          <s:enumeration value="MERCHANT4T" />
+          <s:enumeration value="EVRY_HANDELSBANKEN_SE" />
+          <s:enumeration value="EVRY_HANDELSBANKEN_DK" />
+          <s:enumeration value="EVRY_HANDELSBANKEN_NO" />
+          <s:enumeration value="EVRY_HANDELSBANKEN_FI" />
+          <s:enumeration value="EVRY_ELAVON" />
+          <s:enumeration value="EVRY_SWEDBANK" />
+          <s:enumeration value="EVRY_EUROLINE" />
+          <s:enumeration value="EVRY_TELLER" />
+          <s:enumeration value="VALITOR" />
           <s:enumeration value="EPAY" />
         </s:restriction>
       </s:simpleType>
