@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<wsdl:definitions xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:tns="http://external.payex.com/PxOrder/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" targetNamespace="http://external.payex.com/PxOrder/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+<wsdl:definitions xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:tns="http://external.payex.com/PxOrder/" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" targetNamespace="http://external.payex.com/PxOrder/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
   <wsdl:types>
     <s:schema elementFormDefault="qualified" targetNamespace="http://external.payex.com/PxOrder/">
       <s:element name="Initialize8">
@@ -31,39 +31,6 @@
         <s:complexType>
           <s:sequence>
             <s:element minOccurs="0" maxOccurs="1" name="Initialize8Result" type="s:string" />
-          </s:sequence>
-        </s:complexType>
-      </s:element>
-      <s:element name="Initialize2">
-        <s:complexType>
-          <s:sequence>
-            <s:element minOccurs="1" maxOccurs="1" name="accountNumber" type="s:long" />
-            <s:element minOccurs="0" maxOccurs="1" name="orderType" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="purchaseOperation" type="s:string" />
-            <s:element minOccurs="1" maxOccurs="1" name="autoRenew" type="s:int" />
-            <s:element minOccurs="0" maxOccurs="1" name="view" type="s:string" />
-            <s:element minOccurs="1" maxOccurs="1" name="period" type="s:int" />
-            <s:element minOccurs="0" maxOccurs="1" name="orderID" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="productNumber" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="subscriptionNumber" type="s:string" />
-            <s:element minOccurs="1" maxOccurs="1" name="price" type="s:int" />
-            <s:element minOccurs="0" maxOccurs="1" name="priceArgList" type="s:string" />
-            <s:element minOccurs="1" maxOccurs="1" name="vat" type="s:int" />
-            <s:element minOccurs="0" maxOccurs="1" name="description" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="returnURL" type="s:string" />
-            <s:element minOccurs="1" maxOccurs="1" name="checkPeriod" type="s:int" />
-            <s:element minOccurs="0" maxOccurs="1" name="externalID" type="s:string" />
-            <s:element minOccurs="1" maxOccurs="1" name="initialDiscount" type="s:int" />
-            <s:element minOccurs="0" maxOccurs="1" name="expireDate" type="s:string" />
-            <s:element minOccurs="1" maxOccurs="1" name="expireDateType" type="s:int" />
-            <s:element minOccurs="0" maxOccurs="1" name="hash" type="s:string" />
-          </s:sequence>
-        </s:complexType>
-      </s:element>
-      <s:element name="Initialize2Response">
-        <s:complexType>
-          <s:sequence>
-            <s:element minOccurs="0" maxOccurs="1" name="Initialize2Result" type="s:string" />
           </s:sequence>
         </s:complexType>
       </s:element>
@@ -411,6 +378,60 @@
           </s:sequence>
         </s:complexType>
       </s:element>
+      <s:element name="PurchaseWyWallet">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="accountNumber" type="s:long" />
+            <s:element minOccurs="0" maxOccurs="1" name="orderRef" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="msisdn" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="hash" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="PurchaseWyWalletResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="PurchaseWyWalletResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="PreparePurchaseWyWallet">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="accountNumber" type="s:long" />
+            <s:element minOccurs="0" maxOccurs="1" name="orderRef" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="returnUrl" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="hash" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="PreparePurchaseWyWalletResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="PreparePurchaseWyWalletResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="AuthenticateCpa">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="accountNumber" type="s:long" />
+            <s:element minOccurs="1" maxOccurs="1" name="authenticationType" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="msisdn" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="clientIPAddress" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="moCode" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="returnUrl" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="hash" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="AuthenticateCpaResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="AuthenticateCpaResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
       <s:element name="SaleCPA">
         <s:complexType>
           <s:sequence>
@@ -427,6 +448,26 @@
         <s:complexType>
           <s:sequence>
             <s:element minOccurs="0" maxOccurs="1" name="SaleCPAResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="PurchaseCpa">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="accountNumber" type="s:long" />
+            <s:element minOccurs="0" maxOccurs="1" name="orderRef" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="msisdn" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="verificationCode" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="serviceCategory" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="message" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="hash" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="PurchaseCpaResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="PurchaseCpaResult" type="s:string" />
           </s:sequence>
         </s:complexType>
       </s:element>
@@ -1013,96 +1054,6 @@
           </s:sequence>
         </s:complexType>
       </s:element>
-      <s:element name="AddLoan">
-        <s:complexType>
-          <s:sequence>
-            <s:element minOccurs="1" maxOccurs="1" name="accountNumber" type="s:long" />
-            <s:element minOccurs="0" maxOccurs="1" name="orderRef" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="socialSecurityNumber" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="email" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="firstName" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="lastName" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="address" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="postalCode" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="city" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="country" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="phone1" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="phone2" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="gsm" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="additionalProducs" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="shippingDescription" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="additionalInfo" type="s:string" />
-            <s:element minOccurs="1" maxOccurs="1" name="calculateType" type="s:int" />
-            <s:element minOccurs="0" maxOccurs="1" name="calculateRef" type="s:string" />
-            <s:element minOccurs="1" maxOccurs="1" name="nominalInterest" type="s:int" />
-            <s:element minOccurs="1" maxOccurs="1" name="pkiMethod" type="s:int" />
-            <s:element minOccurs="1" maxOccurs="1" name="model" type="s:int" />
-            <s:element minOccurs="0" maxOccurs="1" name="hash" type="s:string" />
-          </s:sequence>
-        </s:complexType>
-      </s:element>
-      <s:element name="AddLoanResponse">
-        <s:complexType>
-          <s:sequence>
-            <s:element minOccurs="0" maxOccurs="1" name="AddLoanResult" type="s:string" />
-          </s:sequence>
-        </s:complexType>
-      </s:element>
-      <s:element name="CalculateLoan">
-        <s:complexType>
-          <s:sequence>
-            <s:element minOccurs="1" maxOccurs="1" name="accountNumber" type="s:long" />
-            <s:element minOccurs="1" maxOccurs="1" name="numberOfMonths" type="s:int" />
-            <s:element minOccurs="1" maxOccurs="1" name="monthlyPayment" type="s:int" />
-            <s:element minOccurs="1" maxOccurs="1" name="amount" type="s:long" />
-            <s:element minOccurs="1" maxOccurs="1" name="loanType" type="s:int" />
-            <s:element minOccurs="0" maxOccurs="1" name="hash" type="s:string" />
-          </s:sequence>
-        </s:complexType>
-      </s:element>
-      <s:element name="CalculateLoanResponse">
-        <s:complexType>
-          <s:sequence>
-            <s:element minOccurs="0" maxOccurs="1" name="CalculateLoanResult" type="s:string" />
-          </s:sequence>
-        </s:complexType>
-      </s:element>
-      <s:element name="SaleLoan">
-        <s:complexType>
-          <s:sequence>
-            <s:element minOccurs="1" maxOccurs="1" name="accountNumber" type="s:long" />
-            <s:element minOccurs="0" maxOccurs="1" name="orderRef" type="s:string" />
-            <s:element minOccurs="1" maxOccurs="1" name="userType" type="s:int" />
-            <s:element minOccurs="0" maxOccurs="1" name="userRef" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="hash" type="s:string" />
-          </s:sequence>
-        </s:complexType>
-      </s:element>
-      <s:element name="SaleLoanResponse">
-        <s:complexType>
-          <s:sequence>
-            <s:element minOccurs="0" maxOccurs="1" name="SaleLoanResult" type="s:string" />
-          </s:sequence>
-        </s:complexType>
-      </s:element>
-      <s:element name="AuthorizeLoan">
-        <s:complexType>
-          <s:sequence>
-            <s:element minOccurs="1" maxOccurs="1" name="accountNumber" type="s:long" />
-            <s:element minOccurs="0" maxOccurs="1" name="orderRef" type="s:string" />
-            <s:element minOccurs="1" maxOccurs="1" name="userType" type="s:int" />
-            <s:element minOccurs="0" maxOccurs="1" name="userRef" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="hash" type="s:string" />
-          </s:sequence>
-        </s:complexType>
-      </s:element>
-      <s:element name="AuthorizeLoanResponse">
-        <s:complexType>
-          <s:sequence>
-            <s:element minOccurs="0" maxOccurs="1" name="AuthorizeLoanResult" type="s:string" />
-          </s:sequence>
-        </s:complexType>
-      </s:element>
       <s:element name="AddOrderAddress">
         <s:complexType>
           <s:sequence>
@@ -1414,6 +1365,115 @@
           </s:sequence>
         </s:complexType>
       </s:element>
+      <s:element name="PurchaseInvoiceSale">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="accountNumber" type="s:long" />
+            <s:element minOccurs="0" maxOccurs="1" name="orderRef" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="socialSecurityNumber" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="legalFirstName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="legalLastName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="legalStreetAddress" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="legalCoAddress" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="legalPostNumber" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="legalCity" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="legalCountryCode" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="email" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="msisdn" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="ipAddress" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="hash" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="PurchaseInvoiceSaleResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="PurchaseInvoiceSaleResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="PurchasePartPaymentSale">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="accountNumber" type="s:long" />
+            <s:element minOccurs="0" maxOccurs="1" name="orderRef" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="socialSecurityNumber" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="legalFirstName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="legalLastName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="legalStreetAddress" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="legalCoAddress" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="legalPostNumber" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="legalCity" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="legalCountryCode" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="email" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="msisdn" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="ipAddress" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="hash" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="PurchasePartPaymentSaleResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="PurchasePartPaymentSaleResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="PreparePartPaymentSale">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="accountNumber" type="s:long" />
+            <s:element minOccurs="0" maxOccurs="1" name="orderRef" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="category" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="socialSecurityNumber" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="countryCode" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="email" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="msisdn" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="ipAddress" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="hash" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="PreparePartPaymentSaleResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="PreparePartPaymentSaleResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="InvoiceLinkGet">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="accountNumber" type="s:long" />
+            <s:element minOccurs="1" maxOccurs="1" name="transactionNumber" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="hash" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="InvoiceLinkGetResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="InvoiceLinkGetResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetLowestMonthlyPartPaymentAmount">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="accountNumber" type="s:long" />
+            <s:element minOccurs="1" maxOccurs="1" name="amount" type="s:long" />
+            <s:element minOccurs="0" maxOccurs="1" name="currency" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="hash" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetLowestMonthlyPartPaymentAmountResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetLowestMonthlyPartPaymentAmountResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
       <s:element name="PurchaseFinancing">
         <s:complexType>
           <s:sequence>
@@ -1442,12 +1502,6 @@
   </wsdl:message>
   <wsdl:message name="Initialize8SoapOut">
     <wsdl:part name="parameters" element="tns:Initialize8Response" />
-  </wsdl:message>
-  <wsdl:message name="Initialize2SoapIn">
-    <wsdl:part name="parameters" element="tns:Initialize2" />
-  </wsdl:message>
-  <wsdl:message name="Initialize2SoapOut">
-    <wsdl:part name="parameters" element="tns:Initialize2Response" />
   </wsdl:message>
   <wsdl:message name="Initialize3SoapIn">
     <wsdl:part name="parameters" element="tns:Initialize3" />
@@ -1539,11 +1593,35 @@
   <wsdl:message name="PurchaseOTTSoapOut">
     <wsdl:part name="parameters" element="tns:PurchaseOTTResponse" />
   </wsdl:message>
+  <wsdl:message name="PurchaseWyWalletSoapIn">
+    <wsdl:part name="parameters" element="tns:PurchaseWyWallet" />
+  </wsdl:message>
+  <wsdl:message name="PurchaseWyWalletSoapOut">
+    <wsdl:part name="parameters" element="tns:PurchaseWyWalletResponse" />
+  </wsdl:message>
+  <wsdl:message name="PreparePurchaseWyWalletSoapIn">
+    <wsdl:part name="parameters" element="tns:PreparePurchaseWyWallet" />
+  </wsdl:message>
+  <wsdl:message name="PreparePurchaseWyWalletSoapOut">
+    <wsdl:part name="parameters" element="tns:PreparePurchaseWyWalletResponse" />
+  </wsdl:message>
+  <wsdl:message name="AuthenticateCpaSoapIn">
+    <wsdl:part name="parameters" element="tns:AuthenticateCpa" />
+  </wsdl:message>
+  <wsdl:message name="AuthenticateCpaSoapOut">
+    <wsdl:part name="parameters" element="tns:AuthenticateCpaResponse" />
+  </wsdl:message>
   <wsdl:message name="SaleCPASoapIn">
     <wsdl:part name="parameters" element="tns:SaleCPA" />
   </wsdl:message>
   <wsdl:message name="SaleCPASoapOut">
     <wsdl:part name="parameters" element="tns:SaleCPAResponse" />
+  </wsdl:message>
+  <wsdl:message name="PurchaseCpaSoapIn">
+    <wsdl:part name="parameters" element="tns:PurchaseCpa" />
+  </wsdl:message>
+  <wsdl:message name="PurchaseCpaSoapOut">
+    <wsdl:part name="parameters" element="tns:PurchaseCpaResponse" />
   </wsdl:message>
   <wsdl:message name="ReserveIVRSoapIn">
     <wsdl:part name="parameters" element="tns:ReserveIVR" />
@@ -1713,30 +1791,6 @@
   <wsdl:message name="SaleInvoiceLedgerSoapOut">
     <wsdl:part name="parameters" element="tns:SaleInvoiceLedgerResponse" />
   </wsdl:message>
-  <wsdl:message name="AddLoanSoapIn">
-    <wsdl:part name="parameters" element="tns:AddLoan" />
-  </wsdl:message>
-  <wsdl:message name="AddLoanSoapOut">
-    <wsdl:part name="parameters" element="tns:AddLoanResponse" />
-  </wsdl:message>
-  <wsdl:message name="CalculateLoanSoapIn">
-    <wsdl:part name="parameters" element="tns:CalculateLoan" />
-  </wsdl:message>
-  <wsdl:message name="CalculateLoanSoapOut">
-    <wsdl:part name="parameters" element="tns:CalculateLoanResponse" />
-  </wsdl:message>
-  <wsdl:message name="SaleLoanSoapIn">
-    <wsdl:part name="parameters" element="tns:SaleLoan" />
-  </wsdl:message>
-  <wsdl:message name="SaleLoanSoapOut">
-    <wsdl:part name="parameters" element="tns:SaleLoanResponse" />
-  </wsdl:message>
-  <wsdl:message name="AuthorizeLoanSoapIn">
-    <wsdl:part name="parameters" element="tns:AuthorizeLoan" />
-  </wsdl:message>
-  <wsdl:message name="AuthorizeLoanSoapOut">
-    <wsdl:part name="parameters" element="tns:AuthorizeLoanResponse" />
-  </wsdl:message>
   <wsdl:message name="AddOrderAddressSoapIn">
     <wsdl:part name="parameters" element="tns:AddOrderAddress" />
   </wsdl:message>
@@ -1803,6 +1857,36 @@
   <wsdl:message name="PurchaseInvoiceCorporateSoapOut">
     <wsdl:part name="parameters" element="tns:PurchaseInvoiceCorporateResponse" />
   </wsdl:message>
+  <wsdl:message name="PurchaseInvoiceSaleSoapIn">
+    <wsdl:part name="parameters" element="tns:PurchaseInvoiceSale" />
+  </wsdl:message>
+  <wsdl:message name="PurchaseInvoiceSaleSoapOut">
+    <wsdl:part name="parameters" element="tns:PurchaseInvoiceSaleResponse" />
+  </wsdl:message>
+  <wsdl:message name="PurchasePartPaymentSaleSoapIn">
+    <wsdl:part name="parameters" element="tns:PurchasePartPaymentSale" />
+  </wsdl:message>
+  <wsdl:message name="PurchasePartPaymentSaleSoapOut">
+    <wsdl:part name="parameters" element="tns:PurchasePartPaymentSaleResponse" />
+  </wsdl:message>
+  <wsdl:message name="PreparePartPaymentSaleSoapIn">
+    <wsdl:part name="parameters" element="tns:PreparePartPaymentSale" />
+  </wsdl:message>
+  <wsdl:message name="PreparePartPaymentSaleSoapOut">
+    <wsdl:part name="parameters" element="tns:PreparePartPaymentSaleResponse" />
+  </wsdl:message>
+  <wsdl:message name="InvoiceLinkGetSoapIn">
+    <wsdl:part name="parameters" element="tns:InvoiceLinkGet" />
+  </wsdl:message>
+  <wsdl:message name="InvoiceLinkGetSoapOut">
+    <wsdl:part name="parameters" element="tns:InvoiceLinkGetResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetLowestMonthlyPartPaymentAmountSoapIn">
+    <wsdl:part name="parameters" element="tns:GetLowestMonthlyPartPaymentAmount" />
+  </wsdl:message>
+  <wsdl:message name="GetLowestMonthlyPartPaymentAmountSoapOut">
+    <wsdl:part name="parameters" element="tns:GetLowestMonthlyPartPaymentAmountResponse" />
+  </wsdl:message>
   <wsdl:message name="PurchaseFinancingSoapIn">
     <wsdl:part name="parameters" element="tns:PurchaseFinancing" />
   </wsdl:message>
@@ -1831,31 +1915,6 @@
     <wsdl:part name="hash" type="s:string" />
   </wsdl:message>
   <wsdl:message name="Initialize8HttpPostOut">
-    <wsdl:part name="Body" element="tns:string" />
-  </wsdl:message>
-  <wsdl:message name="Initialize2HttpPostIn">
-    <wsdl:part name="accountNumber" type="s:string" />
-    <wsdl:part name="orderType" type="s:string" />
-    <wsdl:part name="purchaseOperation" type="s:string" />
-    <wsdl:part name="autoRenew" type="s:string" />
-    <wsdl:part name="view" type="s:string" />
-    <wsdl:part name="period" type="s:string" />
-    <wsdl:part name="orderID" type="s:string" />
-    <wsdl:part name="productNumber" type="s:string" />
-    <wsdl:part name="subscriptionNumber" type="s:string" />
-    <wsdl:part name="price" type="s:string" />
-    <wsdl:part name="priceArgList" type="s:string" />
-    <wsdl:part name="vat" type="s:string" />
-    <wsdl:part name="description" type="s:string" />
-    <wsdl:part name="returnURL" type="s:string" />
-    <wsdl:part name="checkPeriod" type="s:string" />
-    <wsdl:part name="externalID" type="s:string" />
-    <wsdl:part name="initialDiscount" type="s:string" />
-    <wsdl:part name="expireDate" type="s:string" />
-    <wsdl:part name="expireDateType" type="s:string" />
-    <wsdl:part name="hash" type="s:string" />
-  </wsdl:message>
-  <wsdl:message name="Initialize2HttpPostOut">
     <wsdl:part name="Body" element="tns:string" />
   </wsdl:message>
   <wsdl:message name="Initialize3HttpPostIn">
@@ -2082,6 +2141,36 @@
   <wsdl:message name="PurchaseOTTHttpPostOut">
     <wsdl:part name="Body" element="tns:string" />
   </wsdl:message>
+  <wsdl:message name="PurchaseWyWalletHttpPostIn">
+    <wsdl:part name="accountNumber" type="s:string" />
+    <wsdl:part name="orderRef" type="s:string" />
+    <wsdl:part name="msisdn" type="s:string" />
+    <wsdl:part name="hash" type="s:string" />
+  </wsdl:message>
+  <wsdl:message name="PurchaseWyWalletHttpPostOut">
+    <wsdl:part name="Body" element="tns:string" />
+  </wsdl:message>
+  <wsdl:message name="PreparePurchaseWyWalletHttpPostIn">
+    <wsdl:part name="accountNumber" type="s:string" />
+    <wsdl:part name="orderRef" type="s:string" />
+    <wsdl:part name="returnUrl" type="s:string" />
+    <wsdl:part name="hash" type="s:string" />
+  </wsdl:message>
+  <wsdl:message name="PreparePurchaseWyWalletHttpPostOut">
+    <wsdl:part name="Body" element="tns:string" />
+  </wsdl:message>
+  <wsdl:message name="AuthenticateCpaHttpPostIn">
+    <wsdl:part name="accountNumber" type="s:string" />
+    <wsdl:part name="authenticationType" type="s:string" />
+    <wsdl:part name="msisdn" type="s:string" />
+    <wsdl:part name="clientIPAddress" type="s:string" />
+    <wsdl:part name="moCode" type="s:string" />
+    <wsdl:part name="returnUrl" type="s:string" />
+    <wsdl:part name="hash" type="s:string" />
+  </wsdl:message>
+  <wsdl:message name="AuthenticateCpaHttpPostOut">
+    <wsdl:part name="Body" element="tns:string" />
+  </wsdl:message>
   <wsdl:message name="SaleCPAHttpPostIn">
     <wsdl:part name="accountNumber" type="s:string" />
     <wsdl:part name="orderRef" type="s:string" />
@@ -2091,6 +2180,18 @@
     <wsdl:part name="hash" type="s:string" />
   </wsdl:message>
   <wsdl:message name="SaleCPAHttpPostOut">
+    <wsdl:part name="Body" element="tns:string" />
+  </wsdl:message>
+  <wsdl:message name="PurchaseCpaHttpPostIn">
+    <wsdl:part name="accountNumber" type="s:string" />
+    <wsdl:part name="orderRef" type="s:string" />
+    <wsdl:part name="msisdn" type="s:string" />
+    <wsdl:part name="verificationCode" type="s:string" />
+    <wsdl:part name="serviceCategory" type="s:string" />
+    <wsdl:part name="message" type="s:string" />
+    <wsdl:part name="hash" type="s:string" />
+  </wsdl:message>
+  <wsdl:message name="PurchaseCpaHttpPostOut">
     <wsdl:part name="Body" element="tns:string" />
   </wsdl:message>
   <wsdl:message name="ReserveIVRHttpPostIn">
@@ -2432,64 +2533,6 @@
   <wsdl:message name="SaleInvoiceLedgerHttpPostOut">
     <wsdl:part name="Body" element="tns:string" />
   </wsdl:message>
-  <wsdl:message name="AddLoanHttpPostIn">
-    <wsdl:part name="accountNumber" type="s:string" />
-    <wsdl:part name="orderRef" type="s:string" />
-    <wsdl:part name="socialSecurityNumber" type="s:string" />
-    <wsdl:part name="email" type="s:string" />
-    <wsdl:part name="firstName" type="s:string" />
-    <wsdl:part name="lastName" type="s:string" />
-    <wsdl:part name="address" type="s:string" />
-    <wsdl:part name="postalCode" type="s:string" />
-    <wsdl:part name="city" type="s:string" />
-    <wsdl:part name="country" type="s:string" />
-    <wsdl:part name="phone1" type="s:string" />
-    <wsdl:part name="phone2" type="s:string" />
-    <wsdl:part name="gsm" type="s:string" />
-    <wsdl:part name="additionalProducs" type="s:string" />
-    <wsdl:part name="shippingDescription" type="s:string" />
-    <wsdl:part name="additionalInfo" type="s:string" />
-    <wsdl:part name="calculateType" type="s:string" />
-    <wsdl:part name="calculateRef" type="s:string" />
-    <wsdl:part name="nominalInterest" type="s:string" />
-    <wsdl:part name="pkiMethod" type="s:string" />
-    <wsdl:part name="model" type="s:string" />
-    <wsdl:part name="hash" type="s:string" />
-  </wsdl:message>
-  <wsdl:message name="AddLoanHttpPostOut">
-    <wsdl:part name="Body" element="tns:string" />
-  </wsdl:message>
-  <wsdl:message name="CalculateLoanHttpPostIn">
-    <wsdl:part name="accountNumber" type="s:string" />
-    <wsdl:part name="numberOfMonths" type="s:string" />
-    <wsdl:part name="monthlyPayment" type="s:string" />
-    <wsdl:part name="amount" type="s:string" />
-    <wsdl:part name="loanType" type="s:string" />
-    <wsdl:part name="hash" type="s:string" />
-  </wsdl:message>
-  <wsdl:message name="CalculateLoanHttpPostOut">
-    <wsdl:part name="Body" element="tns:string" />
-  </wsdl:message>
-  <wsdl:message name="SaleLoanHttpPostIn">
-    <wsdl:part name="accountNumber" type="s:string" />
-    <wsdl:part name="orderRef" type="s:string" />
-    <wsdl:part name="userType" type="s:string" />
-    <wsdl:part name="userRef" type="s:string" />
-    <wsdl:part name="hash" type="s:string" />
-  </wsdl:message>
-  <wsdl:message name="SaleLoanHttpPostOut">
-    <wsdl:part name="Body" element="tns:string" />
-  </wsdl:message>
-  <wsdl:message name="AuthorizeLoanHttpPostIn">
-    <wsdl:part name="accountNumber" type="s:string" />
-    <wsdl:part name="orderRef" type="s:string" />
-    <wsdl:part name="userType" type="s:string" />
-    <wsdl:part name="userRef" type="s:string" />
-    <wsdl:part name="hash" type="s:string" />
-  </wsdl:message>
-  <wsdl:message name="AuthorizeLoanHttpPostOut">
-    <wsdl:part name="Body" element="tns:string" />
-  </wsdl:message>
   <wsdl:message name="AddOrderAddressHttpPostIn">
     <wsdl:part name="accountNumber" type="s:string" />
     <wsdl:part name="orderRef" type="s:string" />
@@ -2713,6 +2756,75 @@
   <wsdl:message name="PurchaseInvoiceCorporateHttpPostOut">
     <wsdl:part name="Body" element="tns:string" />
   </wsdl:message>
+  <wsdl:message name="PurchaseInvoiceSaleHttpPostIn">
+    <wsdl:part name="accountNumber" type="s:string" />
+    <wsdl:part name="orderRef" type="s:string" />
+    <wsdl:part name="socialSecurityNumber" type="s:string" />
+    <wsdl:part name="legalFirstName" type="s:string" />
+    <wsdl:part name="legalLastName" type="s:string" />
+    <wsdl:part name="legalStreetAddress" type="s:string" />
+    <wsdl:part name="legalCoAddress" type="s:string" />
+    <wsdl:part name="legalPostNumber" type="s:string" />
+    <wsdl:part name="legalCity" type="s:string" />
+    <wsdl:part name="legalCountryCode" type="s:string" />
+    <wsdl:part name="email" type="s:string" />
+    <wsdl:part name="msisdn" type="s:string" />
+    <wsdl:part name="ipAddress" type="s:string" />
+    <wsdl:part name="hash" type="s:string" />
+  </wsdl:message>
+  <wsdl:message name="PurchaseInvoiceSaleHttpPostOut">
+    <wsdl:part name="Body" element="tns:string" />
+  </wsdl:message>
+  <wsdl:message name="PurchasePartPaymentSaleHttpPostIn">
+    <wsdl:part name="accountNumber" type="s:string" />
+    <wsdl:part name="orderRef" type="s:string" />
+    <wsdl:part name="socialSecurityNumber" type="s:string" />
+    <wsdl:part name="legalFirstName" type="s:string" />
+    <wsdl:part name="legalLastName" type="s:string" />
+    <wsdl:part name="legalStreetAddress" type="s:string" />
+    <wsdl:part name="legalCoAddress" type="s:string" />
+    <wsdl:part name="legalPostNumber" type="s:string" />
+    <wsdl:part name="legalCity" type="s:string" />
+    <wsdl:part name="legalCountryCode" type="s:string" />
+    <wsdl:part name="email" type="s:string" />
+    <wsdl:part name="msisdn" type="s:string" />
+    <wsdl:part name="ipAddress" type="s:string" />
+    <wsdl:part name="hash" type="s:string" />
+  </wsdl:message>
+  <wsdl:message name="PurchasePartPaymentSaleHttpPostOut">
+    <wsdl:part name="Body" element="tns:string" />
+  </wsdl:message>
+  <wsdl:message name="PreparePartPaymentSaleHttpPostIn">
+    <wsdl:part name="accountNumber" type="s:string" />
+    <wsdl:part name="orderRef" type="s:string" />
+    <wsdl:part name="category" type="s:string" />
+    <wsdl:part name="socialSecurityNumber" type="s:string" />
+    <wsdl:part name="countryCode" type="s:string" />
+    <wsdl:part name="email" type="s:string" />
+    <wsdl:part name="msisdn" type="s:string" />
+    <wsdl:part name="ipAddress" type="s:string" />
+    <wsdl:part name="hash" type="s:string" />
+  </wsdl:message>
+  <wsdl:message name="PreparePartPaymentSaleHttpPostOut">
+    <wsdl:part name="Body" element="tns:string" />
+  </wsdl:message>
+  <wsdl:message name="InvoiceLinkGetHttpPostIn">
+    <wsdl:part name="accountNumber" type="s:string" />
+    <wsdl:part name="transactionNumber" type="s:string" />
+    <wsdl:part name="hash" type="s:string" />
+  </wsdl:message>
+  <wsdl:message name="InvoiceLinkGetHttpPostOut">
+    <wsdl:part name="Body" element="tns:string" />
+  </wsdl:message>
+  <wsdl:message name="GetLowestMonthlyPartPaymentAmountHttpPostIn">
+    <wsdl:part name="accountNumber" type="s:string" />
+    <wsdl:part name="amount" type="s:string" />
+    <wsdl:part name="currency" type="s:string" />
+    <wsdl:part name="hash" type="s:string" />
+  </wsdl:message>
+  <wsdl:message name="GetLowestMonthlyPartPaymentAmountHttpPostOut">
+    <wsdl:part name="Body" element="tns:string" />
+  </wsdl:message>
   <wsdl:message name="PurchaseFinancingHttpPostIn">
     <wsdl:part name="accountNumber" type="s:string" />
     <wsdl:part name="orderRef" type="s:string" />
@@ -2729,10 +2841,6 @@
     <wsdl:operation name="Initialize8">
       <wsdl:input message="tns:Initialize8SoapIn" />
       <wsdl:output message="tns:Initialize8SoapOut" />
-    </wsdl:operation>
-    <wsdl:operation name="Initialize">
-      <wsdl:input name="Initialize2" message="tns:Initialize2SoapIn" />
-      <wsdl:output name="Initialize2" message="tns:Initialize2SoapOut" />
     </wsdl:operation>
     <wsdl:operation name="Initialize3">
       <wsdl:input message="tns:Initialize3SoapIn" />
@@ -2794,9 +2902,25 @@
       <wsdl:input message="tns:PurchaseOTTSoapIn" />
       <wsdl:output message="tns:PurchaseOTTSoapOut" />
     </wsdl:operation>
+    <wsdl:operation name="PurchaseWyWallet">
+      <wsdl:input message="tns:PurchaseWyWalletSoapIn" />
+      <wsdl:output message="tns:PurchaseWyWalletSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="PreparePurchaseWyWallet">
+      <wsdl:input message="tns:PreparePurchaseWyWalletSoapIn" />
+      <wsdl:output message="tns:PreparePurchaseWyWalletSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="AuthenticateCpa">
+      <wsdl:input message="tns:AuthenticateCpaSoapIn" />
+      <wsdl:output message="tns:AuthenticateCpaSoapOut" />
+    </wsdl:operation>
     <wsdl:operation name="SaleCPA">
       <wsdl:input message="tns:SaleCPASoapIn" />
       <wsdl:output message="tns:SaleCPASoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="PurchaseCpa">
+      <wsdl:input message="tns:PurchaseCpaSoapIn" />
+      <wsdl:output message="tns:PurchaseCpaSoapOut" />
     </wsdl:operation>
     <wsdl:operation name="ReserveIVR">
       <wsdl:input message="tns:ReserveIVRSoapIn" />
@@ -2910,22 +3034,6 @@
       <wsdl:input message="tns:SaleInvoiceLedgerSoapIn" />
       <wsdl:output message="tns:SaleInvoiceLedgerSoapOut" />
     </wsdl:operation>
-    <wsdl:operation name="AddLoan">
-      <wsdl:input message="tns:AddLoanSoapIn" />
-      <wsdl:output message="tns:AddLoanSoapOut" />
-    </wsdl:operation>
-    <wsdl:operation name="CalculateLoan">
-      <wsdl:input message="tns:CalculateLoanSoapIn" />
-      <wsdl:output message="tns:CalculateLoanSoapOut" />
-    </wsdl:operation>
-    <wsdl:operation name="SaleLoan">
-      <wsdl:input message="tns:SaleLoanSoapIn" />
-      <wsdl:output message="tns:SaleLoanSoapOut" />
-    </wsdl:operation>
-    <wsdl:operation name="AuthorizeLoan">
-      <wsdl:input message="tns:AuthorizeLoanSoapIn" />
-      <wsdl:output message="tns:AuthorizeLoanSoapOut" />
-    </wsdl:operation>
     <wsdl:operation name="AddOrderAddress">
       <wsdl:input message="tns:AddOrderAddressSoapIn" />
       <wsdl:output message="tns:AddOrderAddressSoapOut" />
@@ -2970,6 +3078,26 @@
       <wsdl:input message="tns:PurchaseInvoiceCorporateSoapIn" />
       <wsdl:output message="tns:PurchaseInvoiceCorporateSoapOut" />
     </wsdl:operation>
+    <wsdl:operation name="PurchaseInvoiceSale">
+      <wsdl:input message="tns:PurchaseInvoiceSaleSoapIn" />
+      <wsdl:output message="tns:PurchaseInvoiceSaleSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="PurchasePartPaymentSale">
+      <wsdl:input message="tns:PurchasePartPaymentSaleSoapIn" />
+      <wsdl:output message="tns:PurchasePartPaymentSaleSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="PreparePartPaymentSale">
+      <wsdl:input message="tns:PreparePartPaymentSaleSoapIn" />
+      <wsdl:output message="tns:PreparePartPaymentSaleSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="InvoiceLinkGet">
+      <wsdl:input message="tns:InvoiceLinkGetSoapIn" />
+      <wsdl:output message="tns:InvoiceLinkGetSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetLowestMonthlyPartPaymentAmount">
+      <wsdl:input message="tns:GetLowestMonthlyPartPaymentAmountSoapIn" />
+      <wsdl:output message="tns:GetLowestMonthlyPartPaymentAmountSoapOut" />
+    </wsdl:operation>
     <wsdl:operation name="PurchaseFinancing">
       <wsdl:input message="tns:PurchaseFinancingSoapIn" />
       <wsdl:output message="tns:PurchaseFinancingSoapOut" />
@@ -2979,10 +3107,6 @@
     <wsdl:operation name="Initialize8">
       <wsdl:input message="tns:Initialize8HttpPostIn" />
       <wsdl:output message="tns:Initialize8HttpPostOut" />
-    </wsdl:operation>
-    <wsdl:operation name="Initialize">
-      <wsdl:input name="Initialize2" message="tns:Initialize2HttpPostIn" />
-      <wsdl:output name="Initialize2" message="tns:Initialize2HttpPostOut" />
     </wsdl:operation>
     <wsdl:operation name="Initialize3">
       <wsdl:input message="tns:Initialize3HttpPostIn" />
@@ -3044,9 +3168,25 @@
       <wsdl:input message="tns:PurchaseOTTHttpPostIn" />
       <wsdl:output message="tns:PurchaseOTTHttpPostOut" />
     </wsdl:operation>
+    <wsdl:operation name="PurchaseWyWallet">
+      <wsdl:input message="tns:PurchaseWyWalletHttpPostIn" />
+      <wsdl:output message="tns:PurchaseWyWalletHttpPostOut" />
+    </wsdl:operation>
+    <wsdl:operation name="PreparePurchaseWyWallet">
+      <wsdl:input message="tns:PreparePurchaseWyWalletHttpPostIn" />
+      <wsdl:output message="tns:PreparePurchaseWyWalletHttpPostOut" />
+    </wsdl:operation>
+    <wsdl:operation name="AuthenticateCpa">
+      <wsdl:input message="tns:AuthenticateCpaHttpPostIn" />
+      <wsdl:output message="tns:AuthenticateCpaHttpPostOut" />
+    </wsdl:operation>
     <wsdl:operation name="SaleCPA">
       <wsdl:input message="tns:SaleCPAHttpPostIn" />
       <wsdl:output message="tns:SaleCPAHttpPostOut" />
+    </wsdl:operation>
+    <wsdl:operation name="PurchaseCpa">
+      <wsdl:input message="tns:PurchaseCpaHttpPostIn" />
+      <wsdl:output message="tns:PurchaseCpaHttpPostOut" />
     </wsdl:operation>
     <wsdl:operation name="ReserveIVR">
       <wsdl:input message="tns:ReserveIVRHttpPostIn" />
@@ -3156,22 +3296,6 @@
       <wsdl:input message="tns:SaleInvoiceLedgerHttpPostIn" />
       <wsdl:output message="tns:SaleInvoiceLedgerHttpPostOut" />
     </wsdl:operation>
-    <wsdl:operation name="AddLoan">
-      <wsdl:input message="tns:AddLoanHttpPostIn" />
-      <wsdl:output message="tns:AddLoanHttpPostOut" />
-    </wsdl:operation>
-    <wsdl:operation name="CalculateLoan">
-      <wsdl:input message="tns:CalculateLoanHttpPostIn" />
-      <wsdl:output message="tns:CalculateLoanHttpPostOut" />
-    </wsdl:operation>
-    <wsdl:operation name="SaleLoan">
-      <wsdl:input message="tns:SaleLoanHttpPostIn" />
-      <wsdl:output message="tns:SaleLoanHttpPostOut" />
-    </wsdl:operation>
-    <wsdl:operation name="AuthorizeLoan">
-      <wsdl:input message="tns:AuthorizeLoanHttpPostIn" />
-      <wsdl:output message="tns:AuthorizeLoanHttpPostOut" />
-    </wsdl:operation>
     <wsdl:operation name="AddOrderAddress">
       <wsdl:input message="tns:AddOrderAddressHttpPostIn" />
       <wsdl:output message="tns:AddOrderAddressHttpPostOut" />
@@ -3216,6 +3340,26 @@
       <wsdl:input message="tns:PurchaseInvoiceCorporateHttpPostIn" />
       <wsdl:output message="tns:PurchaseInvoiceCorporateHttpPostOut" />
     </wsdl:operation>
+    <wsdl:operation name="PurchaseInvoiceSale">
+      <wsdl:input message="tns:PurchaseInvoiceSaleHttpPostIn" />
+      <wsdl:output message="tns:PurchaseInvoiceSaleHttpPostOut" />
+    </wsdl:operation>
+    <wsdl:operation name="PurchasePartPaymentSale">
+      <wsdl:input message="tns:PurchasePartPaymentSaleHttpPostIn" />
+      <wsdl:output message="tns:PurchasePartPaymentSaleHttpPostOut" />
+    </wsdl:operation>
+    <wsdl:operation name="PreparePartPaymentSale">
+      <wsdl:input message="tns:PreparePartPaymentSaleHttpPostIn" />
+      <wsdl:output message="tns:PreparePartPaymentSaleHttpPostOut" />
+    </wsdl:operation>
+    <wsdl:operation name="InvoiceLinkGet">
+      <wsdl:input message="tns:InvoiceLinkGetHttpPostIn" />
+      <wsdl:output message="tns:InvoiceLinkGetHttpPostOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetLowestMonthlyPartPaymentAmount">
+      <wsdl:input message="tns:GetLowestMonthlyPartPaymentAmountHttpPostIn" />
+      <wsdl:output message="tns:GetLowestMonthlyPartPaymentAmountHttpPostOut" />
+    </wsdl:operation>
     <wsdl:operation name="PurchaseFinancing">
       <wsdl:input message="tns:PurchaseFinancingHttpPostIn" />
       <wsdl:output message="tns:PurchaseFinancingHttpPostOut" />
@@ -3229,15 +3373,6 @@
         <soap:body use="literal" />
       </wsdl:input>
       <wsdl:output>
-        <soap:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="Initialize">
-      <soap:operation soapAction="http://external.payex.com/PxOrder/Initialize2" style="document" />
-      <wsdl:input name="Initialize2">
-        <soap:body use="literal" />
-      </wsdl:input>
-      <wsdl:output name="Initialize2">
         <soap:body use="literal" />
       </wsdl:output>
     </wsdl:operation>
@@ -3376,8 +3511,44 @@
         <soap:body use="literal" />
       </wsdl:output>
     </wsdl:operation>
+    <wsdl:operation name="PurchaseWyWallet">
+      <soap:operation soapAction="http://external.payex.com/PxOrder/PurchaseWyWallet" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="PreparePurchaseWyWallet">
+      <soap:operation soapAction="http://external.payex.com/PxOrder/PreparePurchaseWyWallet" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AuthenticateCpa">
+      <soap:operation soapAction="http://external.payex.com/PxOrder/AuthenticateCpa" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
     <wsdl:operation name="SaleCPA">
       <soap:operation soapAction="http://external.payex.com/PxOrder/SaleCPA" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="PurchaseCpa">
+      <soap:operation soapAction="http://external.payex.com/PxOrder/PurchaseCpa" style="document" />
       <wsdl:input>
         <soap:body use="literal" />
       </wsdl:input>
@@ -3637,42 +3808,6 @@
         <soap:body use="literal" />
       </wsdl:output>
     </wsdl:operation>
-    <wsdl:operation name="AddLoan">
-      <soap:operation soapAction="http://external.payex.com/PxOrder/AddLoan" style="document" />
-      <wsdl:input>
-        <soap:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="CalculateLoan">
-      <soap:operation soapAction="http://external.payex.com/PxOrder/CalculateLoan" style="document" />
-      <wsdl:input>
-        <soap:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="SaleLoan">
-      <soap:operation soapAction="http://external.payex.com/PxOrder/SaleLoan" style="document" />
-      <wsdl:input>
-        <soap:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="AuthorizeLoan">
-      <soap:operation soapAction="http://external.payex.com/PxOrder/AuthorizeLoan" style="document" />
-      <wsdl:input>
-        <soap:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
     <wsdl:operation name="AddOrderAddress">
       <soap:operation soapAction="http://external.payex.com/PxOrder/AddOrderAddress" style="document" />
       <wsdl:input>
@@ -3772,6 +3907,51 @@
         <soap:body use="literal" />
       </wsdl:output>
     </wsdl:operation>
+    <wsdl:operation name="PurchaseInvoiceSale">
+      <soap:operation soapAction="http://external.payex.com/PxOrder/PurchaseInvoiceSale" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="PurchasePartPaymentSale">
+      <soap:operation soapAction="http://external.payex.com/PxOrder/PurchasePartPaymentSale" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="PreparePartPaymentSale">
+      <soap:operation soapAction="http://external.payex.com/PxOrder/PreparePartPaymentSale" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="InvoiceLinkGet">
+      <soap:operation soapAction="http://external.payex.com/PxOrder/InvoiceLinkGet" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLowestMonthlyPartPaymentAmount">
+      <soap:operation soapAction="http://external.payex.com/PxOrder/GetLowestMonthlyPartPaymentAmount" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
     <wsdl:operation name="PurchaseFinancing">
       <soap:operation soapAction="http://external.payex.com/PxOrder/PurchaseFinancing" style="document" />
       <wsdl:input>
@@ -3790,15 +3970,6 @@
         <soap12:body use="literal" />
       </wsdl:input>
       <wsdl:output>
-        <soap12:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="Initialize">
-      <soap12:operation soapAction="http://external.payex.com/PxOrder/Initialize2" style="document" />
-      <wsdl:input name="Initialize2">
-        <soap12:body use="literal" />
-      </wsdl:input>
-      <wsdl:output name="Initialize2">
         <soap12:body use="literal" />
       </wsdl:output>
     </wsdl:operation>
@@ -3937,8 +4108,44 @@
         <soap12:body use="literal" />
       </wsdl:output>
     </wsdl:operation>
+    <wsdl:operation name="PurchaseWyWallet">
+      <soap12:operation soapAction="http://external.payex.com/PxOrder/PurchaseWyWallet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="PreparePurchaseWyWallet">
+      <soap12:operation soapAction="http://external.payex.com/PxOrder/PreparePurchaseWyWallet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AuthenticateCpa">
+      <soap12:operation soapAction="http://external.payex.com/PxOrder/AuthenticateCpa" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
     <wsdl:operation name="SaleCPA">
       <soap12:operation soapAction="http://external.payex.com/PxOrder/SaleCPA" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="PurchaseCpa">
+      <soap12:operation soapAction="http://external.payex.com/PxOrder/PurchaseCpa" style="document" />
       <wsdl:input>
         <soap12:body use="literal" />
       </wsdl:input>
@@ -4198,42 +4405,6 @@
         <soap12:body use="literal" />
       </wsdl:output>
     </wsdl:operation>
-    <wsdl:operation name="AddLoan">
-      <soap12:operation soapAction="http://external.payex.com/PxOrder/AddLoan" style="document" />
-      <wsdl:input>
-        <soap12:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap12:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="CalculateLoan">
-      <soap12:operation soapAction="http://external.payex.com/PxOrder/CalculateLoan" style="document" />
-      <wsdl:input>
-        <soap12:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap12:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="SaleLoan">
-      <soap12:operation soapAction="http://external.payex.com/PxOrder/SaleLoan" style="document" />
-      <wsdl:input>
-        <soap12:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap12:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="AuthorizeLoan">
-      <soap12:operation soapAction="http://external.payex.com/PxOrder/AuthorizeLoan" style="document" />
-      <wsdl:input>
-        <soap12:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap12:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
     <wsdl:operation name="AddOrderAddress">
       <soap12:operation soapAction="http://external.payex.com/PxOrder/AddOrderAddress" style="document" />
       <wsdl:input>
@@ -4333,6 +4504,51 @@
         <soap12:body use="literal" />
       </wsdl:output>
     </wsdl:operation>
+    <wsdl:operation name="PurchaseInvoiceSale">
+      <soap12:operation soapAction="http://external.payex.com/PxOrder/PurchaseInvoiceSale" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="PurchasePartPaymentSale">
+      <soap12:operation soapAction="http://external.payex.com/PxOrder/PurchasePartPaymentSale" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="PreparePartPaymentSale">
+      <soap12:operation soapAction="http://external.payex.com/PxOrder/PreparePartPaymentSale" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="InvoiceLinkGet">
+      <soap12:operation soapAction="http://external.payex.com/PxOrder/InvoiceLinkGet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLowestMonthlyPartPaymentAmount">
+      <soap12:operation soapAction="http://external.payex.com/PxOrder/GetLowestMonthlyPartPaymentAmount" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
     <wsdl:operation name="PurchaseFinancing">
       <soap12:operation soapAction="http://external.payex.com/PxOrder/PurchaseFinancing" style="document" />
       <wsdl:input>
@@ -4351,15 +4567,6 @@
         <mime:content type="application/x-www-form-urlencoded" />
       </wsdl:input>
       <wsdl:output>
-        <mime:mimeXml part="Body" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="Initialize">
-      <http:operation location="/Initialize2" />
-      <wsdl:input name="Initialize2">
-        <mime:content type="application/x-www-form-urlencoded" />
-      </wsdl:input>
-      <wsdl:output name="Initialize2">
         <mime:mimeXml part="Body" />
       </wsdl:output>
     </wsdl:operation>
@@ -4498,8 +4705,44 @@
         <mime:mimeXml part="Body" />
       </wsdl:output>
     </wsdl:operation>
+    <wsdl:operation name="PurchaseWyWallet">
+      <http:operation location="/PurchaseWyWallet" />
+      <wsdl:input>
+        <mime:content type="application/x-www-form-urlencoded" />
+      </wsdl:input>
+      <wsdl:output>
+        <mime:mimeXml part="Body" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="PreparePurchaseWyWallet">
+      <http:operation location="/PreparePurchaseWyWallet" />
+      <wsdl:input>
+        <mime:content type="application/x-www-form-urlencoded" />
+      </wsdl:input>
+      <wsdl:output>
+        <mime:mimeXml part="Body" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AuthenticateCpa">
+      <http:operation location="/AuthenticateCpa" />
+      <wsdl:input>
+        <mime:content type="application/x-www-form-urlencoded" />
+      </wsdl:input>
+      <wsdl:output>
+        <mime:mimeXml part="Body" />
+      </wsdl:output>
+    </wsdl:operation>
     <wsdl:operation name="SaleCPA">
       <http:operation location="/SaleCPA" />
+      <wsdl:input>
+        <mime:content type="application/x-www-form-urlencoded" />
+      </wsdl:input>
+      <wsdl:output>
+        <mime:mimeXml part="Body" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="PurchaseCpa">
+      <http:operation location="/PurchaseCpa" />
       <wsdl:input>
         <mime:content type="application/x-www-form-urlencoded" />
       </wsdl:input>
@@ -4750,42 +4993,6 @@
         <mime:mimeXml part="Body" />
       </wsdl:output>
     </wsdl:operation>
-    <wsdl:operation name="AddLoan">
-      <http:operation location="/AddLoan" />
-      <wsdl:input>
-        <mime:content type="application/x-www-form-urlencoded" />
-      </wsdl:input>
-      <wsdl:output>
-        <mime:mimeXml part="Body" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="CalculateLoan">
-      <http:operation location="/CalculateLoan" />
-      <wsdl:input>
-        <mime:content type="application/x-www-form-urlencoded" />
-      </wsdl:input>
-      <wsdl:output>
-        <mime:mimeXml part="Body" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="SaleLoan">
-      <http:operation location="/SaleLoan" />
-      <wsdl:input>
-        <mime:content type="application/x-www-form-urlencoded" />
-      </wsdl:input>
-      <wsdl:output>
-        <mime:mimeXml part="Body" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="AuthorizeLoan">
-      <http:operation location="/AuthorizeLoan" />
-      <wsdl:input>
-        <mime:content type="application/x-www-form-urlencoded" />
-      </wsdl:input>
-      <wsdl:output>
-        <mime:mimeXml part="Body" />
-      </wsdl:output>
-    </wsdl:operation>
     <wsdl:operation name="AddOrderAddress">
       <http:operation location="/AddOrderAddress" />
       <wsdl:input>
@@ -4885,6 +5092,51 @@
         <mime:mimeXml part="Body" />
       </wsdl:output>
     </wsdl:operation>
+    <wsdl:operation name="PurchaseInvoiceSale">
+      <http:operation location="/PurchaseInvoiceSale" />
+      <wsdl:input>
+        <mime:content type="application/x-www-form-urlencoded" />
+      </wsdl:input>
+      <wsdl:output>
+        <mime:mimeXml part="Body" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="PurchasePartPaymentSale">
+      <http:operation location="/PurchasePartPaymentSale" />
+      <wsdl:input>
+        <mime:content type="application/x-www-form-urlencoded" />
+      </wsdl:input>
+      <wsdl:output>
+        <mime:mimeXml part="Body" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="PreparePartPaymentSale">
+      <http:operation location="/PreparePartPaymentSale" />
+      <wsdl:input>
+        <mime:content type="application/x-www-form-urlencoded" />
+      </wsdl:input>
+      <wsdl:output>
+        <mime:mimeXml part="Body" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="InvoiceLinkGet">
+      <http:operation location="/InvoiceLinkGet" />
+      <wsdl:input>
+        <mime:content type="application/x-www-form-urlencoded" />
+      </wsdl:input>
+      <wsdl:output>
+        <mime:mimeXml part="Body" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLowestMonthlyPartPaymentAmount">
+      <http:operation location="/GetLowestMonthlyPartPaymentAmount" />
+      <wsdl:input>
+        <mime:content type="application/x-www-form-urlencoded" />
+      </wsdl:input>
+      <wsdl:output>
+        <mime:mimeXml part="Body" />
+      </wsdl:output>
+    </wsdl:operation>
     <wsdl:operation name="PurchaseFinancing">
       <http:operation location="/PurchaseFinancing" />
       <wsdl:input>
@@ -4903,7 +5155,7 @@
       <soap12:address location="https://test-external.payex.com/pxorder/pxorder.asmx" />
     </wsdl:port>
     <wsdl:port name="PxOrderHttpPost" binding="tns:PxOrderHttpPost">
-      <http:address location="https://test-external.payex.com/pxorder/pxorder.asmx" />
+      <http:address location="http://test-external.payex.com/pxorder/pxorder.asmx" />
     </wsdl:port>
   </wsdl:service>
 </wsdl:definitions>
