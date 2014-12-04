@@ -185,14 +185,16 @@ namespace TeaCommerce.PaymentProviders.Inline {
           settings.MustContainKey( "merchant.id", "settings" );
           settings.MustContainKey( "merchant.terms_uri", "settings" );
           settings.MustContainKey( "locale", "settings" );
-          //TODO: find ud af rabat
+
+          bool onlyOrderLineDiscounts = !order.SubtotalPrice.Discounts.Any() && !order.TotalPrice.Discounts.Any() && !order.GiftCards.Any();
+
           //Cart information
           List<Dictionary<string, object>> cartItems = order.OrderLines.Select( orderLine =>
             new Dictionary<string, object> {
               { "reference", orderLine.Sku }, 
               { "name", orderLine.Name }, 
               { "quantity", (int) orderLine.Quantity },
-              { "unit_price", (int) (orderLine.UnitPrice.Value.WithVat * 100M) },
+              { "unit_price", (int) ( (onlyOrderLineDiscounts ? orderLine.UnitPrice.Value : orderLine.UnitPrice.WithoutDiscounts).WithVat * 100M) },
               { "tax_rate", (int) (orderLine.VatRate.Value * 10000M) }
             } )
           .ToList();
@@ -204,8 +206,40 @@ namespace TeaCommerce.PaymentProviders.Inline {
               { "reference", shippingMethod.Sku},
               { "name", shippingMethod.Name},
               { "quantity", 1},
-              { "unit_price", (int) (order.ShipmentInformation.TotalPrice.Value.WithVat * 100M) },
+              { "unit_price", (int) ((onlyOrderLineDiscounts ? order.ShipmentInformation.TotalPrice.Value : order.ShipmentInformation.TotalPrice.WithoutDiscounts).WithVat * 100M) },
               { "tax_rate",  (int) (order.ShipmentInformation.VatRate * 10000M) }
+            } );
+          }
+
+          if ( order.PaymentInformation.PaymentMethodId != null ) {
+            PaymentMethod paymentMethodMethod = PaymentMethodService.Instance.Get( order.StoreId, order.PaymentInformation.PaymentMethodId.Value );
+            cartItems.Add( new Dictionary<string, object> {
+              { "reference", paymentMethodMethod.Sku},
+              { "name", paymentMethodMethod.Name},
+              { "quantity", 1},
+              { "unit_price", (int) ((onlyOrderLineDiscounts ? order.PaymentInformation.TotalPrice.Value : order.PaymentInformation.TotalPrice.WithoutDiscounts).WithVat * 100M) },
+              { "tax_rate",  (int) (order.PaymentInformation.VatRate * 10000M) }
+            } );
+          }
+
+          if ( order.SubtotalPrice.Discounts.Any() || order.TotalPrice.Discounts.Any() ) {
+            cartItems.Add( new Dictionary<string, object> {
+              { "type", "discount" },
+              { "reference", settings.ContainsKey( "discountSku" ) ? settings[ "discountSku" ] : "0001"},
+              { "name", settings.ContainsKey( "discountName" ) ? settings[ "discountName" ] : "Rabatt"},
+              { "quantity", 1},
+              { "unit_price", (int) (order.TotalPrice.TotalDiscount.WithVat * 100M) },
+              { "tax_rate",  (int) ((order.TotalPrice.TotalDiscount.Vat / order.TotalPrice.TotalDiscount.Value) * 10000M) }
+            } );
+          }
+          if ( order.GiftCards.Any() ) {
+            cartItems.Add( new Dictionary<string, object> {
+              { "type", "discount" },
+              { "reference", settings.ContainsKey( "giftCardSku" ) ? settings[ "giftCardSku" ] : "0002"},
+              { "name", settings.ContainsKey( "giftCardName" ) ? settings[ "giftCardName" ] : "Gåvokort"},
+              { "quantity", 1},
+              { "unit_price", (int) (order.TotalPrice.GiftCardsAmount.Value * 100M) },
+              { "tax_rate", 0 }
             } );
           }
 
