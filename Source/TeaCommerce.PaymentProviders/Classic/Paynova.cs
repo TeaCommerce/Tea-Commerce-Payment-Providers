@@ -65,20 +65,23 @@ namespace TeaCommerce.PaymentProviders.Classic {
         CreateOrderRequest createOrderRequest = new CreateOrderRequest( order.CartNumber, currency.IsoCode, order.TotalPrice.Value.WithVat );
 
         //Add line items
-        //TODO: kast exception hvis der er rabat på nogle total priser
-        string unitMeasure = settings[ "unitMeasure" ];
-        foreach ( OrderLine orderLine in order.OrderLines ) {
-          createOrderRequest.AddLineItem( new LineItem( orderLine.Id.ToString( CultureInfo.InvariantCulture ), orderLine.Sku, orderLine.Name, unitMeasure, orderLine.VatRate.Value, orderLine.Quantity, orderLine.UnitPrice.Value.Value, orderLine.TotalPrice.Value.WithVat, orderLine.TotalPrice.Value.Vat ) );
-        }
+        bool onlyOrderLineDiscounts = !order.SubtotalPrice.Discounts.Any() && !order.TotalPrice.Discounts.Any() && !order.GiftCards.Any();
 
-        if ( order.ShipmentInformation.ShippingMethodId != null && order.ShipmentInformation.TotalPrice.Value.Value > 0M ) {
-          ShippingMethod shippingMethod = ShippingMethodService.Instance.Get( order.StoreId, order.ShipmentInformation.ShippingMethodId.Value );
-          createOrderRequest.AddLineItem( new LineItem( "shipping_" + shippingMethod.Id, shippingMethod.Sku, shippingMethod.Name, unitMeasure, order.ShipmentInformation.VatRate.Value, 1M, order.ShipmentInformation.TotalPrice.Value.Value, order.ShipmentInformation.TotalPrice.Value.WithVat, order.ShipmentInformation.TotalPrice.Value.Vat ) );
-        }
+        if ( onlyOrderLineDiscounts ) {
+          string unitMeasure = settings[ "unitMeasure" ];
+          foreach ( OrderLine orderLine in order.OrderLines ) {
+            createOrderRequest.AddLineItem( new LineItem( orderLine.Id.ToString( CultureInfo.InvariantCulture ), orderLine.Sku, orderLine.Name, unitMeasure, orderLine.VatRate.Value, orderLine.Quantity, orderLine.UnitPrice.Value.Value, orderLine.TotalPrice.Value.WithVat, orderLine.TotalPrice.Value.Vat ) );
+          }
 
-        if ( order.PaymentInformation.PaymentMethodId != null && order.PaymentInformation.TotalPrice.Value.Value > 0M ) {
-          TeaCommercePaymentMethod paymentMethod = PaymentMethodService.Instance.Get( order.StoreId, order.PaymentInformation.PaymentMethodId.Value );
-          createOrderRequest.AddLineItem( new LineItem( "payment_" + paymentMethod.Id, paymentMethod.Sku, paymentMethod.Name, unitMeasure, order.PaymentInformation.VatRate.Value, 1M, order.PaymentInformation.TotalPrice.Value.Value, order.PaymentInformation.TotalPrice.Value.WithVat, order.PaymentInformation.TotalPrice.Value.Vat ) );
+          if ( order.ShipmentInformation.ShippingMethodId != null && order.ShipmentInformation.TotalPrice.Value.Value > 0M ) {
+            ShippingMethod shippingMethod = ShippingMethodService.Instance.Get( order.StoreId, order.ShipmentInformation.ShippingMethodId.Value );
+            createOrderRequest.AddLineItem( new LineItem( "shipping_" + shippingMethod.Id, shippingMethod.Sku, shippingMethod.Name, unitMeasure, order.ShipmentInformation.VatRate.Value, 1M, order.ShipmentInformation.TotalPrice.Value.Value, order.ShipmentInformation.TotalPrice.Value.WithVat, order.ShipmentInformation.TotalPrice.Value.Vat ) );
+          }
+
+          if ( order.PaymentInformation.PaymentMethodId != null && order.PaymentInformation.TotalPrice.Value.Value > 0M ) {
+            TeaCommercePaymentMethod paymentMethod = PaymentMethodService.Instance.Get( order.StoreId, order.PaymentInformation.PaymentMethodId.Value );
+            createOrderRequest.AddLineItem( new LineItem( "payment_" + paymentMethod.Id, paymentMethod.Sku, paymentMethod.Name, unitMeasure, order.PaymentInformation.VatRate.Value, 1M, order.PaymentInformation.TotalPrice.Value.Value, order.PaymentInformation.TotalPrice.Value.WithVat, order.PaymentInformation.TotalPrice.Value.Vat ) );
+          }
         }
 
         #region Customer information
