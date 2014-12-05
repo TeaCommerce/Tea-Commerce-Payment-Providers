@@ -108,7 +108,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "TESTMODE" ) && settings[ "TESTMODE" ] == "1" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/ogone-callback-data.txt" ), logGetData: true );
+          LogRequest( request, logGetData: true );
         }
 
         Dictionary<string, string> inputFields = new Dictionary<string, string>();

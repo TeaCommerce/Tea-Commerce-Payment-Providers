@@ -125,7 +125,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "test" ) && settings[ "test" ] == "1" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/dibs-callback-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         string transaction = request.Form[ "transact" ];

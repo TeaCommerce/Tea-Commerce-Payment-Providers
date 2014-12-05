@@ -170,7 +170,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
           //Write data when testing
           if ( settings.ContainsKey( "Testing" ) && settings[ "Testing" ] == "1" ) {
-            LogRequestToFile( request, HostingEnvironment.MapPath( "~/payment-sense-callback-data.txt" ), logPostData: true );
+            LogRequest( request, logPostData: true );
           }
 
           List<string> keysToHash = new List<string>();

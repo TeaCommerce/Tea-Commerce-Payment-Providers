@@ -175,7 +175,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/paynova-callback-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         PostbackDigest postbackDigest = new PostbackDigest( settings[ "secretKey" ] );

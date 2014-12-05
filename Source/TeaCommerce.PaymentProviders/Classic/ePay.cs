@@ -158,7 +158,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/epay-callback-data.txt" ), logGetData: true );
+          LogRequest( request, logGetData: true );
         }
 
         string transaction = request.QueryString[ "txnid" ];

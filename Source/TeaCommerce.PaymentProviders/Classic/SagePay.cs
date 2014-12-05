@@ -183,7 +183,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "testMode" ) && ( settings[ "testMode" ] == "SIMULATOR" || settings[ "testMode" ] == "TEST" ) ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/sage-pay-callback-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         string transaction = request.Form[ "VPSTxId" ];

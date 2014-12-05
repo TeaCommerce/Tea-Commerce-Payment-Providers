@@ -118,7 +118,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "testmode" ) && settings[ "testmode" ] == "1" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/quick-pay-callback-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         string md5CheckValue = string.Empty;

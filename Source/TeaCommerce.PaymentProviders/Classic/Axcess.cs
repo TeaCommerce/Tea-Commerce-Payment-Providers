@@ -127,7 +127,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings[ "TRANSACTION.MODE" ] != "LIVE" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/axcess-callback-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         HttpContext.Current.Response.Clear();

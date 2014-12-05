@@ -100,7 +100,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "testing" ) && settings[ "testing" ] == "1" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/authorize-net-get-cart-number-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         string responseCode = request.Form[ "x_response_code" ];
@@ -141,7 +141,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "testing" ) && settings[ "testing" ] == "1" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/authorize-net-callback-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         string responseCode = request.Form[ "x_response_code" ];

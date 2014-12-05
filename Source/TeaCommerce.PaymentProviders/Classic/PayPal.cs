@@ -137,7 +137,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/paypal-callback-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         //Verify callback

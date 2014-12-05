@@ -129,7 +129,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "testmode" ) && settings[ "testmode" ] == "1" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/wannafind-callback-data.txt" ), logGetData: true );
+          LogRequest( request, logGetData: true );
         }
 
         string cartNumber = request.QueryString[ "orderid" ];

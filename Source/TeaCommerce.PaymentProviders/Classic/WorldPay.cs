@@ -134,7 +134,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "100" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/world-pay-get-cart-number-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         string paymentResponsePassword = settings[ "paymentResponsePassword" ];
@@ -163,7 +163,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "100" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/world-pay-callback-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         string paymentResponsePassword = settings[ "paymentResponsePassword" ];

@@ -223,7 +223,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "test_mode" ) && settings[ "test_mode" ] == "true" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/payer-callback-data.txt" ), logGetData: true );
+          LogRequest( request, logGetData: true );
         }
 
         //Check for payer IP addresses

@@ -206,7 +206,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "demo" ) && settings[ "demo" ] == "Y" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/2checkout-callback-data.txt" ), logGetData: true );
+          LogRequest( request, logGetData: true );
         }
 
         string accountNumber = request.QueryString[ "sid" ];
