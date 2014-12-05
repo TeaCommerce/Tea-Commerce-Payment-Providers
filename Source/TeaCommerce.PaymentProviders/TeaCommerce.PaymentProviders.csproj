@@ -36,18 +36,17 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Klarna.Checkout">
-      <HintPath>..\..\Lib\Klarna\Klarna.Checkout.dll</HintPath>
+      <HintPath>..\Lib\Klarna\Klarna.Checkout.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Lib\Tea Commerce\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\Lib\Tea Commerce\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="Paynova.Api.Client">
       <HintPath>..\packages\Paynova.Api.Client.1.0.0\lib\net35\Paynova.Api.Client.dll</HintPath>
     </Reference>
     <Reference Include="Stripe.net">
-      <HintPath>..\..\Lib\StripeDotNet\Stripe.net.dll</HintPath>
+      <HintPath>..\Lib\StripeDotNet\Stripe.net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -60,12 +59,10 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Xml" />
     <Reference Include="TeaCommerce.Api">
-      <HintPath>..\..\Lib\Tea Commerce\TeaCommerce.Api.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>..\Lib\Tea Commerce\TeaCommerce.Api.dll</HintPath>
     </Reference>
     <Reference Include="TeaCommerce.Api.Web">
-      <HintPath>..\..\Lib\Tea Commerce\TeaCommerce.Api.Web.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>..\Lib\Tea Commerce\TeaCommerce.Api.Web.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
