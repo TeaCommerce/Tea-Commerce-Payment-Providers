@@ -33,6 +33,8 @@ namespace TeaCommerce.PaymentProviders.Classic {
         defaultSettings[ "USER" ] = string.Empty;
         defaultSettings[ "PWD" ] = string.Empty;
         defaultSettings[ "SIGNATURE" ] = string.Empty;
+        defaultSettings[ "totalSku" ] = "0001";
+        defaultSettings[ "totalName" ] = "Total";
         defaultSettings[ "isSandbox" ] = "1";
         return defaultSettings;
       }
@@ -66,48 +68,11 @@ namespace TeaCommerce.PaymentProviders.Classic {
       htmlForm.InputFields[ "cancel_return" ] = teaCommerceCancelUrl;
       htmlForm.InputFields[ "notify_url" ] = teaCommerceCallBackUrl;
 
-      #region Order line information + shipping + payment
-
-      bool onlyOrderLineDiscounts = !order.SubtotalPrice.Discounts.Any() && !order.TotalPrice.Discounts.Any() && !order.GiftCards.Any();
-
-      if ( !onlyOrderLineDiscounts ) {
-        htmlForm.InputFields[ "tax_cart" ] = order.TotalPrice.Value.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
-        htmlForm.InputFields[ "discount_amount_cart" ] = ( order.TotalPrice.TotalDiscount.Value + order.TotalPrice.GiftCardsAmount.Value ).ToString( "0.00", CultureInfo.InvariantCulture );
-      }
-      
-      int itemIndex = 1;
-      foreach ( OrderLine orderLine in order.OrderLines ) {
-        htmlForm.InputFields[ "item_name_" + itemIndex ] = orderLine.Name;
-        htmlForm.InputFields[ "item_number_" + itemIndex ] = orderLine.Sku;
-        htmlForm.InputFields[ "amount_" + itemIndex ] = ( onlyOrderLineDiscounts ? orderLine.UnitPrice.Value : orderLine.UnitPrice.WithoutDiscounts ).Value.ToString( "0.00", CultureInfo.InvariantCulture );
-        htmlForm.InputFields[ "tax_" + itemIndex ] = ( onlyOrderLineDiscounts ? orderLine.UnitPrice.Value : orderLine.UnitPrice.WithoutDiscounts ).Vat.ToString( "0.00", CultureInfo.InvariantCulture );
-        htmlForm.InputFields[ "quantity_" + itemIndex ] = orderLine.Quantity.ToString( "0", CultureInfo.InvariantCulture );
-
-        itemIndex++;
-      }
-
-      if ( order.ShipmentInformation.ShippingMethodId != null ) {
-        ShippingMethod shippingMethod = ShippingMethodService.Instance.Get( order.StoreId, order.ShipmentInformation.ShippingMethodId.Value );
-        htmlForm.InputFields[ "item_name_" + itemIndex ] = shippingMethod.Name;
-        if ( !string.IsNullOrEmpty( shippingMethod.Sku ) ) {
-          htmlForm.InputFields[ "item_number_" + itemIndex ] = shippingMethod.Sku;
-        }
-        htmlForm.InputFields[ "amount_" + itemIndex ] = ( onlyOrderLineDiscounts ? order.ShipmentInformation.TotalPrice.Value : order.ShipmentInformation.TotalPrice.WithoutDiscounts ).Value.ToString( "0.00", CultureInfo.InvariantCulture );
-        htmlForm.InputFields[ "tax_" + itemIndex ] = ( onlyOrderLineDiscounts ? order.ShipmentInformation.TotalPrice.Value : order.ShipmentInformation.TotalPrice.WithoutDiscounts ).Vat.ToString( "0.00", CultureInfo.InvariantCulture );
-        itemIndex++;
-      }
-
-      if ( order.PaymentInformation.PaymentMethodId != null ) {
-        PaymentMethod paymentMethod = PaymentMethodService.Instance.Get( order.StoreId, order.PaymentInformation.PaymentMethodId.Value );
-        htmlForm.InputFields[ "item_name_" + itemIndex ] = paymentMethod.Name;
-        if ( !string.IsNullOrEmpty( paymentMethod.Sku ) ) {
-          htmlForm.InputFields[ "item_number_" + itemIndex ] = paymentMethod.Sku;
-        }
-        htmlForm.InputFields[ "amount_" + itemIndex ] = ( onlyOrderLineDiscounts ? order.PaymentInformation.TotalPrice.Value : order.PaymentInformation.TotalPrice.WithoutDiscounts ).Value.ToString( "0.00", CultureInfo.InvariantCulture );
-        htmlForm.InputFields[ "tax_" + itemIndex ] = ( onlyOrderLineDiscounts ? order.PaymentInformation.TotalPrice.Value : order.PaymentInformation.TotalPrice.WithoutDiscounts ).Vat.ToString( "0.00", CultureInfo.InvariantCulture );
-      }
-
-      #endregion
+      htmlForm.InputFields[ "item_name_1" ] = settings.ContainsKey( "totalName" ) ? settings[ "totalName" ] : "Total";
+      htmlForm.InputFields[ "item_number_1" ] = settings.ContainsKey( "totalSku" ) ? settings[ "totalSku" ] : "0001";
+      htmlForm.InputFields[ "amount_1" ] = order.TotalPrice.Value.Value.ToString( "0.00", CultureInfo.InvariantCulture );
+      htmlForm.InputFields[ "tax_1" ] = order.TotalPrice.Value.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
+      htmlForm.InputFields[ "quantity_1" ] = 1M.ToString( "0", CultureInfo.InvariantCulture );
 
       return htmlForm;
     }
@@ -137,7 +102,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/paypal-callback-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         //Verify callback

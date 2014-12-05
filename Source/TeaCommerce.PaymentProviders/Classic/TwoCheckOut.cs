@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Web;
-using System.Web.Hosting;
 using TeaCommerce.Api.Common;
+using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
-using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders.Classic {
 
@@ -138,49 +137,6 @@ namespace TeaCommerce.PaymentProviders.Classic {
       //fixed
       htmlForm.InputFields[ "id_type" ] = "1";
 
-      int itemIndex = 1;
-      bool onlyOrderLineDiscounts = !order.SubtotalPrice.Discounts.Any() && !order.TotalPrice.Discounts.Any() && !order.GiftCards.Any();
-      //Lines are added in reverse order of the UI
-
-      if ( onlyOrderLineDiscounts ) {
-        //Payment fee
-        if ( order.PaymentInformation.PaymentMethodId != null ) {
-          PaymentMethod paymentMethod = PaymentMethodService.Instance.Get( order.StoreId, order.PaymentInformation.PaymentMethodId.Value );
-          htmlForm.InputFields[ "c_prod_" + itemIndex ] = paymentMethod.Sku + ",1";
-          htmlForm.InputFields[ "c_name_" + itemIndex ] = paymentMethod.Name.Truncate( 128 );
-          htmlForm.InputFields[ "c_description_" + itemIndex ] = string.Empty;
-          htmlForm.InputFields[ "c_price_" + itemIndex ] = order.PaymentInformation.TotalPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
-          itemIndex++;
-        }
-
-        //Shipping fee
-        if ( order.ShipmentInformation.ShippingMethodId != null ) {
-          ShippingMethod shippingMethod = ShippingMethodService.Instance.Get( order.StoreId, order.ShipmentInformation.ShippingMethodId.Value );
-          htmlForm.InputFields[ "c_prod_" + itemIndex ] = shippingMethod.Sku + ",1";
-          htmlForm.InputFields[ "c_name_" + itemIndex ] = shippingMethod.Name.Truncate( 128 );
-          htmlForm.InputFields[ "c_description_" + itemIndex ] = string.Empty;
-          htmlForm.InputFields[ "c_price_" + itemIndex ] = order.ShipmentInformation.TotalPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
-          itemIndex++;
-        }
-
-        //Order line information
-        for ( int i = order.OrderLines.Count - 1; i >= 0; i-- ) {
-          OrderLine orderLine = order.OrderLines[ i ];
-
-          htmlForm.InputFields[ "c_prod_" + itemIndex ] = orderLine.Sku + "," + orderLine.Quantity;
-          htmlForm.InputFields[ "c_name_" + itemIndex ] = orderLine.Name.Truncate( 128 );
-          htmlForm.InputFields[ "c_description_" + itemIndex ] = string.Empty;
-          htmlForm.InputFields[ "c_price_" + itemIndex ] = orderLine.TotalPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
-
-          itemIndex++;
-        }
-      } else {
-        htmlForm.InputFields[ "c_prod_" + itemIndex ] = settings.ContainsKey( "totalSku" ) ? settings[ "totalSku" ] : "0001" + ",1";
-        htmlForm.InputFields[ "c_name_" + itemIndex ] = ( settings.ContainsKey( "totalText" ) ? settings[ "totalText" ] : "Total" ).Truncate( 128 );
-        htmlForm.InputFields[ "c_description_" + itemIndex ] = string.Empty;
-        htmlForm.InputFields[ "c_price_" + itemIndex ] = order.TotalPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
-      }
-
       return htmlForm;
     }
 
@@ -206,7 +162,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "demo" ) && settings[ "demo" ] == "Y" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/2checkout-callback-data.txt" ), logGetData: true );
+          LogRequest( request, logGetData: true );
         }
 
         string accountNumber = request.QueryString[ "sid" ];

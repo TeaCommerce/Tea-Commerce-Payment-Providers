@@ -1,12 +1,11 @@
-﻿using System.Linq;
-using Stripe;
+﻿using Stripe;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Web;
-using System.Web.Hosting;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
@@ -86,7 +85,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
 
         // If in test mode, write out the form data to a text file
         if ( settings.ContainsKey( "mode" ) && settings[ "mode" ] == "test" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/stripe-get-cart-number-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         StripeEvent stripeEvent = GetStripeEvent( request );
@@ -118,7 +117,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
 
         // If in test mode, write out the form data to a text file
         if ( settings.ContainsKey( "mode" ) && settings[ "mode" ] == "test" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/stripe-callback-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         StripeChargeCreateOptions chargeOptions = new StripeChargeCreateOptions {
@@ -177,7 +176,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
 
         // If in test mode, write out the form data to a text file
         if ( settings.ContainsKey( "mode" ) && settings[ "mode" ] == "test" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/stripe-request-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         //Stripe supports webhooks

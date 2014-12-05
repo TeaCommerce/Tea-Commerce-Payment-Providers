@@ -5,7 +5,6 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web;
-using System.Web.Hosting;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
@@ -82,7 +81,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
         settings.MustNotBeNull( "settings" );
 
         if ( settings.ContainsKey( "mode" ) && settings[ "mode" ] == "test" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/cyber-source-callback-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         string calculatedSignature = CreateSignature( request.Form[ "signed_field_names" ].Split( new[] { ',' }, StringSplitOptions.RemoveEmptyEntries ).ToDictionary( k => k, k => request.Form[ k ] ), settings );
@@ -143,7 +142,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
 
         // If in test mode, write out the form data to a text file
         if ( settings.ContainsKey( "mode" ) && settings[ "mode" ] == "test" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/cyber-source-request-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         //Generate input fields for the JavaScript post of the inline form

@@ -5,14 +5,13 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web;
-using System.Web.Hosting;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using TeaCommerce.Api.Common;
+using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
-using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders.Classic {
 
@@ -108,7 +107,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "TESTMODE" ) && settings[ "TESTMODE" ] == "1" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/ogone-callback-data.txt" ), logGetData: true );
+          LogRequest( request, logGetData: true );
         }
 
         Dictionary<string, string> inputFields = new Dictionary<string, string>();

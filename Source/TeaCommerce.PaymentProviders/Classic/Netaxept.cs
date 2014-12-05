@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Web;
-using System.Web.Hosting;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using TeaCommerce.Api.Common;
@@ -113,7 +112,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "testmode" ) && settings[ "testmode" ] == "1" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/netaxcept-callback-data.txt" ), logGetData: true );
+          LogRequest( request, logGetData: true );
         }
 
         string responseCode = request.QueryString[ "responseCode" ];

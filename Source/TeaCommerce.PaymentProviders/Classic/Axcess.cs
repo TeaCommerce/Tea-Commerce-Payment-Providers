@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Web;
-using System.Web.Hosting;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
@@ -127,7 +126,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings[ "TRANSACTION.MODE" ] != "LIVE" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/axcess-callback-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         HttpContext.Current.Response.Clear();

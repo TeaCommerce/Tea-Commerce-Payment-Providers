@@ -6,7 +6,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
-using System.Web.Hosting;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
@@ -100,7 +99,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "testing" ) && settings[ "testing" ] == "1" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/authorize-net-get-cart-number-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         string responseCode = request.Form[ "x_response_code" ];
@@ -141,7 +140,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "testing" ) && settings[ "testing" ] == "1" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/authorize-net-callback-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         string responseCode = request.Form[ "x_response_code" ];

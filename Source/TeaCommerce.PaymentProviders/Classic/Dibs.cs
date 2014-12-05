@@ -5,7 +5,6 @@ using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Web;
-using System.Web.Hosting;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
@@ -125,7 +124,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "test" ) && settings[ "test" ] == "1" ) {
-          LogRequestToFile( request, HostingEnvironment.MapPath( "~/dibs-callback-data.txt" ), logPostData: true );
+          LogRequest( request, logPostData: true );
         }
 
         string transaction = request.Form[ "transact" ];
