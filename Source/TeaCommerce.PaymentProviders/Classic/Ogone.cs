@@ -5,14 +5,13 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web;
-using System.Web.Hosting;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using TeaCommerce.Api.Common;
+using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
-using TeaCommerce.Api.Infrastructure.Logging;
 
 namespace TeaCommerce.PaymentProviders.Classic {
 

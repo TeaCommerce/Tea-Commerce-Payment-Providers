@@ -5,7 +5,6 @@ using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Web;
-using System.Web.Hosting;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;

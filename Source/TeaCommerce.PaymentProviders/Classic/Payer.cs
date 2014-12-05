@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Web;
-using System.Web.Hosting;
 using System.Xml.Linq;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
@@ -28,6 +27,8 @@ namespace TeaCommerce.PaymentProviders.Classic {
         defaultSettings[ "payment_methods" ] = "auto";
         defaultSettings[ "md5Key1" ] = string.Empty;
         defaultSettings[ "md5Key2" ] = string.Empty;
+        defaultSettings[ "totalSku" ] = "0001";
+        defaultSettings[ "totalName" ] = "Total";
         defaultSettings[ "test_mode" ] = "true";
         return defaultSettings;
       }
@@ -85,74 +86,16 @@ namespace TeaCommerce.PaymentProviders.Classic {
         //new XElement( "options", server.HtmlEncode( string.Empty ) )
       ) );
 
-      //TODO: kast exception hvis der er rabat på nogle total priser
-      bool onlyOrderLineDiscounts = !order.SubtotalPrice.Discounts.Any() && !order.TotalPrice.Discounts.Any() && !order.GiftCards.Any();
-
       //Purchase
       XElement purchaseList = new XElement( "purchase_list" );
-      int lineCounter = 1;
-      foreach ( OrderLine orderLine in order.OrderLines ) {
-        purchaseList.Add( new XElement( "freeform_purchase",
-          new XElement( "line_number", lineCounter ),
-          new XElement( "description", server.HtmlEncode( orderLine.Name ) ),
-          new XElement( "item_number", server.HtmlEncode( orderLine.Sku ) ),
-          new XElement( "price_including_vat", server.HtmlEncode( ( onlyOrderLineDiscounts ? orderLine.UnitPrice.Value : orderLine.UnitPrice.WithoutDiscounts ).WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
-          new XElement( "vat_percentage", server.HtmlEncode( ( orderLine.VatRate * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
-          new XElement( "quantity", server.HtmlEncode( orderLine.Quantity.ToString( CultureInfo.InvariantCulture ) ) )
-        ) );
-        lineCounter++;
-      }
-
-      //Shipping fee
-      if ( order.ShipmentInformation.ShippingMethodId != null ) {
-        ShippingMethod shippingMethod = ShippingMethodService.Instance.Get( order.StoreId, order.ShipmentInformation.ShippingMethodId.Value );
-        purchaseList.Add( new XElement( "freeform_purchase",
-          new XElement( "line_number", lineCounter ),
-          new XElement( "description", server.HtmlEncode( shippingMethod.Name ) ),
-          new XElement( "item_number", server.HtmlEncode( shippingMethod.Sku ) ),
-          new XElement( "price_including_vat", server.HtmlEncode( ( onlyOrderLineDiscounts ? order.ShipmentInformation.TotalPrice.Value : order.ShipmentInformation.TotalPrice.WithoutDiscounts ).WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
-          new XElement( "vat_percentage", server.HtmlEncode( ( order.ShipmentInformation.VatRate * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
-          new XElement( "quantity", "1" )
-        ) );
-        lineCounter++;
-      }
-
-      //Payment fee
-      if ( order.PaymentInformation.PaymentMethodId != null ) {
-        PaymentMethod paymentMethod = PaymentMethodService.Instance.Get( order.StoreId, order.PaymentInformation.PaymentMethodId.Value );
-        purchaseList.Add( new XElement( "freeform_purchase",
-          new XElement( "line_number", lineCounter ),
-          new XElement( "description", server.HtmlEncode( paymentMethod.Name ) ),
-          new XElement( "item_number", server.HtmlEncode( paymentMethod.Sku ) ),
-          new XElement( "price_including_vat", server.HtmlEncode( ( onlyOrderLineDiscounts ? order.PaymentInformation.TotalPrice.Value : order.PaymentInformation.TotalPrice.WithoutDiscounts ).WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
-          new XElement( "vat_percentage", server.HtmlEncode( ( order.PaymentInformation.VatRate * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
-          new XElement( "quantity", "1" )
-        ) );
-        lineCounter++;
-      }
-
-      if ( order.SubtotalPrice.Discounts.Any() || order.TotalPrice.Discounts.Any() ) {
-        purchaseList.Add( new XElement( "freeform_purchase",
-          new XElement( "line_number", lineCounter ),
-          new XElement( "description", server.HtmlEncode( settings.ContainsKey( "discountName" ) ? settings[ "discountName" ] : "Rabatt" ) ),
-          new XElement( "item_number", server.HtmlEncode( settings.ContainsKey( "discountSku" ) ? settings[ "discountSku" ] : "0001" ) ),
-          new XElement( "price_including_vat", server.HtmlEncode( ( -order.TotalPrice.TotalDiscount.WithVat ).ToString( CultureInfo.InvariantCulture ) ) ),
-          new XElement( "vat_percentage", server.HtmlEncode( ( ( -order.TotalPrice.TotalDiscount.Vat / -order.TotalPrice.TotalDiscount.Value ) * 100M ).ToString( CultureInfo.InvariantCulture ) ) ),
-          new XElement( "quantity", "1" )
-        ) );
-        lineCounter++;
-      }
-
-      if ( order.GiftCards.Any() ) {
-        purchaseList.Add( new XElement( "freeform_purchase",
-          new XElement( "line_number", lineCounter ),
-          new XElement( "description", server.HtmlEncode( settings.ContainsKey( "giftCardName" ) ? settings[ "giftCardName" ] : "Gåvokort" ) ),
-          new XElement( "item_number", server.HtmlEncode( settings.ContainsKey( "giftCardSku" ) ? settings[ "giftCardSku" ] : "0002" ) ),
-          new XElement( "price_including_vat", server.HtmlEncode( ( -order.TotalPrice.GiftCardsAmount.Value ).ToString( CultureInfo.InvariantCulture ) ) ),
-          new XElement( "vat_percentage", server.HtmlEncode( ( 0M ).ToString( CultureInfo.InvariantCulture ) ) ),
-          new XElement( "quantity", "1" )
-        ) );
-      }
+      purchaseList.Add( new XElement( "freeform_purchase",
+        new XElement( "line_number", 1 ),
+        new XElement( "description", server.HtmlEncode( settings.ContainsKey( "totalName" ) ? settings[ "totalName" ] : "Total" ) ),
+        new XElement( "item_number", server.HtmlEncode( settings.ContainsKey( "totalSku" ) ? settings[ "totalSku" ] : "0001" ) ),
+        new XElement( "price_including_vat", server.HtmlEncode( order.TotalPrice.Value.WithVat.ToString( CultureInfo.InvariantCulture ) ) ),
+        new XElement( "vat_percentage", server.HtmlEncode( 0M.ToString( CultureInfo.InvariantCulture ) ) ),
+        new XElement( "quantity", server.HtmlEncode( 1M.ToString( CultureInfo.InvariantCulture ) ) )
+      ) );
 
       //Check that the Iso code exists
       Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );

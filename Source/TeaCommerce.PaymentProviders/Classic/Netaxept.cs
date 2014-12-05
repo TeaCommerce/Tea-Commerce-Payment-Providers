@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Web;
-using System.Web.Hosting;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using TeaCommerce.Api.Common;

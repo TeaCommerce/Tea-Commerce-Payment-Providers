@@ -1,22 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Net;
-using System.Web;
-using System.Web.Hosting;
-using Paynova.Api.Client;
+﻿using Paynova.Api.Client;
 using Paynova.Api.Client.Model;
 using Paynova.Api.Client.Requests;
 using Paynova.Api.Client.Responses;
 using Paynova.Api.Client.Security;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Web;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 using PaynovaPaymentMethod = Paynova.Api.Client.Model.PaymentMethod;
-using TeaCommercePaymentMethod = TeaCommerce.Api.Models.PaymentMethod;
 
 namespace TeaCommerce.PaymentProviders.Classic {
 
@@ -39,7 +36,6 @@ namespace TeaCommerce.PaymentProviders.Classic {
         defaultSettings[ "paymentMethods" ] = "";
         defaultSettings[ "secretKey" ] = "";
         defaultSettings[ "apiPassword" ] = "";
-        defaultSettings[ "unitMeasure" ] = "pcs";
         defaultSettings[ "testMode" ] = "1";
         return defaultSettings;
       }
@@ -49,7 +45,6 @@ namespace TeaCommerce.PaymentProviders.Classic {
       order.MustNotBeNull( "order" );
       settings.MustNotBeNull( "settings" );
       settings.MustContainKey( "customerLanguageCode", "settings" );
-      settings.MustContainKey( "unitMeasure", "settings" );
       settings.MustContainKey( "testMode", "settings" );
 
       PaymentHtmlForm htmlForm = new PaymentHtmlForm();
@@ -62,32 +57,14 @@ namespace TeaCommerce.PaymentProviders.Classic {
       }
       try {
         //Create order request
-        CreateOrderRequest createOrderRequest = new CreateOrderRequest( order.CartNumber, currency.IsoCode, order.TotalPrice.Value.WithVat );
-
-        //Add line items
-        bool onlyOrderLineDiscounts = !order.SubtotalPrice.Discounts.Any() && !order.TotalPrice.Discounts.Any() && !order.GiftCards.Any();
-
-        if ( onlyOrderLineDiscounts ) {
-          string unitMeasure = settings[ "unitMeasure" ];
-          foreach ( OrderLine orderLine in order.OrderLines ) {
-            createOrderRequest.AddLineItem( new LineItem( orderLine.Id.ToString( CultureInfo.InvariantCulture ), orderLine.Sku, orderLine.Name, unitMeasure, orderLine.VatRate.Value, orderLine.Quantity, orderLine.UnitPrice.Value.Value, orderLine.TotalPrice.Value.WithVat, orderLine.TotalPrice.Value.Vat ) );
-          }
-
-          if ( order.ShipmentInformation.ShippingMethodId != null && order.ShipmentInformation.TotalPrice.Value.Value > 0M ) {
-            ShippingMethod shippingMethod = ShippingMethodService.Instance.Get( order.StoreId, order.ShipmentInformation.ShippingMethodId.Value );
-            createOrderRequest.AddLineItem( new LineItem( "shipping_" + shippingMethod.Id, shippingMethod.Sku, shippingMethod.Name, unitMeasure, order.ShipmentInformation.VatRate.Value, 1M, order.ShipmentInformation.TotalPrice.Value.Value, order.ShipmentInformation.TotalPrice.Value.WithVat, order.ShipmentInformation.TotalPrice.Value.Vat ) );
-          }
-
-          if ( order.PaymentInformation.PaymentMethodId != null && order.PaymentInformation.TotalPrice.Value.Value > 0M ) {
-            TeaCommercePaymentMethod paymentMethod = PaymentMethodService.Instance.Get( order.StoreId, order.PaymentInformation.PaymentMethodId.Value );
-            createOrderRequest.AddLineItem( new LineItem( "payment_" + paymentMethod.Id, paymentMethod.Sku, paymentMethod.Name, unitMeasure, order.PaymentInformation.VatRate.Value, 1M, order.PaymentInformation.TotalPrice.Value.Value, order.PaymentInformation.TotalPrice.Value.WithVat, order.PaymentInformation.TotalPrice.Value.Vat ) );
-          }
-        }
+        CreateOrderRequest createOrderRequest = new CreateOrderRequest( order.CartNumber, currency.IsoCode, order.TotalPrice.Value.WithVat ) {
+          Customer = new Customer(),
+          BillTo = new NameAndAddress(),
+          ShipTo = new NameAndAddress()
+        };
 
         #region Customer information
-        createOrderRequest.Customer = new Customer();
-        createOrderRequest.BillTo = new NameAndAddress();
-        createOrderRequest.ShipTo = new NameAndAddress();
+
         createOrderRequest.Customer.EmailAddress = order.PaymentInformation.Email;
         createOrderRequest.Customer.Name.CompanyName = createOrderRequest.BillTo.Name.CompanyName = order.Properties[ settings.ContainsKey( "companyPropertyAlias" ) && !string.IsNullOrEmpty( settings[ "companyPropertyAlias" ] ) ? settings[ "companyPropertyAlias" ] : "company" ];
         createOrderRequest.Customer.Name.Title = createOrderRequest.BillTo.Name.Title = order.Properties[ settings.ContainsKey( "titlePropertyAlias" ) && !string.IsNullOrEmpty( settings[ "titlePropertyAlias" ] ) ? settings[ "titlePropertyAlias" ] : "title" ];
