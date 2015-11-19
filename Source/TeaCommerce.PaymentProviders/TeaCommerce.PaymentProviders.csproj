@@ -73,6 +73,7 @@
     </Compile>
     <Compile Include="Classic\Axcess.cs" />
     <Compile Include="Classic\Paynova.cs" />
+    <Compile Include="Classic\QuickPay.cs" />
     <Compile Include="Inline\Klarna.cs" />
     <Compile Include="Inline\CyberSource.cs" />
     <Compile Include="Classic\PaymentSense.cs" />
@@ -86,7 +87,7 @@
     <Compile Include="Classic\PayEx.cs" />
     <Compile Include="Classic\PayPal.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Classic\QuickPay.cs" />
+    <Compile Include="Classic\QuickPay7.cs" />
     <Compile Include="Classic\SagePay.cs" />
     <Compile Include="Service References\ePayService\Reference.cs">
       <AutoGen>True</AutoGen>
