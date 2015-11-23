@@ -31,6 +31,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         defaultSettings[ "accepturl" ] = string.Empty;
         defaultSettings[ "declineurl" ] = string.Empty;
         defaultSettings[ "cardtype" ] = string.Empty;
+        defaultSettings[ "paytype" ] = "creditcard";
         defaultSettings[ "md5AuthSecret" ] = string.Empty;
         defaultSettings[ "md5CallbackSecret" ] = string.Empty;
         defaultSettings[ "apiUser" ] = string.Empty;
@@ -77,8 +78,10 @@ namespace TeaCommerce.PaymentProviders.Classic {
       //authtype
       htmlForm.InputFields[ "authtype" ] = "auth";
 
-      //paytype
-      htmlForm.InputFields[ "paytype" ] = "creditcard";
+      //paytype - legacy
+      if ( !settings.ContainsKey( "paytype" ) ) {
+        htmlForm.InputFields[ "paytype" ] = "creditcard";
+      }
 
       //cardtype
       string cardType = string.Empty;
@@ -266,6 +269,8 @@ namespace TeaCommerce.PaymentProviders.Classic {
           return settingsKey + "<br/><small>e.g. /cancel/</small>";
         case "cardtype":
           return settingsKey + "<br/><small>e.g. VISA,MC</small>";
+        case "paytype":
+          return settingsKey + "<br/><small>creditcard or 3dsecure</small>";
         case "testmode":
           return settingsKey + "<br/><small>1 = true; 0 = false</small>";
         default:
