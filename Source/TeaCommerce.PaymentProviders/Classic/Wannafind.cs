@@ -31,7 +31,6 @@ namespace TeaCommerce.PaymentProviders.Classic {
         defaultSettings[ "accepturl" ] = string.Empty;
         defaultSettings[ "declineurl" ] = string.Empty;
         defaultSettings[ "cardtype" ] = string.Empty;
-        defaultSettings[ "paytype" ] = "creditcard";
         defaultSettings[ "md5AuthSecret" ] = string.Empty;
         defaultSettings[ "md5CallbackSecret" ] = string.Empty;
         defaultSettings[ "apiUser" ] = string.Empty;
