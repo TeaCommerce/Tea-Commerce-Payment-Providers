@@ -196,16 +196,15 @@ namespace TeaCommerce.PaymentProviders.Inline {
 
           Dictionary<string, object> data = new Dictionary<string, object> { { "cart", new Dictionary<string, object> { { "items", cartItems } } } };
           string klarnaLocation = order.Properties[ "klarnaLocation" ];
-          string merchantTermsUri = settings["merchant.terms_uri"];
+          string merchantTermsUri = settings[ "merchant.terms_uri" ];
 
-          if (!merchantTermsUri.StartsWith("http"))
-          {
-            Uri baseUrl = new UriBuilder(HttpContext.Current.Request.Url.Scheme, HttpContext.Current.Request.Url.Host, HttpContext.Current.Request.Url.Port).Uri;
-            merchantTermsUri = new Uri(baseUrl, merchantTermsUri).AbsoluteUri;
+          if ( !merchantTermsUri.StartsWith( "http" ) ) {
+            Uri baseUrl = new UriBuilder( HttpContext.Current.Request.Url.Scheme, HttpContext.Current.Request.Url.Host, HttpContext.Current.Request.Url.Port ).Uri;
+            merchantTermsUri = new Uri( baseUrl, merchantTermsUri ).AbsoluteUri;
           }
 
           //Merchant information
-          data["merchant"] = new Dictionary<string, object> {
+          data[ "merchant" ] = new Dictionary<string, object> {
               {"id", settings[ "merchant.id" ]},
               {"terms_uri", merchantTermsUri},
               {"checkout_uri", request.UrlReferrer.ToString()},
@@ -213,22 +212,21 @@ namespace TeaCommerce.PaymentProviders.Inline {
               {"push_uri", order.Properties[ "teaCommerceCallbackUrl" ]}
             };
 
-          data["merchant_reference"] = new Dictionary<string, object>() {
+          data[ "merchant_reference" ] = new Dictionary<string, object>() {
               {"orderid1", order.CartNumber}
             };
 
           //Combined data
-          Currency currency = CurrencyService.Instance.Get(order.StoreId, order.CurrencyId);
+          Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
 
           //If the currency is not a valid iso4217 currency then throw an error
-          if (!Iso4217CurrencyCodes.ContainsKey(currency.IsoCode))
-          {
-            throw new Exception("You must specify an ISO 4217 currency code for the " + currency.Name + " currency");
+          if ( !Iso4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
+            throw new Exception( "You must specify an ISO 4217 currency code for the " + currency.Name + " currency" );
           }
 
-          data["purchase_country"] = CountryService.Instance.Get(order.StoreId, order.PaymentInformation.CountryId).RegionCode;
-          data["purchase_currency"] = currency.IsoCode;
-          data["locale"] = settings["locale"];
+          data[ "purchase_country" ] = CountryService.Instance.Get( order.StoreId, order.PaymentInformation.CountryId ).RegionCode;
+          data[ "purchase_currency" ] = currency.IsoCode;
+          data[ "locale" ] = settings[ "locale" ];
 
           //Check if the order has a Klarna location URI property - then we try and update the order
           if ( !string.IsNullOrEmpty( klarnaLocation ) ) {
