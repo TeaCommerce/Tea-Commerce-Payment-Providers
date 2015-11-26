@@ -136,7 +136,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         string cartNumber = request.QueryString[ "orderid" ];
         string currency = request.QueryString[ "currency" ];
         string amount = request.QueryString[ "amount" ];
-        string cardType = settings.ContainsKey( "cardtype" ) ? settings[ "cardtype" ] : string.Empty;
+        string cardType = settings.ContainsKey( "paytype" ) && settings[ "paytype" ] == "3dsecure" ? TranslateCardTypeToId( request.QueryString[ "cardtype" ] ) : settings.ContainsKey( "cardtype" ) ? settings[ "cardtype" ] : "";
 
         string md5CheckValue = GenerateMD5Hash( cartNumber + currency + cardType + amount + settings[ "md5CallbackSecret" ] );
 
@@ -288,6 +288,45 @@ namespace TeaCommerce.PaymentProviders.Classic {
         Credentials = new NetworkCredential( settings[ "apiUser" ], settings[ "apiPassword" ] )
       };
       return paymentGateWayApi;
+    }
+
+    protected string TranslateCardTypeToId( string cardtype ) {
+      switch ( cardtype ) {
+        case "DK":
+          return "1";
+        case "V-DK":
+          return "2";
+        case "VISA(DK)":
+          return "3";
+        case "MC(DK)":
+          return "4";
+        case "MC":
+          return "7";
+        case "MSC(DK)":
+          return "8";
+        case "MSC":
+          return "9";
+        case "DINERS(DA)":
+          return "10";
+        case "DINERS":
+          return "11";
+        case "AMEX(DA)":
+          return "12";
+        case "AMEX":
+          return "13";
+        case "VISA":
+          return "17";
+        case "EDK":
+          return "6";
+        case "N/A":
+          return "5";
+        case "JCB":
+          return "16";
+        case "FBF":
+          return "18";
+      }
+
+      return "";
     }
 
     #endregion
