@@ -138,7 +138,9 @@ namespace TeaCommerce.PaymentProviders.Classic {
         inputFields[ "DeliveryPhone" ] = order.Properties[ settings[ "shipping_phonePropertyAlias" ] ].Truncate( 20 );
       }
 
-      inputFields[ "Apply3DSecure" ] = settings.ContainsKey( "Apply3DSecure" ) ? settings[ "Apply3DSecure" ] : "2";
+      if ( !settings.ContainsKey( "Apply3DSecure" ) ) {
+        inputFields[ "Apply3DSecure" ] = "2";
+      }
 
       IDictionary<string, string> responseFields = GetFields( MakePostRequest( GetMethodUrl( "PURCHASE", settings ), inputFields ) );
       string status = responseFields[ "Status" ];
