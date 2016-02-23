@@ -87,6 +87,18 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
       htmlForm.InputFields[ "language" ] = settings[ "language" ];
 
+      if ( settings.ContainsKey( "branding_id" ) ) {
+        htmlForm.InputFields[ "branding_id" ] = settings[ "branding_id" ];
+      }
+
+      if ( settings.ContainsKey( "google_analytics_tracking_id" ) ) {
+        htmlForm.InputFields[ "google_analytics_tracking_id" ] = settings[ "google_analytics_tracking_id" ];
+      }
+
+      if ( settings.ContainsKey( "google_analytics_client_id" ) ) {
+        htmlForm.InputFields[ "google_analytics_client_id" ] = settings[ "google_analytics_client_id" ];
+      }
+
       htmlForm.InputFields[ "checksum" ] = GetChecksum( htmlForm.InputFields, settings[ "windowApiKey" ] );
 
       return htmlForm;
@@ -259,8 +271,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
     protected ApiInfo MakeApiRequest( string transactionId, string apiKey, string operation, Dictionary<string, string> parameters, string method = "POST" ) {
       ApiInfo apiInfo = null;
 
-      string url = string.Format( "https://api.quickpay.net/payments/" + transactionId + ( !string.IsNullOrEmpty( operation ) ? "/" + operation : "" ) + "?synchronized&{0}",
-        string.Join( "&", parameters.Select( kvp => string.Format( "{0}={1}", kvp.Key, kvp.Value ) ) ) );
+      string url = string.Format( "https://api.quickpay.net/payments/" + transactionId + ( !string.IsNullOrEmpty( operation ) ? "/" + operation : "" ) + "?synchronized" );
 
       if ( !string.IsNullOrEmpty( url ) ) {
         HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create( url );
@@ -269,6 +280,15 @@ namespace TeaCommerce.PaymentProviders.Classic {
         webRequest.ContentType = "application/x-www-form-urlencoded";
         webRequest.Headers.Add( HttpRequestHeader.Authorization, string.Format( "Basic {0}", Convert.ToBase64String( Encoding.ASCII.GetBytes( ":" + apiKey ) ) ) );
         webRequest.Headers.Add( "Accept-Version", "v10" );
+
+        string postData = string.Join( "&", parameters.Select( kvp => string.Format( "{0}={1}", kvp.Key, kvp.Value ) ) );
+
+        byte[] data = Encoding.ASCII.GetBytes( postData );
+        webRequest.ContentLength = data.Length;
+
+        Stream requestStream = webRequest.GetRequestStream();
+        requestStream.Write( data, 0, data.Length );
+        requestStream.Close();
 
         using ( Stream responseStream = ( webRequest.GetResponse() ).GetResponseStream() ) {
           if ( responseStream != null ) {
