@@ -271,16 +271,20 @@ namespace TeaCommerce.PaymentProviders.Classic {
     protected ApiInfo MakeApiRequest( string transactionId, string apiKey, string operation, Dictionary<string, string> parameters, string method = "POST" ) {
       ApiInfo apiInfo = null;
 
-      string url = string.Format( "https://api.quickpay.net/payments/" + transactionId + ( !string.IsNullOrEmpty( operation ) ? "/" + operation : "" ) + "?synchronized" );
+      string url = string.Format( "https://api.quickpay.net/payments/" + transactionId + ( !string.IsNullOrEmpty( operation ) ? "/" + operation : "" ) );
 
-      if ( !string.IsNullOrEmpty( url ) ) {
-        HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create( url );
+      if ( method.ToLower() != "get" ) {
+        url += "?synchronized";
+      }
 
-        webRequest.Method = method;
-        webRequest.ContentType = "application/x-www-form-urlencoded";
-        webRequest.Headers.Add( HttpRequestHeader.Authorization, string.Format( "Basic {0}", Convert.ToBase64String( Encoding.ASCII.GetBytes( ":" + apiKey ) ) ) );
-        webRequest.Headers.Add( "Accept-Version", "v10" );
+      HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create( url );
 
+      webRequest.Method = method;
+      webRequest.ContentType = "application/x-www-form-urlencoded";
+      webRequest.Headers.Add( HttpRequestHeader.Authorization, string.Format( "Basic {0}", Convert.ToBase64String( Encoding.ASCII.GetBytes( ":" + apiKey ) ) ) );
+      webRequest.Headers.Add( "Accept-Version", "v10" );
+
+      if ( parameters.Any() ) {
         string postData = string.Join( "&", parameters.Select( kvp => string.Format( "{0}={1}", kvp.Key, kvp.Value ) ) );
 
         byte[] data = Encoding.ASCII.GetBytes( postData );
@@ -289,34 +293,37 @@ namespace TeaCommerce.PaymentProviders.Classic {
         Stream requestStream = webRequest.GetRequestStream();
         requestStream.Write( data, 0, data.Length );
         requestStream.Close();
+      }
 
-        using ( Stream responseStream = ( webRequest.GetResponse() ).GetResponseStream() ) {
-          if ( responseStream != null ) {
-            using ( StreamReader reader = new StreamReader( responseStream, Encoding.UTF8 ) ) {
-              string str = reader.ReadToEnd();
+      using ( Stream responseStream = ( webRequest.GetResponse() ).GetResponseStream() ) {
+        if ( responseStream != null ) {
+          using ( StreamReader reader = new StreamReader( responseStream, Encoding.UTF8 ) ) {
+            string str = reader.ReadToEnd();
 
-              Result result = JsonConvert.DeserializeObject<Result>( str );
+            Result result = JsonConvert.DeserializeObject<Result>( str );
 
-              Operation lastCompletedOperation = result.Operations.LastOrDefault( o => !o.Pending && o.QpStatusCode == "20000" );
+            Operation lastCompletedOperation = result.Operations.LastOrDefault( o => !o.Pending && o.QpStatusCode == "20000" );
 
-              PaymentState paymentState = PaymentState.Initialized;
+            PaymentState paymentState = PaymentState.Initialized;
 
-              if ( lastCompletedOperation != null ) {
-                switch ( lastCompletedOperation.Type ) {
-                  case "capture":
-                    paymentState = PaymentState.Captured;
-                    break;
-                  case "refund":
-                    paymentState = PaymentState.Refunded;
-                    break;
-                  case "cancel":
-                    paymentState = PaymentState.Cancelled;
-                    break;
-                }
+            if ( lastCompletedOperation != null ) {
+              switch ( lastCompletedOperation.Type ) {
+                case "authorize":
+                  paymentState = PaymentState.Authorized;
+                  break;
+                case "capture":
+                  paymentState = PaymentState.Captured;
+                  break;
+                case "refund":
+                  paymentState = PaymentState.Refunded;
+                  break;
+                case "cancel":
+                  paymentState = PaymentState.Cancelled;
+                  break;
               }
-
-              apiInfo = new ApiInfo( transactionId, paymentState );
             }
+
+            apiInfo = new ApiInfo( transactionId, paymentState );
           }
         }
       }
