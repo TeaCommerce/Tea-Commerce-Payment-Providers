@@ -87,7 +87,7 @@
     <Compile Include="Classic\PayEx.cs" />
     <Compile Include="Classic\PayPal.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Classic\QuickPay7.cs" />
+    <Compile Include="Classic\QuickPay10.cs" />
     <Compile Include="Classic\SagePay.cs" />
     <Compile Include="Service References\ePayService\Reference.cs">
       <AutoGen>True</AutoGen>
