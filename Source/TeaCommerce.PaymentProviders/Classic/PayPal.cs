@@ -70,8 +70,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
       htmlForm.InputFields[ "item_name_1" ] = settings.ContainsKey( "totalName" ) ? settings[ "totalName" ] : "Total";
       htmlForm.InputFields[ "item_number_1" ] = settings.ContainsKey( "totalSku" ) ? settings[ "totalSku" ] : "0001";
-      htmlForm.InputFields[ "amount_1" ] = order.TotalPrice.Value.Value.ToString( "0.00", CultureInfo.InvariantCulture );
-      htmlForm.InputFields[ "tax_1" ] = order.TotalPrice.Value.Vat.ToString( "0.00", CultureInfo.InvariantCulture );
+      htmlForm.InputFields[ "amount_1" ] = order.TotalPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
       htmlForm.InputFields[ "quantity_1" ] = 1M.ToString( "0", CultureInfo.InvariantCulture );
 
       return htmlForm;
