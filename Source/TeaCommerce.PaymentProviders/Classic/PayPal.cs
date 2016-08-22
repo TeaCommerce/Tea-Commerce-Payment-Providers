@@ -108,10 +108,29 @@ namespace TeaCommerce.PaymentProviders.Classic {
         string response = MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://www.sandbox.paypal.com/cgi-bin/webscr" : "https://www.paypal.com/cgi-bin/webscr", Encoding.ASCII.GetString( request.BinaryRead( request.ContentLength ) ) + "&cmd=_notify-validate" );
 
         if ( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ) {
-          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/paypal-callback-data-2.txt" ) ) ) ) {
-            writer.WriteLine( response );
-            writer.Flush();
-          }
+        	var serverRootPath = HostingEnvironment.MapPath("~/");
+        	var folderPath = Path.Combine(serverRootPath, "App_Data", "TeaCommerce", "PayPal");
+        	var filename = string.Format("paypal-callback-data-{0:yyyyMMddHHmmss}.txt", DateTime.UtcNow);
+        	var logPath = Path.Combine(folderPath, )
+        
+        	if (!Directory.Exists(folderPath))
+        	{
+        		Directory.CreateDirectory(folderPath);
+        	}
+        	try
+        	{
+        		LoggingService.Instance.Log(response);
+        		using (StreamWriter writer = new StreamWriter(File.Create(logPath)))
+        		{
+        			writer.WriteLine(response);
+        			writer.Flush();
+        		}
+        	}
+        	catch (Exception ex)
+        	{
+        		LoggingService.Instance.Log(ex, "Error writing to log file: " + logPath);
+        	}
+
         }
 
         if ( response == "VERIFIED" ) {
