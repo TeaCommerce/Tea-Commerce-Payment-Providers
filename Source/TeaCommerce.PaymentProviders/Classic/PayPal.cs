@@ -113,7 +113,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         	var serverRootPath = HostingEnvironment.MapPath("~/");
         	var folderPath = Path.Combine(serverRootPath, "App_Data", "TeaCommerce", "PayPal");
         	var filename = string.Format("paypal-callback-data-{0:yyyyMMddHHmmss}.txt", DateTime.UtcNow);
-        	var logPath = Path.Combine(folderPath, )
+            var logPath = Path.Combine(folderPath, filename);
         
         	if (!Directory.Exists(folderPath))
         	{
