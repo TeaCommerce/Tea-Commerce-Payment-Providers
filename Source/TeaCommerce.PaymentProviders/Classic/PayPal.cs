@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Web;
 using System.Web.Hosting;
@@ -105,13 +106,33 @@ namespace TeaCommerce.PaymentProviders.Classic {
         }
 
         //Verify callback
+        ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
         string response = MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://www.sandbox.paypal.com/cgi-bin/webscr" : "https://www.paypal.com/cgi-bin/webscr", Encoding.ASCII.GetString( request.BinaryRead( request.ContentLength ) ) + "&cmd=_notify-validate" );
 
         if ( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ) {
-          using ( StreamWriter writer = new StreamWriter( File.Create( HostingEnvironment.MapPath( "~/paypal-callback-data-2.txt" ) ) ) ) {
-            writer.WriteLine( response );
-            writer.Flush();
-          }
+        	var serverRootPath = HostingEnvironment.MapPath("~/");
+        	var folderPath = Path.Combine(serverRootPath, "App_Data", "TeaCommerce", "PayPal");
+        	var filename = string.Format("paypal-callback-data-{0:yyyyMMddHHmmss}.txt", DateTime.UtcNow);
+            var logPath = Path.Combine(folderPath, filename);
+        
+        	if (!Directory.Exists(folderPath))
+        	{
+        		Directory.CreateDirectory(folderPath);
+        	}
+        	try
+        	{
+        		LoggingService.Instance.Log(response);
+        		using (StreamWriter writer = new StreamWriter(File.Create(logPath)))
+        		{
+        			writer.WriteLine(response);
+        			writer.Flush();
+        		}
+        	}
+        	catch (Exception ex)
+        	{
+        		LoggingService.Instance.Log(ex, "Error writing to log file: " + logPath);
+        	}
+
         }
 
         if ( response == "VERIFIED" ) {
@@ -185,6 +206,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         inputFields.Add( "CURRENCYCODE", currency.IsoCode );
         inputFields.Add( "COMPLETETYPE", "Complete" );
 
+        ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
         IDictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://api-3t.sandbox.paypal.com/nvp" : "https://api-3t.paypal.com/nvp", inputFields ) );
         if ( responseKvp[ "ACK" ] == "Success" || responseKvp[ "ACK" ] == "SuccessWithWarning" ) {
           apiInfo = InternalGetStatus( order.OrderNumber, responseKvp[ "TRANSACTIONID" ], settings );
@@ -209,6 +231,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         inputFields.Add( "TRANSACTIONID", order.TransactionInformation.TransactionId );
 
+        ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
         IDictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://api-3t.sandbox.paypal.com/nvp" : "https://api-3t.paypal.com/nvp", inputFields ) );
         if ( responseKvp[ "ACK" ] == "Success" || responseKvp[ "ACK" ] == "SuccessWithWarning" ) {
           apiInfo = InternalGetStatus( order.OrderNumber, responseKvp[ "REFUNDTRANSACTIONID" ], settings );
@@ -233,6 +256,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         inputFields.Add( "AUTHORIZATIONID", order.TransactionInformation.TransactionId );
 
+        ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
         IDictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://api-3t.sandbox.paypal.com/nvp" : "https://api-3t.paypal.com/nvp", inputFields ) );
         if ( responseKvp[ "ACK" ] == "Success" || responseKvp[ "ACK" ] == "SuccessWithWarning" ) {
           apiInfo = InternalGetStatus( order.OrderNumber, responseKvp[ "AUTHORIZATIONID" ], settings );
@@ -270,7 +294,8 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
       inputFields.Add( "TRANSACTIONID", transactionId );
 
-      IDictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://api-3t.sandbox.paypal.com/nvp" : "https://api-3t.paypal.com/nvp", inputFields ) );
+     ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
+     IDictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://api-3t.sandbox.paypal.com/nvp" : "https://api-3t.paypal.com/nvp", inputFields ) );
       if ( responseKvp[ "ACK" ] == "Success" || responseKvp[ "ACK" ] == "SuccessWithWarning" ) {
 
         string paymentStatusResponse = responseKvp[ "PAYMENTSTATUS" ];
