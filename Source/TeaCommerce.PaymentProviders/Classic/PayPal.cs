@@ -218,6 +218,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         inputFields.Add( "CURRENCYCODE", currency.IsoCode );
         inputFields.Add( "COMPLETETYPE", "Complete" );
 
+        System.Net.ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
         IDictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://api-3t.sandbox.paypal.com/nvp" : "https://api-3t.paypal.com/nvp", inputFields ) );
         if ( responseKvp[ "ACK" ] == "Success" || responseKvp[ "ACK" ] == "SuccessWithWarning" ) {
           apiInfo = InternalGetStatus( order.OrderNumber, responseKvp[ "TRANSACTIONID" ], settings );
@@ -242,6 +243,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         inputFields.Add( "TRANSACTIONID", order.TransactionInformation.TransactionId );
 
+        System.Net.ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
         IDictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://api-3t.sandbox.paypal.com/nvp" : "https://api-3t.paypal.com/nvp", inputFields ) );
         if ( responseKvp[ "ACK" ] == "Success" || responseKvp[ "ACK" ] == "SuccessWithWarning" ) {
           apiInfo = InternalGetStatus( order.OrderNumber, responseKvp[ "REFUNDTRANSACTIONID" ], settings );
@@ -266,6 +268,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         inputFields.Add( "AUTHORIZATIONID", order.TransactionInformation.TransactionId );
 
+        System.Net.ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
         IDictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://api-3t.sandbox.paypal.com/nvp" : "https://api-3t.paypal.com/nvp", inputFields ) );
         if ( responseKvp[ "ACK" ] == "Success" || responseKvp[ "ACK" ] == "SuccessWithWarning" ) {
           apiInfo = InternalGetStatus( order.OrderNumber, responseKvp[ "AUTHORIZATIONID" ], settings );
@@ -303,6 +306,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
       inputFields.Add( "TRANSACTIONID", transactionId );
 
+      System.Net.ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
       IDictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://api-3t.sandbox.paypal.com/nvp" : "https://api-3t.paypal.com/nvp", inputFields ) );
       if ( responseKvp[ "ACK" ] == "Success" || responseKvp[ "ACK" ] == "SuccessWithWarning" ) {
 
