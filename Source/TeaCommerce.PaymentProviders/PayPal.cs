@@ -181,6 +181,7 @@ namespace TeaCommerce.PaymentProviders {
       inputFields.Add( "CURRENCYCODE", order.CurrencyISOCode );
       inputFields.Add( "COMPLETETYPE", "Complete" );
 
+      System.Net.ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
       Dictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( APIPostUrl, inputFields ) );
       if ( responseKvp[ "ACK" ].Equals( "Success" ) || responseKvp[ "ACK" ].Equals( "SuccessWithWarning" ) ) {
         return InternalGetStatus( responseKvp[ "TRANSACTIONID" ], settings );
@@ -199,6 +200,7 @@ namespace TeaCommerce.PaymentProviders {
 
       inputFields.Add( "TRANSACTIONID", order.TransactionPaymentTransactionId );
 
+      System.Net.ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
       Dictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( APIPostUrl, inputFields ) );
       if ( responseKvp[ "ACK" ].Equals( "Success" ) || responseKvp[ "ACK" ].Equals( "SuccessWithWarning" ) ) {
         return InternalGetStatus( responseKvp[ "REFUNDTRANSACTIONID" ], settings );
@@ -217,6 +219,7 @@ namespace TeaCommerce.PaymentProviders {
 
       inputFields.Add( "AUTHORIZATIONID", order.TransactionPaymentTransactionId );
 
+      System.Net.ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
       Dictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( APIPostUrl, inputFields ) );
       if ( responseKvp[ "ACK" ].Equals( "Success" ) || responseKvp[ "ACK" ].Equals( "SuccessWithWarning" ) ) {
         return InternalGetStatus( responseKvp[ "AUTHORIZATIONID" ], settings );
@@ -235,6 +238,7 @@ namespace TeaCommerce.PaymentProviders {
 
       inputFields.Add( "TRANSACTIONID", transactionId );
 
+      System.Net.ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
       Dictionary<string, string> responseKvp = GetApiResponseKvp( MakePostRequest( APIPostUrl, inputFields ) );
       if ( responseKvp[ "ACK" ].Equals( "Success" ) || responseKvp[ "ACK" ].Equals( "SuccessWithWarning" ) ) {
 
