@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Web;
 using TeaCommerce.Data;
@@ -118,6 +119,7 @@ namespace TeaCommerce.PaymentProviders {
       isSandbox = settings[ "isSandbox" ] == "1";
 
       //Verify callback
+      System.Net.ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
       string response = MakePostRequest( FormPostUrl, Encoding.ASCII.GetString( request.BinaryRead( request.ContentLength ) ) + "&cmd=_notify-validate" );
 
       //using ( StreamWriter writer = new StreamWriter( File.Create( HttpContext.Current.Server.MapPath( "~/PayPalTestCallback2.txt" ) ) ) ) {
