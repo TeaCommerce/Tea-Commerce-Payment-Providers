@@ -162,7 +162,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "demo" ) && settings[ "demo" ] == "Y" ) {
-          LogRequest( request, logGetData: true );
+          LogRequest<TwoCheckOut>( request, logGetData: true );
         }
 
         string accountNumber = request.QueryString[ "sid" ];
@@ -183,10 +183,10 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
           callbackInfo = new CallbackInfo( totalAmount, transaction, PaymentState.Authorized );
         } else {
-          LoggingService.Instance.Log( "2CheckOut(" + order.CartNumber + ") - MD5Sum security check failed - key: " + key + " - calculatedMD5: " + calculatedMd5 );
+          LoggingService.Instance.Warn<TwoCheckOut>( "2CheckOut(" + order.CartNumber + ") - MD5Sum security check failed - key: " + key + " - calculatedMD5: " + calculatedMd5 );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "2CheckOut(" + order.CartNumber + ") - Process callback" );
+        LoggingService.Instance.Error<TwoCheckOut>( "2CheckOut(" + order.CartNumber + ") - Process callback", exp );
       }
 
       return callbackInfo;

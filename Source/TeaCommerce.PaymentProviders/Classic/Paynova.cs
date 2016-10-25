@@ -152,7 +152,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "testMode" ) && settings[ "testMode" ] == "1" ) {
-          LogRequest( request, logPostData: true );
+          LogRequest<Paynova>( request, logPostData: true );
         }
 
         PostbackDigest postbackDigest = new PostbackDigest( settings[ "secretKey" ] );
@@ -180,10 +180,10 @@ namespace TeaCommerce.PaymentProviders.Classic {
             callbackInfo = new CallbackInfo( amountAuthorized, transaction, paymentState.Value, paymentType, paymentIdentifier );
           }
         } else {
-          LoggingService.Instance.Log( "Paynova(" + order.CartNumber + ") - digest check failed" );
+          LoggingService.Instance.Warn<Paynova>( "Paynova(" + order.CartNumber + ") - digest check failed" );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Paynova(" + order.CartNumber + ") - Process callback" );
+        LoggingService.Instance.Error<Paynova>( "Paynova(" + order.CartNumber + ") - Process callback", exp );
       }
 
       return callbackInfo;
@@ -201,7 +201,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         apiInfo = new ApiInfo( response.TransactionId, PaymentState.Captured );
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Paynova(" + order.OrderNumber + ") - Capture payment" );
+        LoggingService.Instance.Error<Paynova>( "Paynova(" + order.OrderNumber + ") - Capture payment", exp );
       }
 
       return apiInfo;
@@ -219,7 +219,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         apiInfo = new ApiInfo( response.TransactionId, PaymentState.Refunded );
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Paynova(" + order.OrderNumber + ") - Refund payment" );
+        LoggingService.Instance.Error<Paynova>( "Paynova(" + order.OrderNumber + ") - Refund payment", exp );
       }
 
       return apiInfo;
@@ -237,7 +237,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Cancelled );
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Paynova(" + order.OrderNumber + ") - Refund payment" );
+        LoggingService.Instance.Error<Paynova>( "Paynova(" + order.OrderNumber + ") - Refund payment", exp );
       }
 
       return apiInfo;

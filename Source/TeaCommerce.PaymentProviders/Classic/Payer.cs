@@ -166,7 +166,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "test_mode" ) && settings[ "test_mode" ] == "true" ) {
-          LogRequest( request, logGetData: true );
+          LogRequest<Payer>( request, logGetData: true );
         }
 
         //Check for payer IP addresses
@@ -189,15 +189,15 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
             callbackInfo = new CallbackInfo( order.TotalPrice.Value.WithVat, transaction, paymentState, paymentType );
           } else {
-            LoggingService.Instance.Log( "Payer(" + order.CartNumber + ") - MD5Sum security check failed" );
+            LoggingService.Instance.Warn<Payer>( "Payer(" + order.CartNumber + ") - MD5Sum security check failed" );
           }
         } else {
-          LoggingService.Instance.Log( "Payer(" + order.CartNumber + ") - IP security check failed - IP: " + remoteServerIpAddress );
+          LoggingService.Instance.Warn<Payer>( "Payer(" + order.CartNumber + ") - IP security check failed - IP: " + remoteServerIpAddress );
         }
 
         HttpContext.Current.Response.Output.Write( "FALSE" );
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "QuickPay(" + order.CartNumber + ") - Process callback" );
+        LoggingService.Instance.Error<Payer>( "QuickPay(" + order.CartNumber + ") - Process callback", exp );
       }
 
       return callbackInfo;

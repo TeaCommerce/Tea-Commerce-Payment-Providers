@@ -150,16 +150,16 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
               callbackInfo = new CallbackInfo( amount, result.Id, PaymentState.Authorized, result.Metadata.Type, result.Metadata.Last4 );
             } else {
-              LoggingService.Instance.Log( "Quickpay10(" + order.CartNumber + ") - Error making API request - error code: " + lastAuthorize.QpStatusCode + " | error message: " + lastAuthorize.QpStatusMsg );
+              LoggingService.Instance.Warn<QuickPay10>( "Quickpay10(" + order.CartNumber + ") - Error making API request - error code: " + lastAuthorize.QpStatusCode + " | error message: " + lastAuthorize.QpStatusMsg );
             }
           } else {
-            LoggingService.Instance.Log( "QuickPay10(" + order.CartNumber + ") - No authorize found" );
+            LoggingService.Instance.Warn<QuickPay10>( "QuickPay10(" + order.CartNumber + ") - No authorize found" );
           }
         } else {
-          LoggingService.Instance.Log( "QuickPay10(" + order.CartNumber + ") - Checksum security check failed" );
+          LoggingService.Instance.Warn<QuickPay10>( "QuickPay10(" + order.CartNumber + ") - Checksum security check failed" );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "QuickPay10(" + order.CartNumber + ") - Process callback" );
+        LoggingService.Instance.Error<QuickPay10>( "QuickPay10(" + order.CartNumber + ") - Process callback", exp );
       }
 
       return callbackInfo;
@@ -177,7 +177,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         apiInfo = MakeApiRequest( order.TransactionInformation.TransactionId, settings[ "apiKey" ], "", parameters, "GET" );
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "QuickPay(" + order.OrderNumber + ") - Get status" );
+        LoggingService.Instance.Error<QuickPay10>( "QuickPay(" + order.OrderNumber + ") - Get status", exp );
       }
 
       return apiInfo;
@@ -197,7 +197,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         apiInfo = MakeApiRequest( order.TransactionInformation.TransactionId, settings[ "apiKey" ], "capture", parameters );
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "QuickPay(" + order.OrderNumber + ") - Capture payment" );
+        LoggingService.Instance.Error<QuickPay10>( "QuickPay(" + order.OrderNumber + ") - Capture payment", exp );
       }
 
       return apiInfo;
@@ -217,7 +217,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         apiInfo = MakeApiRequest( order.TransactionInformation.TransactionId, settings[ "apiKey" ], "refund", parameters );
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "QuickPay(" + order.OrderNumber + ") - Refund payment" );
+        LoggingService.Instance.Error<QuickPay10>( "QuickPay(" + order.OrderNumber + ") - Refund payment", exp );
       }
 
       return apiInfo;
@@ -235,7 +235,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         apiInfo = MakeApiRequest( order.TransactionInformation.TransactionId, settings[ "apiKey" ], "cancel", parameters );
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "QuickPay(" + order.OrderNumber + ") - Cancel payment" );
+        LoggingService.Instance.Error<QuickPay10>( "QuickPay(" + order.OrderNumber + ") - Cancel payment", exp );
       }
 
       return apiInfo;

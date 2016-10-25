@@ -81,7 +81,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
         settings.MustNotBeNull( "settings" );
 
         if ( settings.ContainsKey( "mode" ) && settings[ "mode" ] == "test" ) {
-          LogRequest( request, logPostData: true );
+          LogRequest<CyberSource>( request, logPostData: true );
         }
 
         string calculatedSignature = CreateSignature( request.Form[ "signed_field_names" ].Split( new[] { ',' }, StringSplitOptions.RemoveEmptyEntries ).ToDictionary( k => k, k => request.Form[ k ] ), settings );
@@ -110,10 +110,10 @@ namespace TeaCommerce.PaymentProviders.Inline {
           }
 
         } else {
-          LoggingService.Instance.Log( "CyberSource(" + order.CartNumber + ") - Signature security check failed" );
+          LoggingService.Instance.Warn<CyberSource>( "CyberSource(" + order.CartNumber + ") - Signature security check failed" );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "CyberSource(" + order.CartNumber + ") - ProcessCallback" );
+        LoggingService.Instance.Error<CyberSource>( "CyberSource(" + order.CartNumber + ") - ProcessCallback", exp );
       }
 
       return callbackInfo;
@@ -142,7 +142,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
 
         // If in test mode, write out the form data to a text file
         if ( settings.ContainsKey( "mode" ) && settings[ "mode" ] == "test" ) {
-          LogRequest( request, logPostData: true );
+          LogRequest<CyberSource>( request, logPostData: true );
         }
 
         //Generate input fields for the JavaScript post of the inline form
@@ -199,7 +199,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
         }
 
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "CyberSource(" + order.CartNumber + ") - ProcessRequest" );
+        LoggingService.Instance.Error<CyberSource>( "CyberSource(" + order.CartNumber + ") - ProcessRequest", exp );
       }
 
       return response;
