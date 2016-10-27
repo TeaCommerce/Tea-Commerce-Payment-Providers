@@ -99,7 +99,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "testing" ) && settings[ "testing" ] == "1" ) {
-          LogRequest( request, logPostData: true );
+          LogRequest<AuthorizeNet>( request, logPostData: true );
         }
 
         string responseCode = request.Form[ "x_response_code" ];
@@ -116,13 +116,13 @@ namespace TeaCommerce.PaymentProviders.Classic {
           if ( gatewayMd5Hash == calculatedMd5Hash ) {
             cartNumber = request.Form[ "x_invoice_num" ];
           } else {
-            LoggingService.Instance.Log( "Authorize.net - MD5Sum security check failed - " + gatewayMd5Hash + " - " + calculatedMd5Hash + " - " + settings[ "md5HashKey" ] );
+            LoggingService.Instance.Warn<AuthorizeNet>( "Authorize.net - MD5Sum security check failed - " + gatewayMd5Hash + " - " + calculatedMd5Hash + " - " + settings[ "md5HashKey" ] );
           }
         } else {
-          LoggingService.Instance.Log( "Authorize.net - Payment not approved: " + responseCode );
+          LoggingService.Instance.Warn<AuthorizeNet>( "Authorize.net - Payment not approved: " + responseCode );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Authorize.net - Get cart number" );
+        LoggingService.Instance.Error<AuthorizeNet>( "Authorize.net - Get cart number", exp );
       }
 
       return cartNumber;
@@ -140,7 +140,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "testing" ) && settings[ "testing" ] == "1" ) {
-          LogRequest( request, logPostData: true );
+          LogRequest<AuthorizeNet>( request, logPostData: true );
         }
 
         string responseCode = request.Form[ "x_response_code" ];
@@ -164,13 +164,13 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
             callbackInfo = new CallbackInfo( decimal.Parse( amount, CultureInfo.InvariantCulture ), transaction, paymentState, cardType, cardNumber );
           } else {
-            LoggingService.Instance.Log( "Authorize.net(" + order.CartNumber + ") - MD5Sum security check failed - " + gatewayMd5Hash + " - " + calculatedMd5Hash + " - " + settings[ "md5HashKey" ] );
+            LoggingService.Instance.Warn<AuthorizeNet>( "Authorize.net(" + order.CartNumber + ") - MD5Sum security check failed - " + gatewayMd5Hash + " - " + calculatedMd5Hash + " - " + settings[ "md5HashKey" ] );
           }
         } else {
-          LoggingService.Instance.Log( "Authorize.net(" + order.CartNumber + ") - Payment not approved: " + responseCode );
+          LoggingService.Instance.Warn<AuthorizeNet>( "Authorize.net(" + order.CartNumber + ") - Payment not approved: " + responseCode );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Authorize.net(" + order.CartNumber + ") - Process callback" );
+        LoggingService.Instance.Error<AuthorizeNet>( "Authorize.net(" + order.CartNumber + ") - Process callback", exp );
       }
 
       return callbackInfo;
@@ -209,11 +209,11 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
           apiInfo = new ApiInfo( result.transaction.transId, paymentState );
         } else {
-          LoggingService.Instance.Log( "Authorize.net(" + order.OrderNumber + ") - Error making API request - error code: " + result.messages[ 0 ].code + " | description: " + result.messages[ 0 ].text );
+          LoggingService.Instance.Warn<AuthorizeNet>( "Authorize.net(" + order.OrderNumber + ") - Error making API request - error code: " + result.messages[ 0 ].code + " | description: " + result.messages[ 0 ].text );
         }
 
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Authorize.net(" + order.OrderNumber + ") - Get status" );
+        LoggingService.Instance.Error<AuthorizeNet>( "Authorize.net(" + order.OrderNumber + ") - Get status", exp );
       }
 
       return apiInfo;

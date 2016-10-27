@@ -170,7 +170,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
           //Write data when testing
           if ( settings.ContainsKey( "Testing" ) && settings[ "Testing" ] == "1" ) {
-            LogRequest( request, logPostData: true );
+            LogRequest<PaymentSense>( request, logPostData: true );
           }
 
           List<string> keysToHash = new List<string>();
@@ -219,12 +219,12 @@ namespace TeaCommerce.PaymentProviders.Classic {
             }
           } else {
             string message = "PaymentSense(" + order.CartNumber + ") - Digest check failed - calculated: " + hashDigest + " PaymentSense: " + request.Form[ "HashDigest" ];
-            LoggingService.Instance.Log( message );
+            LoggingService.Instance.Warn<PaymentSense>( message );
             HttpContext.Current.Response.Write( "StatusCode=30&Message=" + message );
           }
         } catch ( Exception exp ) {
           string message = "PaymentSense(" + order.CartNumber + ") - Process callback failed";
-          LoggingService.Instance.Log( exp, message );
+          LoggingService.Instance.Error<PaymentSense>( message, exp );
           HttpContext.Current.Response.Write( "StatusCode=30&Message=" + message );
         }
       } else {

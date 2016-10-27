@@ -153,7 +153,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         htmlForm.Action = responseFields[ "NextURL" ];
       } else {
         htmlForm.Action = teaCommerceCancelUrl;
-        LoggingService.Instance.Log( "Sage Pay(" + order.CartNumber + ") - Generate html form error - status: " + status + " | status details: " + responseFields[ "StatusDetail" ] );
+        LoggingService.Instance.Warn<SagePay>( "Sage Pay(" + order.CartNumber + ") - Generate html form error - status: " + status + " | status details: " + responseFields[ "StatusDetail" ] );
       }
 
       return htmlForm;
@@ -184,7 +184,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         //Write data when testing
         if ( settings.ContainsKey( "testMode" ) && ( settings[ "testMode" ] == "SIMULATOR" || settings[ "testMode" ] == "TEST" ) ) {
-          LogRequest( request, logPostData: true );
+          LogRequest<SagePay>( request, logPostData: true );
         }
 
         string transaction = request.Form[ "VPSTxId" ];
@@ -234,7 +234,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
             inputFields[ "StatusDetail" ] = "OK";
 
           } else {
-            LoggingService.Instance.Log( "Sage Pay(" + order.CartNumber + ") - Error  in callback - status: " + status + " | status details: " + request.Form[ "StatusDetail" ] );
+            LoggingService.Instance.Warn<SagePay>( "Sage Pay(" + order.CartNumber + ") - Error  in callback - status: " + status + " | status details: " + request.Form[ "StatusDetail" ] );
 
             if ( status == "ERROR" )
               inputFields[ "Status" ] = "INVALID";
@@ -248,10 +248,10 @@ namespace TeaCommerce.PaymentProviders.Classic {
           HttpContext.Current.Response.Clear();
           HttpContext.Current.Response.Write( string.Join( Environment.NewLine, inputFields.Select( i => string.Format( "{0}={1}", i.Key, i.Value ) ).ToArray() ) );
         } else {
-          LoggingService.Instance.Log( "Sage Pay(" + order.CartNumber + ") - VPSSignature check isn't valid - Calculated signature: " + calcedMd5Hash + " | SagePay VPSSignature: " + vpsSignature );
+          LoggingService.Instance.Warn<SagePay>( "Sage Pay(" + order.CartNumber + ") - VPSSignature check isn't valid - Calculated signature: " + calcedMd5Hash + " | SagePay VPSSignature: " + vpsSignature );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Sage Pay(" + order.CartNumber + ") - Process callback" );
+        LoggingService.Instance.Error<SagePay>( "Sage Pay(" + order.CartNumber + ") - Process callback", exp );
       }
 
       return callbackInfo;
@@ -290,10 +290,10 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
           apiInfo = new ApiInfo( responseFields[ "VPSTxId" ], PaymentState.Captured );
         } else {
-          LoggingService.Instance.Log( "Sage pay(" + order.OrderNumber + ") - Error making API request: " + responseFields[ "StatusDetail" ] );
+          LoggingService.Instance.Warn<SagePay>( "Sage pay(" + order.OrderNumber + ") - Error making API request: " + responseFields[ "StatusDetail" ] );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Sage pay(" + order.OrderNumber + ") - Cancel payment" );
+        LoggingService.Instance.Error<SagePay>( "Sage pay(" + order.OrderNumber + ") - Cancel payment", exp );
       }
 
       return apiInfo;
@@ -339,10 +339,10 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
           apiInfo = new ApiInfo( responseFields[ "VPSTxId" ], PaymentState.Refunded );
         } else {
-          LoggingService.Instance.Log( "Sage pay(" + order.OrderNumber + ") - Error making API request: " + responseFields[ "StatusDetail" ] );
+          LoggingService.Instance.Warn<SagePay>( "Sage pay(" + order.OrderNumber + ") - Error making API request: " + responseFields[ "StatusDetail" ] );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Sage pay(" + order.OrderNumber + ") - Refund payment" );
+        LoggingService.Instance.Error<SagePay>( "Sage pay(" + order.OrderNumber + ") - Refund payment", exp );
       }
 
       return apiInfo;
@@ -370,10 +370,10 @@ namespace TeaCommerce.PaymentProviders.Classic {
         if ( responseFields[ "Status" ] == "OK" ) {
           apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Cancelled );
         } else {
-          LoggingService.Instance.Log( "Sage pay(" + order.OrderNumber + ") - Error making API request: " + responseFields[ "StatusDetail" ] );
+          LoggingService.Instance.Warn<SagePay>( "Sage pay(" + order.OrderNumber + ") - Error making API request: " + responseFields[ "StatusDetail" ] );
         }
       } catch ( Exception exp ) {
-        LoggingService.Instance.Log( exp, "Sage pay(" + order.OrderNumber + ") - Cancel payment" );
+        LoggingService.Instance.Error<SagePay>( "Sage pay(" + order.OrderNumber + ") - Cancel payment", exp );
       }
 
       return apiInfo;
