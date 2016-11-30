@@ -70,6 +70,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Classic\Axcess.cs" />
+    <Compile Include="Classic\Invoicing.cs" />
     <Compile Include="Classic\QuickPay10.cs" />
     <Compile Include="Classic\Paynova.cs" />
     <Compile Include="Inline\Klarna.cs" />
