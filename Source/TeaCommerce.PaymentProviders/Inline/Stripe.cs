@@ -32,6 +32,12 @@ namespace TeaCommerce.PaymentProviders.Inline {
           { "continue_url", "" },
           { "cancel_url", "" },
           { "capture", "false" },
+          { "validate_cvc", "false" },
+          { "validate_address", "false" },
+          { "address_property_alias", "streetAddress" },
+          { "validate_zipcode", "false" },
+          { "zipcode_property_alias", "zipCode" },
+          { "validate_country", "false" },
           { "test_secret_key", "" },
           { "test_public_key", "" },
           { "live_secret_key", "" },
@@ -59,7 +65,19 @@ namespace TeaCommerce.PaymentProviders.Inline {
       htmlForm.InputFields[ "continue_url" ] = teaCommerceContinueUrl;
       htmlForm.InputFields[ "cancel_url" ] = teaCommerceCancelUrl;
 
-      return htmlForm;
+     if (settings.ContainsKey("address_property_alias") && !string.IsNullOrWhiteSpace(settings["address_property_alias"]))
+        htmlForm.InputFields["address"] = order.Properties.First(x => x.Alias == settings["address_property_alias"]).Value;
+
+     if (settings.ContainsKey("zipcode_property_alias") && !string.IsNullOrWhiteSpace(settings["zipcode_property_alias"]))
+        htmlForm.InputFields["zipcode"] = order.Properties.First(x => x.Alias == settings["zipcode_property_alias"]).Value;
+
+     if (order.PaymentInformation != null && order.PaymentInformation.CountryId > 0)
+     {
+        var country = CountryService.Instance.Get(order.StoreId, order.PaymentInformation.CountryId);
+        htmlForm.InputFields["country"] = country.RegionCode.ToLowerInvariant();
+     }
+
+     return htmlForm;
     }
 
     public override string GetContinueUrl( Order order, IDictionary<string, string> settings ) {
@@ -109,6 +127,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
       CallbackInfo callbackInfo = null;
 
       try {
+
         order.MustNotBeNull( "order" );
         request.MustNotBeNull( "request" );
         settings.MustNotBeNull( "settings" );
@@ -120,23 +139,131 @@ namespace TeaCommerce.PaymentProviders.Inline {
           LogRequest<Stripe>( request, logPostData: true );
         }
 
+        var validateCvc = settings["validate_cvc"].TryParse<bool>() ?? false;
+        var validateAddress = settings["validate_address"].TryParse<bool>() ?? false;
+        var validateZipCode = settings["validate_zipcode"].TryParse<bool>() ?? false;
+        var validateCountry = settings["validate_country"].TryParse<bool>() ?? false;
+        var capture = settings["capture"].TryParse<bool>() ?? false;
+    
+        StripeChargeService chargeService = new StripeChargeService( settings[ settings[ "mode" ] + "_secret_key" ] );
+
         StripeChargeCreateOptions chargeOptions = new StripeChargeCreateOptions {
-          AmountInCents = (int)( order.TotalPrice.Value.WithVat * 100 ),
+          Amount = (int)Math.Round(order.TotalPrice.Value.WithVat * 100, MidpointRounding.AwayFromZero),
           Currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId ).IsoCode,
-          TokenId = request.Form[ "stripeToken" ],
+          SourceTokenOrExistingSourceId = request.Form[ "stripeToken" ],
           Description = order.CartNumber,
-          Capture = settings.ContainsKey( "capture" ) && ( settings[ "capture" ].TryParse<bool>() ?? false )
+          Capture = false
         };
 
-        StripeChargeService chargeService = new StripeChargeService( settings[ settings[ "mode" ] + "_secret_key" ] );
         StripeCharge charge = chargeService.Create( chargeOptions );
 
-        if ( charge.AmountInCents != null && charge.Paid != null && charge.Paid.Value ) {
-          callbackInfo = new CallbackInfo( (decimal)charge.AmountInCents.Value / 100, charge.Id, charge.Captured != null && charge.Captured.Value ? PaymentState.Captured : PaymentState.Authorized );
-
+        // Check CVC
+        if (validateCvc && charge.Source.Card.CvcCheck == "fail")
+        {
+            throw new StripeException(HttpStatusCode.Unauthorized,
+                new StripeError
+                {
+                    ChargeId = charge.Id,
+                    Code = "TEA_ERROR",
+                    Message = "Credit card failed CVC checks. Please check your CVC code and try again."
+                }, "Credit card failed CVC checks. Please check your CVC code and try again.");
         }
 
+        // Check address
+        if (validateAddress)
+        {
+            var address = order.Properties.FirstOrDefault(x => x.Alias == settings["address_property_alias"]);
+            if (address != null && (address.Value != charge.Source.Card.AddressLine1 || charge.Source.Card.AddressLine1Check == "fail"))
+            {
+                throw new StripeException(HttpStatusCode.Unauthorized,
+                    new StripeError
+                    {
+                        ChargeId = charge.Id,
+                        Code = "TEA_COMMERCE",
+                        Message = "Address failed security checks. Please check your billing address matches the address your card is registered to."
+                    },
+                    "Address failed security checks. Please check your billing address matches the address your card is registered to.");
+            }
+        }
+
+        // Check zipcode
+        if (validateZipCode)
+        {
+            var zipCode = order.Properties.FirstOrDefault(x => x.Alias == settings["zipcode_property_alias"]);
+            if (zipCode != null && (zipCode.Value != charge.Source.Card.AddressZip || charge.Source.Card.AddressZipCheck == "fail"))
+            {
+                throw new StripeException(HttpStatusCode.Unauthorized,
+                    new StripeError
+                    {
+                        ChargeId = charge.Id,
+                        Code = "TEA_ERROR",
+                        Message = "Address failed security checks. Please check your billing address matches the address your card is registered to."
+                    },
+                    "Address failed security checks. Please check your billing address matches the address your card is registered to.");
+            }
+        }
+
+        // Check country
+        if (validateCountry)
+        {
+            var country = CountryService.Instance.Get(order.StoreId, order.PaymentInformation.CountryId);
+            if (country != null && !string.IsNullOrEmpty(charge.Source.Card.Country) &&
+                charge.Source.Card.Country.ToLowerInvariant() != country.RegionCode.ToLowerInvariant())
+            {
+                throw new StripeException(HttpStatusCode.Unauthorized,
+                    new StripeError
+                    {
+                        ChargeId = charge.Id,
+                        Code = "TEA_ERROR",
+                        Message = "Card country of origin does not match billing address. Please check your billing address country matches the country your card is registered to."
+                    },
+                    "Card country of origin does not match billing address. Please check your billing address country matches the country your card is registered to.");
+            }
+        }
+
+        // Check payment ammount
+        if (charge.Amount != chargeOptions.Amount)
+        {
+            throw new StripeException(HttpStatusCode.Unauthorized,
+                new StripeError
+                {
+                    ChargeId = charge.Id,
+                    Code = "TEA_ERROR",
+                    Message = "Payment ammount differs from authorized payment ammount"
+                }, "Payment ammount differs from authorized payment ammount");
+        }
+
+        // Check paid status
+        if (!charge.Paid)
+        {
+            throw new StripeException(HttpStatusCode.Unauthorized,
+                new StripeError
+                {
+                    ChargeId = charge.Id,
+                    Code = "TEA_ERROR",
+                    Message = "Payment failed"
+                }, "Payment failed");
+        }
+
+        if (capture && charge.Captured == false)
+        {
+            var result = CapturePayment(order, settings);
+            if (result == null || result.PaymentState != PaymentState.Captured)
+            {
+                throw new StripeException(HttpStatusCode.Unauthorized,
+                    new StripeError
+                    {
+                        ChargeId = charge.Id,
+                        Code = "TEA_ERROR",
+                        Message = "Error capturing payment"
+                    }, "Error capturing payment");
+            }
+        }
+
+        callbackInfo = new CallbackInfo((decimal)charge.Amount / 100, charge.Id, capture ? PaymentState.Captured : PaymentState.Authorized);
+
       } catch ( StripeException e ) {
+
         // Pass through request fields
         string requestFields = string.Join( "", request.Form.AllKeys.Select( k => "<input type=\"hidden\" name=\"" + k + "\" value=\"" + request.Form[ k ] + "\" />" ) );
 
@@ -243,8 +370,15 @@ namespace TeaCommerce.PaymentProviders.Inline {
         settings.MustContainKey( "mode", "settings" );
         settings.MustContainKey( settings[ "mode" ] + "_secret_key", "settings" );
 
-        StripeChargeService chargeService = new StripeChargeService( settings[ settings[ "mode" ] + "_secret_key" ] );
-        StripeCharge charge = chargeService.Refund( order.TransactionInformation.TransactionId );
+        StripeRefundService refundService = new StripeRefundService(settings[settings["mode"] + "_secret_key"]);
+        StripeRefund refund = refundService.Create(order.TransactionInformation.TransactionId);
+        StripeCharge charge = refund.Charge;
+
+        if (!charge.Refunded)
+        {
+            StripeChargeService chargeService = new StripeChargeService(settings[settings["mode"] + "_secret_key"]);
+            charge = chargeService.Capture(refund.ChargeId);
+        }
 
         return new ApiInfo( charge.Id, GetPaymentState( charge ) );
       } catch ( Exception exp ) {
@@ -268,6 +402,18 @@ namespace TeaCommerce.PaymentProviders.Inline {
           return settingsKey + "<br/><small>The url to navigate to if the customer cancels the payment - e.g. /cancel/</small>";
         case "capture":
           return settingsKey + "<br/><small>Flag indicating if a payment should be captured instantly - true/false.</small>";
+        case "validate_cvc":
+          return settingsKey + "<br/><small>Flag indicating whether to validate the credit cards cvc number - true/false.</small>";
+        case "validate_address":
+          return settingsKey + "<br/><small>Flag indicating whether to validate the credit cards address matches the billing address - true/false.</small>";
+        case "address_property_alias":
+          return settingsKey + "<br/><small>The alias of the field containing the billing address - e.g. billingStreetAddress.</small>";
+        case "validate_zipcode":
+          return settingsKey + "<br/><small>Flag indicating whether to validate the credit cards zip code matches the billing zip code - true/false.</small>";
+        case "zipcode_property_alias":
+          return settingsKey + "<br/><small>The alias of the field containing the billing zip code - e.g. billingZipCode.</small>";
+        case "validate_country":
+          return settingsKey + "<br/><small>Flag indicating whether to validate the credit cards country matches the billing country - true/false.</small>";
         case "test_secret_key":
           return settingsKey + "<br/><small>Your test stripe secret key.</small>";
         case "test_public_key":
@@ -286,17 +432,17 @@ namespace TeaCommerce.PaymentProviders.Inline {
     protected PaymentState GetPaymentState( StripeCharge charge ) {
       PaymentState paymentState = PaymentState.Initialized;
 
-      if ( charge.Paid != null && charge.Paid.Value ) {
+      if ( charge.Paid ) {
         paymentState = PaymentState.Authorized;
 
         if ( charge.Captured != null && charge.Captured.Value ) {
           paymentState = PaymentState.Captured;
 
-          if ( charge.Refunded != null && charge.Refunded.Value ) {
+          if ( charge.Refunded ) {
             paymentState = PaymentState.Refunded;
           }
         } else {
-          if ( charge.Refunded != null && charge.Refunded.Value ) {
+          if ( charge.Refunded ) {
             paymentState = PaymentState.Cancelled;
           }
         }

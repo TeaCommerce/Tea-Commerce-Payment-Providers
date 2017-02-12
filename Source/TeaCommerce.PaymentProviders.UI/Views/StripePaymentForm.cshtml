@@ -6,6 +6,21 @@
 
 <form action="@Request.Form["continue_url"]" method="POST" id="payment-form">
 
+    @if (!string.IsNullOrWhiteSpace(Request.Form["address"]))
+    {
+        <input type="hidden" data-stripe="address_line1" value="@Request.Form["address"]" />
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Request.Form["zipcode"]))
+    {
+        <input type="hidden" data-stripe="address_zip" value="@Request.Form["zipcode"]" />
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Request.Form["country"]))
+    {
+        <input type="hidden" data-stripe="address_country" value="@Request.Form["country"]" />
+    }
+
     <span class="payment-errors">
         @*
             We only find out a transaction has failed on confirmation of the transation serverside, so this form gets reloaded with additional data about the error.
