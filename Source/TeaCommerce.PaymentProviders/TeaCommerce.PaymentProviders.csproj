@@ -73,6 +73,7 @@
     <Compile Include="Classic\Invoicing.cs" />
     <Compile Include="Classic\QuickPay10.cs" />
     <Compile Include="Classic\Paynova.cs" />
+    <Compile Include="Helpers\PriceValueConverter.cs" />
     <Compile Include="Inline\Klarna.cs" />
     <Compile Include="Inline\CyberSource.cs" />
     <Compile Include="Classic\PaymentSense.cs" />

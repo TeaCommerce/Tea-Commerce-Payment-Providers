@@ -11,6 +11,7 @@ using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
+using TeaCommerce.PaymentProviders.Helpers;
 
 namespace TeaCommerce.PaymentProviders.Inline {
   [PaymentProvider( "Stripe - inline" )]
@@ -121,7 +122,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
         }
 
         StripeChargeCreateOptions chargeOptions = new StripeChargeCreateOptions {
-          AmountInCents = (int)( order.TotalPrice.Value.WithVat * 100 ),
+          AmountInCents = order.TotalPrice.Value.WithVat.ToCents(),
           Currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId ).IsoCode,
           TokenId = request.Form[ "stripeToken" ],
           Description = order.CartNumber,
@@ -226,7 +227,7 @@ namespace TeaCommerce.PaymentProviders.Inline {
         settings.MustContainKey( settings[ "mode" ] + "_secret_key", "settings" );
 
         StripeChargeService chargeService = new StripeChargeService( settings[ settings[ "mode" ] + "_secret_key" ] );
-        StripeCharge charge = chargeService.Capture( order.TransactionInformation.TransactionId, (int)order.TransactionInformation.AmountAuthorized.Value * 100 );
+        StripeCharge charge = chargeService.Capture( order.TransactionInformation.TransactionId, order.TransactionInformation.AmountAuthorized.Value.ToCents());
 
         return new ApiInfo( charge.Id, GetPaymentState( charge ) );
       } catch ( Exception exp ) {
