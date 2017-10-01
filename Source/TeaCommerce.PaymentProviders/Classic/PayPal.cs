@@ -42,95 +42,96 @@ namespace TeaCommerce.PaymentProviders.Classic {
       }
     }
 
-    private IDictionary<string, string> GetPaymentButton(Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, IDictionary<string, string> settings)
-    {
-        var bvCount = 0;
+    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings ) {
+      order.MustNotBeNull( "order" );
+      settings.MustNotBeNull( "settings" );
+      string action = string.Empty;
+      string encrypted = string.Empty;
 
-        IDictionary<string, string> inputFields = PrepareApiPostRequest("BMCreateButton", settings);
+      try {
+        int bvCount = 0;
 
-        inputFields.Add("BUTTONCODE", "ENCRYPTED");
-        inputFields.Add("BUTTONTYPE", "BUYNOW");
-        inputFields.Add("BUTTONSUBTYPE", "PRODUCTS");
+        IDictionary<string, string> inputFields = PrepareApiPostRequest( "BMCreateButton", settings );
 
-        bvCount++; inputFields.Add($"L_BUTTONVAR{bvCount}", "business=" + (settings.ContainsKey("business") ? settings["business"] : string.Empty));
-        bvCount++; inputFields.Add($"L_BUTTONVAR{bvCount}", "lc=" + (settings.ContainsKey("lc") ? settings["lc"] : string.Empty));
-        bvCount++; inputFields.Add($"L_BUTTONVAR{bvCount}", "button_subtype=PRODUCTS");
+        inputFields.Add( "BUTTONCODE", "ENCRYPTED" );
+        inputFields.Add( "BUTTONTYPE", "BUYNOW" );
+        inputFields.Add( "BUTTONSUBTYPE", "PRODUCTS" );
+
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "business=" + ( settings.ContainsKey( "business" ) ? settings[ "business" ] : string.Empty ) );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "lc=" + ( settings.ContainsKey( "lc" ) ? settings[ "lc" ] : string.Empty ) );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "button_subtype=PRODUCTS" );
 
         // Check that the Iso code exists
-        var currency = CurrencyService.Instance.Get(order.StoreId, order.CurrencyId);
-        if (!Iso4217CurrencyCodes.ContainsKey(currency.IsoCode))
-        {
-            throw new Exception("You must specify an ISO 4217 currency code for the " + currency.Name + " currency");
+        Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
+        if ( !Iso4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
+          throw new Exception( "You must specify an ISO 4217 currency code for the " + currency.Name + " currency" );
         }
-        bvCount++; inputFields.Add($"L_BUTTONVAR{bvCount}", "currency_code=" + currency.IsoCode);
 
-        bvCount++; inputFields.Add($"L_BUTTONVAR{bvCount}", "invoice=" + order.CartNumber);
-        bvCount++; inputFields.Add($"L_BUTTONVAR{bvCount}", "item_name=" + (settings.ContainsKey("totalName") ? settings["totalName"] : "Total"));
-        bvCount++; inputFields.Add($"L_BUTTONVAR{bvCount}", "item_number=" + (settings.ContainsKey("totalSku") ? settings["totalSku"] : "0001"));
-        bvCount++; inputFields.Add($"L_BUTTONVAR{bvCount}", "amount=" + order.TotalPrice.Value.WithVat.ToString("0.00", CultureInfo.InvariantCulture));
-        bvCount++; inputFields.Add($"L_BUTTONVAR{bvCount}", "quantity=" + 1M.ToString("0", CultureInfo.InvariantCulture));
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "currency_code=" + currency.IsoCode );
 
-        bvCount++; inputFields.Add($"L_BUTTONVAR{bvCount}", "return=" + teaCommerceContinueUrl);
-        bvCount++; inputFields.Add($"L_BUTTONVAR{bvCount}", "rm=2");
-        bvCount++; inputFields.Add($"L_BUTTONVAR{bvCount}", "cancel_return=" + teaCommerceCancelUrl);
-        bvCount++; inputFields.Add($"L_BUTTONVAR{bvCount}", "notify_url=" + teaCommerceCallBackUrl);
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "invoice=" + order.CartNumber );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "item_name=" + ( settings.ContainsKey( "totalName" ) ? settings[ "totalName" ] : "Total" ) );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "item_number=" + ( settings.ContainsKey( "totalSku" ) ? settings[ "totalSku" ] : "0001" ) );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "amount=" + order.TotalPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture ) );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "quantity=" + 1M.ToString( "0", CultureInfo.InvariantCulture ) );
 
-        ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
-        var response = MakePostRequest(settings.ContainsKey("isSandbox") && settings["isSandbox"] == "1" ? "https://api-3t.sandbox.paypal.com/nvp" : "https://api-3t.paypal.com/nvp", inputFields);
-        return GetApiResponseKvp(response);
-    }
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "return=" + teaCommerceContinueUrl );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "rm=2" );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "cancel_return=" + teaCommerceCancelUrl );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "notify_url=" + teaCommerceCallBackUrl );
 
-    public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings )
-    {
-        order.MustNotBeNull( "order" );
-        settings.MustNotBeNull( "settings" );
-        var action = string.Empty;
-        var encrypted = string.Empty;
-        
-        try
-        {
-            IDictionary<string, string> responseKvp = GetPaymentButton(order, teaCommerceContinueUrl, teaCommerceCancelUrl, teaCommerceCallBackUrl, settings);
-            if (responseKvp["ACK"] == "Success" || responseKvp["ACK"] == "SuccessWithWarning")
-            {
-                var input = responseKvp["WEBSITECODE"];
-                using (XmlReader reader = XmlReader.Create(new StringReader(input)))
-                {
-                    reader.ReadToFollowing("form");
-                    reader.MoveToAttribute("action");
-                    action = reader.Value.Trim();
+        ServicePointManager.SecurityProtocol = (SecurityProtocolType) 3072;
+        string response = MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://api-3t.sandbox.paypal.com/nvp" : "https://api-3t.paypal.com/nvp", inputFields );
+        IDictionary<string, string> responseKvp = GetApiResponseKvp( response );
+        if ( responseKvp[ "ACK" ] == "Success" || responseKvp[ "ACK" ] == "SuccessWithWarning" ) {
+          string input = responseKvp["WEBSITECODE"];
+          using ( XmlReader reader = XmlReader.Create( new StringReader( input ) ) ) {
+            reader.ReadToFollowing( "form" );
+            reader.MoveToAttribute( "action" );
+            action = reader.Value.Trim();
 
-                    while (reader.ReadToFollowing("input"))
-                    {
-                        reader.MoveToAttribute("name");
-                        var name = reader.Value.Trim();
-                        if (name != "encrypted"){continue;}
+            while ( reader.ReadToFollowing( "input" ) ) {
+              reader.MoveToAttribute( "name" );
+              string name = reader.Value.Trim();
+              if ( name != "encrypted" ) {
+                continue;
+              }
 
-                        reader.MoveToAttribute("value");
-                        encrypted = reader.Value.Trim();
-                        break;
-                    }
-                }
+              reader.MoveToAttribute( "value" );
+              encrypted = reader.Value.Trim();
+              break;
             }
-            else
-            {
-                LoggingService.Instance.Warn<PayPal>("PayPal(" + order.OrderNumber + ") - Error making API request - error code: " + responseKvp["L_ERRORCODE0"]);
-            }
+          }
         }
-        catch (Exception exp)
-        {
-            LoggingService.Instance.Error<PayPal>("PayPal(" + order.OrderNumber + ") - GenerateHtmlForm payment", exp);
+        else {
+          LoggingService.Instance.Warn<PayPal>( "PayPal(" + order.OrderNumber + ") - Error making API request - error code: " + responseKvp[ "L_ERRORCODE0" ] );
         }
+      }
+      catch ( Exception exp ) {
+        LoggingService.Instance.Error<PayPal>( "PayPal(" + order.OrderNumber + ") - GenerateHtmlForm payment", exp );
+      }
 
-        PaymentHtmlForm htmlForm = new PaymentHtmlForm
-                                   {
-                                       Action = action,
-                                       InputFields = new Dictionary<string, string>
-                                                     {
-                                                         {"cmd", "_s-xclick"},
-                                                         {"encrypted", encrypted}
-                                                     }
-                                   };
-        return htmlForm;
+      PaymentHtmlForm htmlForm = new PaymentHtmlForm {
+        Action = action,
+        InputFields = new Dictionary<string, string> {
+          { "cmd", "_s-xclick" },
+          { "encrypted", encrypted }
+        }
+      };
+      return htmlForm;
     }
 
     public override string GetContinueUrl( Order order, IDictionary<string, string> settings ) {
