@@ -12,6 +12,7 @@ using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 using System.Net;
+using System.Xml;
 
 namespace TeaCommerce.PaymentProviders.Classic {
 
@@ -44,36 +45,92 @@ namespace TeaCommerce.PaymentProviders.Classic {
     public override PaymentHtmlForm GenerateHtmlForm( Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings ) {
       order.MustNotBeNull( "order" );
       settings.MustNotBeNull( "settings" );
+      string action = string.Empty;
+      string encrypted = string.Empty;
+
+      try {
+        int bvCount = 0;
+
+        IDictionary<string, string> inputFields = PrepareApiPostRequest( "BMCreateButton", settings );
+
+        inputFields.Add( "BUTTONCODE", "ENCRYPTED" );
+        inputFields.Add( "BUTTONTYPE", "BUYNOW" );
+        inputFields.Add( "BUTTONSUBTYPE", "PRODUCTS" );
+
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "business=" + ( settings.ContainsKey( "business" ) ? settings[ "business" ] : string.Empty ) );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "lc=" + ( settings.ContainsKey( "lc" ) ? settings[ "lc" ] : string.Empty ) );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "button_subtype=PRODUCTS" );
+
+        // Check that the Iso code exists
+        Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
+        if ( !Iso4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
+          throw new Exception( "You must specify an ISO 4217 currency code for the " + currency.Name + " currency" );
+        }
+
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "currency_code=" + currency.IsoCode );
+
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "invoice=" + order.CartNumber );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "item_name=" + ( settings.ContainsKey( "totalName" ) ? settings[ "totalName" ] : "Total" ) );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "item_number=" + ( settings.ContainsKey( "totalSku" ) ? settings[ "totalSku" ] : "0001" ) );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "amount=" + order.TotalPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture ) );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "quantity=" + 1M.ToString( "0", CultureInfo.InvariantCulture ) );
+
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "return=" + teaCommerceContinueUrl );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "rm=2" );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "cancel_return=" + teaCommerceCancelUrl );
+        bvCount++;
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "notify_url=" + teaCommerceCallBackUrl );
+
+        ServicePointManager.SecurityProtocol = (SecurityProtocolType) 3072;
+        string response = MakePostRequest( settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://api-3t.sandbox.paypal.com/nvp" : "https://api-3t.paypal.com/nvp", inputFields );
+        IDictionary<string, string> responseKvp = GetApiResponseKvp( response );
+        if ( responseKvp[ "ACK" ] == "Success" || responseKvp[ "ACK" ] == "SuccessWithWarning" ) {
+          string input = responseKvp["WEBSITECODE"];
+          using ( XmlReader reader = XmlReader.Create( new StringReader( input ) ) ) {
+            reader.ReadToFollowing( "form" );
+            reader.MoveToAttribute( "action" );
+            action = reader.Value.Trim();
+
+            while ( reader.ReadToFollowing( "input" ) ) {
+              reader.MoveToAttribute( "name" );
+              string name = reader.Value.Trim();
+              if ( name != "encrypted" ) {
+                continue;
+              }
+
+              reader.MoveToAttribute( "value" );
+              encrypted = reader.Value.Trim();
+              break;
+            }
+          }
+        }
+        else {
+          LoggingService.Instance.Warn<PayPal>( "PayPal(" + order.OrderNumber + ") - Error making API request - error code: " + responseKvp[ "L_ERRORCODE0" ] );
+        }
+      }
+      catch ( Exception exp ) {
+        LoggingService.Instance.Error<PayPal>( "PayPal(" + order.OrderNumber + ") - GenerateHtmlForm payment", exp );
+      }
 
       PaymentHtmlForm htmlForm = new PaymentHtmlForm {
-        Action = settings.ContainsKey( "isSandbox" ) && settings[ "isSandbox" ] == "1" ? "https://www.sandbox.paypal.com/cgi-bin/webscr" : "https://www.paypal.com/cgi-bin/webscr"
+        Action = action,
+        InputFields = new Dictionary<string, string> {
+          { "cmd", "_s-xclick" },
+          { "encrypted", encrypted }
+        }
       };
-
-      string[] settingsToExclude = new[] { "USER", "PWD", "SIGNATURE", "isSandbox" };
-      htmlForm.InputFields = settings.Where( i => !settingsToExclude.Contains( i.Key ) ).ToDictionary( i => i.Key, i => i.Value );
-
-      htmlForm.InputFields[ "cmd" ] = "_cart";
-      htmlForm.InputFields[ "upload" ] = "1";
-
-      //Check that the Iso code exists
-      Currency currency = CurrencyService.Instance.Get( order.StoreId, order.CurrencyId );
-      if ( !Iso4217CurrencyCodes.ContainsKey( currency.IsoCode ) ) {
-        throw new Exception( "You must specify an ISO 4217 currency code for the " + currency.Name + " currency" );
-      }
-      htmlForm.InputFields[ "currency_code" ] = currency.IsoCode;
-
-      htmlForm.InputFields[ "invoice" ] = order.CartNumber;
-
-      htmlForm.InputFields[ "return" ] = teaCommerceContinueUrl;
-      htmlForm.InputFields[ "rm" ] = "2";
-      htmlForm.InputFields[ "cancel_return" ] = teaCommerceCancelUrl;
-      htmlForm.InputFields[ "notify_url" ] = teaCommerceCallBackUrl;
-
-      htmlForm.InputFields[ "item_name_1" ] = settings.ContainsKey( "totalName" ) ? settings[ "totalName" ] : "Total";
-      htmlForm.InputFields[ "item_number_1" ] = settings.ContainsKey( "totalSku" ) ? settings[ "totalSku" ] : "0001";
-      htmlForm.InputFields[ "amount_1" ] = order.TotalPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture );
-      htmlForm.InputFields[ "quantity_1" ] = 1M.ToString( "0", CultureInfo.InvariantCulture );
-
       return htmlForm;
     }
 
