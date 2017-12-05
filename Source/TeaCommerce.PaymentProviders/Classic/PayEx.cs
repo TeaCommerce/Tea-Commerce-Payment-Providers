@@ -79,6 +79,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
       string md5Hash = GenerateMD5Hash( accountNumber.ToString( CultureInfo.InvariantCulture ) + purchaseOperation + price.ToString( CultureInfo.InvariantCulture ) + priceArgList + currency.IsoCode + vat.ToString( CultureInfo.InvariantCulture ) + orderId + productNumber + description + clientIpAddress + clientIdentifier + additionalValues + externalId + returnUrl + view + agreementRef + cancelUrl + clientLanguage + settings[ "encryptionKey" ] );
 
+      ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
       string xmlReturn = GetPayExServiceClient( settings ).Initialize7( accountNumber, purchaseOperation, price, priceArgList, currency.IsoCode, vat, orderId, productNumber, description, clientIpAddress, clientIdentifier, additionalValues, externalId, returnUrl, view, agreementRef, cancelUrl, clientLanguage, md5Hash );
 
       XDocument xmlDoc = XDocument.Parse( xmlReturn, LoadOptions.PreserveWhitespace );
