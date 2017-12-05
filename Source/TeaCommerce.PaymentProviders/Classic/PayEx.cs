@@ -13,6 +13,7 @@ using TeaCommerce.Api.Models;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 using TeaCommerce.PaymentProviders.PayExService;
+using System.Net;
 
 namespace TeaCommerce.PaymentProviders.Classic {
 
@@ -123,6 +124,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
         string orderRef = order.Properties.First( p => p.Alias.Equals( "orderRef" ) ).Value;
         string md5Hash = GenerateMD5Hash( accountNumber + orderRef + settings[ "encryptionKey" ] );
 
+        ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
         string xmlReturn = GetPayExServiceClient( settings ).Complete( accountNumber, orderRef, md5Hash );
 
         //Write data when testing
@@ -171,6 +173,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         string md5Hash = GenerateMD5Hash( accountNumber.ToString( CultureInfo.InvariantCulture ) + transactionNumber.ToString( CultureInfo.InvariantCulture ) + settings[ "encryptionKey" ] );
 
+        ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
         XDocument xmlDoc = XDocument.Parse( GetPayExServiceClient( settings ).GetTransactionDetails2( accountNumber, transactionNumber, md5Hash ), LoadOptions.PreserveWhitespace );
         string errorCode = xmlDoc.XPathSelectElement( "//status/errorCode" ).Value;
 
@@ -220,6 +223,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         string md5Hash = GenerateMD5Hash( accountNumber.ToString( CultureInfo.InvariantCulture ) + transactionNumber.ToString( CultureInfo.InvariantCulture ) + amount.ToString( CultureInfo.InvariantCulture ) + orderId + vatAmount.ToString( CultureInfo.InvariantCulture ) + additionalValues + settings[ "encryptionKey" ] );
 
+        ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
         XDocument xmlDoc = XDocument.Parse( GetPayExServiceClient( settings ).Capture4( accountNumber, transactionNumber, amount, orderId, vatAmount, additionalValues, md5Hash ), LoadOptions.PreserveWhitespace );
         string errorCode = xmlDoc.XPathSelectElement( "//status/errorCode" ).Value;
 
@@ -253,6 +257,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         string md5Hash = GenerateMD5Hash( accountNumber.ToString( CultureInfo.InvariantCulture ) + transactionNumber.ToString( CultureInfo.InvariantCulture ) + amount.ToString( CultureInfo.InvariantCulture ) + orderId + vatAmount.ToString( CultureInfo.InvariantCulture ) + additionalValues + settings[ "encryptionKey" ] );
 
+        ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
         XDocument xmlDoc = XDocument.Parse( GetPayExServiceClient( settings ).Credit4( accountNumber, transactionNumber, amount, orderId, vatAmount, additionalValues, md5Hash ), LoadOptions.PreserveWhitespace );
         string errorCode = xmlDoc.XPathSelectElement( "//status/errorCode" ).Value;
 
@@ -282,6 +287,7 @@ namespace TeaCommerce.PaymentProviders.Classic {
 
         string md5Hash = GenerateMD5Hash( accountNumber.ToString( CultureInfo.InvariantCulture ) + transactionNumber.ToString( CultureInfo.InvariantCulture ) + settings[ "encryptionKey" ] );
 
+        ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
         XDocument xmlDoc = XDocument.Parse( GetPayExServiceClient( settings ).Cancel2( accountNumber, transactionNumber, md5Hash ), LoadOptions.PreserveWhitespace );
         string errorCode = xmlDoc.XPathSelectElement( "//status/errorCode" ).Value;
 
