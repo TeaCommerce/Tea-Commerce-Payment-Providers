@@ -86,7 +86,7 @@
     form.addEventListener('submit', function (event) {
         event.preventDefault();
 
-        var tokenData =
+        var tokenData = {
             name: document.getElementById("name-on-card").value,
             address_line1: '@Request.Form["billing_address_line1"]',
             address_line2: '@Request.Form["billing_address_line2"]',
