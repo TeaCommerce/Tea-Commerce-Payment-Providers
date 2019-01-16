@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Package" ToolsVersion="14.0">
+
+	<!-- IMPORTS -->
+	<PropertyGroup>
+		<MSBuildCommunityTasksPath>$(MSBuildProjectDirectory)\tools\MSBuildCommunityTasks</MSBuildCommunityTasksPath>
+	</PropertyGroup>
+
+	<Import Project="$(MSBuildCommunityTasksPath)\MSBuild.Community.Tasks.Targets" />
+
+	<PropertyGroup>
+		<ILMergeExe>$(MSBuildProjectDirectory)\tools\ILMerge\ILMerge.exe</ILMergeExe>
+  	</PropertyGroup>
+
+	<!-- SHARED PROPERTIES -->
+	<PropertyGroup>
+		<ProjectName>TeaCommerce.PaymentProviders</ProjectName>
+	</PropertyGroup>
+
+	<!-- PATHS -->
+	<PropertyGroup>
+		<RootDir>$(MSBuildProjectDirectory)\..</RootDir>
+		<ArtifactsDir>$(RootDir)\Artifacts</ArtifactsDir>
+		<SolutionDir>$(RootDir)\Source</SolutionDir>
+		<CoreProjectDir>$(SolutionDir)\$(ProjectName)</CoreProjectDir>
+	</PropertyGroup>
+
+	<!-- CLEAN -->
+	<Target Name="Clean">
+		<RemoveDir Directories="$(ArtifactsDir)" Condition="Exists('$(ArtifactsDir)')" />
+		<MakeDir Directories="$(ArtifactsDir)" />
+	</Target>
+
+	<!-- COMPILE -->
+	<Target Name="Compile" DependsOnTargets="Clean">
+		<MSBuild Projects="$(CoreProjectDir)\$(ProjectName).csproj" Properties="Configuration=$(Configuration)"/>
+	</Target>
+
+	<!-- MERGE DLLS + OUTPUT TO ARTIFACTS DIR -->
+	<Target Name="MergeDlls" DependsOnTargets="Compile">
+		<ItemGroup>
+			<Dlls Include="$(CoreProjectDir)\bin\$(Configuration)\$(ProjectName).dll" />
+			<Dlls Include="$(CoreProjectDir)\bin\$(Configuration)\*.dll" Exclude="$(CoreProjectDir)\bin\$(Configuration)\TeaCommerce.*.dll" />
+		</ItemGroup>
+		<Exec Command="$(ILMergeExe) /ndebug /internalize /out:$(ArtifactsDir)\$(ProjectName).dll @(Dlls, ' ') /targetplatform:v4,&quot;%programfiles(x86)%\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5&quot;" />
+	</Target>
+
+	<!-- Package -->
+	<Target Name="Package" DependsOnTargets="MergeDlls"></Target>
+
+</Project>
