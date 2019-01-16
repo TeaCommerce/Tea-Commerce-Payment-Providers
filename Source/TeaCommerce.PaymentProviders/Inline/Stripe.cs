@@ -364,6 +364,12 @@ namespace TeaCommerce.PaymentProviders.Inline
                 var refund = refundService.Create(refundCreateOptions);
                 var charge = refund.Charge;
 
+                if (charge == null)
+                {
+                    var chargeService = new ChargeService(apiKey);
+                    charge = chargeService.Get(order.TransactionInformation.TransactionId);
+                }
+
                 return new ApiInfo(charge.Id, GetPaymentState(charge));
             }
             catch (Exception exp)
