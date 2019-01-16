@@ -31,16 +31,28 @@
 		<MakeDir Directories="$(ArtifactsDir)" />
 	</Target>
 
+	<!-- UPDATE PROJECT ASSEMBLEY VERSION -->
+	<Target Name="UpdateAssemblyInfo" DependsOnTargets="Clean">
+		<ItemGroup>
+			<VersionMajor Include="$(BUILD_VERSION.Split('.')[0])" />
+			<VersionMinor Include="$(BUILD_VERSION.Split('.')[1])" />
+		</ItemGroup>
+		<AssemblyInfo CodeLanguage="CS"
+			OutputFile="$(CoreProjectDir)\Properties\VersionInfo.cs"
+			AssemblyVersion="@(VersionMajor).@(VersionMinor).*"
+			AssemblyInformationalVersion="$(BUILD_VERSION)"/>
+	</Target>
+
 	<!-- COMPILE -->
-	<Target Name="Compile" DependsOnTargets="Clean">
-		<MSBuild Projects="$(CoreProjectDir)\$(ProjectName).csproj" Properties="Configuration=$(Configuration)"/>
+	<Target Name="Compile" DependsOnTargets="UpdateAssemblyInfo">
+		<MSBuild Projects="$(CoreProjectDir)\$(ProjectName).csproj" Properties="Configuration=$(BUILD_CONFIG)"/>
 	</Target>
 
 	<!-- MERGE DLLS + OUTPUT TO ARTIFACTS DIR -->
 	<Target Name="MergeDlls" DependsOnTargets="Compile">
 		<ItemGroup>
-			<Dlls Include="$(CoreProjectDir)\bin\$(Configuration)\$(ProjectName).dll" />
-			<Dlls Include="$(CoreProjectDir)\bin\$(Configuration)\*.dll" Exclude="$(CoreProjectDir)\bin\$(Configuration)\TeaCommerce.*.dll" />
+			<Dlls Include="$(CoreProjectDir)\bin\$(BUILD_CONFIG)\$(ProjectName).dll" />
+			<Dlls Include="$(CoreProjectDir)\bin\$(BUILD_CONFIG)\*.dll" Exclude="$(CoreProjectDir)\bin\$(BUILD_CONFIG)\TeaCommerce.*.dll" />
 		</ItemGroup>
 		<Exec Command="$(ILMergeExe) /ndebug /internalize /out:$(ArtifactsDir)\$(ProjectName).dll @(Dlls, ' ') /targetplatform:v4,&quot;%programfiles(x86)%\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5&quot;" />
 	</Target>
