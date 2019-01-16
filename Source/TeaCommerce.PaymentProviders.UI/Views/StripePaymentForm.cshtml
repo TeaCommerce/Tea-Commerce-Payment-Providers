@@ -1,8 +1,11 @@
 ﻿@*
- * IMPORTANT!
- * Please ensure that this macro is placed on a page 
- * that is protected by SSL.
- *@
+    * IMPORTANT!
+    * Please ensure that this macro is placed on a page
+    * that is protected by SSL.
+    *
+    * For more information on imlementing and styling Stripe elements see
+    * https://stripe.com/docs/stripe-js/elements/quickstart
+*@
 
 <form action="@Request.Form["continue_url"]" method="POST" id="payment-form">
 
@@ -18,73 +21,107 @@
             FailureReason.Parameter:
         *@
 
-        @if(Request.Form["TransactionFailed"]=="true")
+        @if (Request.Form["TransactionFailed"] == "true")
         {
             @Request.Form["FailureReason.Message"]
         }
     </span>
 
-    <div class="form-row"> 
-        <label>
-            <span>Card Number</span>
-            <input type="text" size="20" data-stripe="number"/>
-        </label>
+    <div class="form-row">
+        <label for="name-on-card">Name on Card</label>
+        <input id="name-on-card" type="text" />
     </div>
 
     <div class="form-row">
-        <label>
-            <span>CVC</span>
-            <input type="text" size="4" data-stripe="cvc"/>
-        </label>
+        <label for="card-element">Card Details</label>
+        <div id="card-element">
+            <!-- A Stripe Element will be inserted here. -->
+        </div>
+        <!-- Used to display form errors. -->
+        <div id="card-errors" role="alert"></div>
     </div>
 
-    <div class="form-row">
-        <label>
-            <span>Expiration (MM/YYYY)</span>
-            <input type="text" size="2" data-stripe="exp-month"/>
-        </label>
-        <span> / </span>
-        <input type="text" size="4" data-stripe="exp-year"/>
-    </div>
-    
     <a href="@Request.Form["cancel_url"]">&lt; Cancel</a>
     <button type="submit">Submit Payment</button>
 </form>
 
-<script type="text/javascript" src="https://js.stripe.com/v2/"></script>
+<script type="text/javascript" src="https://js.stripe.com/v3/"></script>
 <script type="text/javascript">
-    
-    Stripe.setPublishableKey('@Request.Form["api_key"]');
-    
-    var stripeResponseHandler = function (status, response) {
-        var $form = $('#payment-form');
 
-        if (response.error) {
-            // Show the errors on the form
-            $form.find('.payment-errors').text(response.error.message);
-            $form.find('button').prop('disabled', false);
-        } else {
-            // token contains id, last4, and card type
-            var token = response.id;
-            // Insert the token into the form so it gets submitted to the server
-            $form.append($('<input type="hidden" name="stripeToken" />').val(token));
-            // and submit
-            $form.get(0).submit();
+    // Create a Stripe client.
+    var stripe = Stripe('@Request.Form["api_key"]');
+
+    // Create an instance of Elements.
+    var elements = stripe.elements();
+
+    // Custom styling can be passed to options when creating an Element.
+    // (Note that this demo uses a wider set of styles than the guide below.)
+    var style = {
+        base: {
+
+        },
+        invalid: {
+
         }
     };
 
-    jQuery(function ($) {
-        $('#payment-form').submit(function (event) {
-            var $form = $(this);
+    // Create an instance of the card Element.
+    var card = elements.create('card', { style: style, hidePostalCode: true });
 
-            // Disable the submit button to prevent repeated clicks
-            $form.find('button').prop('disabled', true);
+    // Add an instance of the card Element into the `card-element` <div>.
+    card.mount('#card-element');
 
-            Stripe.createToken($form, stripeResponseHandler);
-
-            // Prevent the form from submitting with the default action
-            return false;
-        });
+    // Handle real-time validation errors from the card Element.
+    card.addEventListener('change', function (event) {
+        var displayError = document.getElementById('card-errors');
+        if (event.error) {
+            displayError.textContent = event.error.message;
+        } else {
+            displayError.textContent = '';
+        }
     });
+
+    // Handle form submission.
+    var form = document.getElementById('payment-form');
+    form.addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        var tokenData = {
+            name: document.getElementById("name-on-card").value,
+            address_line1: '@Request.Form["billing_address_line1"]',
+            address_line2: '@Request.Form["billing_address_line2"]',
+            address_city: '@Request.Form["billing_city"]',
+            address_state: '@Request.Form["billing_state"]',
+            address_zip: '@Request.Form["billing_zip_code"]',
+            address_country: '@Request.Form["billing_country"]'
+        };
+
+        stripe.createToken(card, tokenData).then(function (result) {
+            if (result.error) {
+                // Inform the user if there was an error.
+                var errorElement = document.getElementById('card-errors');
+                errorElement.textContent = result.error.message;
+            } else {
+                // Send the token to your server.
+                stripeTokenHandler(result.token);
+            }
+        });
+
+    });
+
+    // Submit the form with the token ID.
+    function stripeTokenHandler(token) {
+
+        // Insert the token ID into the form so it gets submitted to the server
+        var form = document.getElementById('payment-form');
+        var hiddenInput = document.createElement('input');
+        hiddenInput.setAttribute('type', 'hidden');
+        hiddenInput.setAttribute('name', 'stripeToken');
+        hiddenInput.setAttribute('value', token.id);
+        form.appendChild(hiddenInput);
+
+        // Submit the form
+        form.submit();
+    }
 
 </script>
