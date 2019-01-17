@@ -23,7 +23,7 @@ if "%BUILD_CONFIG%" == "r" (
 REM Load the build version from the version.txt file
 SET /P BUILD_VERSION=<version.txt
 
-REM If in configured for debug mode, append an '-alpha-timestamp' 
+REM If configured for debug mode, append an '-alpha+timestamp' 
 REM suffix to the version number
 IF "%BUILD_CONFIG%" == "Debug" (
   SET BUILD_VERSION=%BUILD_VERSION%-alpha+%TIMESTAMP%
