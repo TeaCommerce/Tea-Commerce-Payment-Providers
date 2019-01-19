@@ -140,13 +140,13 @@ namespace TeaCommerce.PaymentProviders.Inline
                     Billing = billingMode == "charge" 
                         ? Billing.ChargeAutomatically 
                         : Billing.SendInvoice,
-                    Items = new List<SubscriptionItemOption>(order.OrderLines.Select(x =>
+                    Items = order.OrderLines.Select(x => 
                         new SubscriptionItemOption
                         {
                             PlanId = x.Sku,
                             Quantity = (long)x.Quantity
                         }
-                    )),
+                    ).ToList(),
                     Metadata = new Dictionary<string, string>
                     {
                         { "orderId", order.Id.ToString() },
