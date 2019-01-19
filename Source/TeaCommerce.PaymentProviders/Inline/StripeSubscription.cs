@@ -1,6 +1,7 @@
 ﻿using Stripe;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Web;
@@ -24,8 +25,29 @@ namespace TeaCommerce.PaymentProviders.Inline
         {
             get
             {
-                return BaseDefaultSettings;
+                return BaseDefaultSettings
+                    .Union(new Dictionary<string, string> {
+                        { "billing_mode", "charge" }
+                    })
+                    .ToDictionary(k => k.Key, v => v.Value);
             }
+        }
+
+        public override PaymentHtmlForm GenerateHtmlForm(Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings)
+        {
+            settings.MustNotBeNull("settings");
+            settings.MustContainKey("billing_mode", "settings");
+
+            var billingMode = settings["billing_mode"];
+
+            ValidateBillingModeSetting(billingMode);
+
+            if (billingMode == "invoice")
+            {
+                return new PaymentHtmlForm { Action = teaCommerceContinueUrl };
+            }
+
+            return base.GenerateHtmlForm(order, teaCommerceContinueUrl, teaCommerceCancelUrl, teaCommerceCallBackUrl, teaCommerceCommunicationUrl, settings);
         }
 
         public override string GetCartNumber(HttpRequest request, IDictionary<string, string> settings)
@@ -85,6 +107,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                 request.MustNotBeNull("request");
                 settings.MustNotBeNull("settings");
                 settings.MustContainKey("mode", "settings");
+                settings.MustContainKey("billing_mode", "settings");
                 settings.MustContainKey(settings["mode"] + "_secret_key", "settings");
 
                 // If in test mode, write out the form data to a text file
@@ -93,8 +116,11 @@ namespace TeaCommerce.PaymentProviders.Inline
                     LogRequest<StripeSubscription>(request, logPostData: true);
                 }
 
+                var billingMode = settings["billing_mode"];
+
+                ValidateBillingModeSetting(billingMode);
+
                 var apiKey = settings[settings["mode"] + "_secret_key"];
-                var capture = settings["capture"].TryParse<bool>() ?? false;
 
                 // Get the Plan ID from the order. As we can only process
                 // one subscription at a time, assume the first order item
@@ -109,7 +135,9 @@ namespace TeaCommerce.PaymentProviders.Inline
                 var customer = customerService.Create(new CustomerCreateOptions
                 {
                     Email = order.PaymentInformation.Email,
-                    SourceToken = request.Form["stripeToken"]
+                    SourceToken = billingMode == "charge"
+                        ? request.Form["stripeToken"]
+                        : null
                 });
 
                 // Subscribe customer to plan
@@ -117,6 +145,9 @@ namespace TeaCommerce.PaymentProviders.Inline
                 var subscription = subscriptionService.Create(new SubscriptionCreateOptions
                 {
                     CustomerId = customer.Id,
+                    Billing = billingMode == "charge" 
+                        ? Billing.ChargeAutomatically 
+                        : Billing.SendInvoice,
                     Items = new List<SubscriptionItemOption>
                     {
                         new SubscriptionItemOption
@@ -195,6 +226,25 @@ namespace TeaCommerce.PaymentProviders.Inline
             }
 
             return response;
+        }
+
+        public override string GetLocalizedSettingsKey(string settingsKey, CultureInfo culture)
+        {
+            switch (settingsKey)
+            {
+                case "billing_mode":
+                    return settingsKey + "<br/><small>Whether to charge payments instantly via credit card or to send out Stripe invoices - charge/invoice.</small>";
+                default:
+                    return base.GetLocalizedSettingsKey(settingsKey, culture);
+            }
+        }
+
+        protected void ValidateBillingModeSetting(string billingMode)
+        {
+            if (billingMode != "invoice" && billingMode != "charge")
+            {
+                throw new ArgumentException("Argument billing_mode is invalid. Must be either 'invoice' or 'charge'.");
+            }
         }
     }
 }
