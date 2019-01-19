@@ -1,15 +1,12 @@
 ﻿using Stripe;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Web;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
-using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 using Order = TeaCommerce.Api.Models.Order;
 
@@ -18,7 +15,7 @@ namespace TeaCommerce.PaymentProviders.Inline
     [PaymentProvider("Stripe Subscription - inline")]
     public class StripeSubscription : BaseStripeProvider
     {
-        public override bool SupportsRetrievalOfPaymentStatus { get { return true; } }
+        public override bool SupportsRetrievalOfPaymentStatus { get { return false; } }
         public override bool SupportsCapturingOfPayment { get { return false; } }
         public override bool SupportsRefundOfPayment { get { return false; } }
         public override bool SupportsCancellationOfPayment { get { return false; } }
