@@ -122,14 +122,6 @@ namespace TeaCommerce.PaymentProviders.Inline
 
                 var apiKey = settings[settings["mode"] + "_secret_key"];
 
-                // Get the Plan ID from the order. As we can only process
-                // one subscription at a time, assume the first order item
-                // is the subscription product.
-                var planId = order.OrderLines.FirstOrDefault()?.Sku;
-
-                // Ensure we have a Plan ID
-                planId.MustNotBeNullOrEmpty("planId");
-
                 // Create the stripe customer
                 var customerService = new CustomerService(apiKey);
                 var customer = customerService.Create(new CustomerCreateOptions
@@ -140,7 +132,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                         : null
                 });
 
-                // Subscribe customer to plan
+                // Subscribe customer to plan(s)
                 var subscriptionService = new SubscriptionService(apiKey);
                 var subscription = subscriptionService.Create(new SubscriptionCreateOptions
                 {
@@ -148,14 +140,13 @@ namespace TeaCommerce.PaymentProviders.Inline
                     Billing = billingMode == "charge" 
                         ? Billing.ChargeAutomatically 
                         : Billing.SendInvoice,
-                    Items = new List<SubscriptionItemOption>
-                    {
+                    Items = new List<SubscriptionItemOption>(order.OrderLines.Select(x =>
                         new SubscriptionItemOption
                         {
-                            PlanId = planId,
-                            Quantity = 1
+                            PlanId = x.Sku,
+                            Quantity = (long)x.Quantity
                         }
-                    },
+                    )),
                     Metadata = new Dictionary<string, string>
                     {
                         { "orderId", order.Id.ToString() },
