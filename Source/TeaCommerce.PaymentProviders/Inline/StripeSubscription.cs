@@ -179,6 +179,8 @@ namespace TeaCommerce.PaymentProviders.Inline
                     var invoice = Mapper<Invoice>.MapFromJson(stripeEvent.Data.Object.ToString());
 
                     if (stripeEvent.Type == "invoice.payment_succeeded"
+                        && order.Properties["stripeCustomerId"] == invoice.CustomerId
+                        && order.Properties["stripeSubscriptionId"] == invoice.SubscriptionId
                         && order.TransactionInformation.PaymentState != PaymentState.Captured)
                     {
                         order.TransactionInformation.TransactionId = invoice.ChargeId;
