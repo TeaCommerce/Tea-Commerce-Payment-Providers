@@ -81,6 +81,7 @@
     <Compile Include="Classic\Invoicing.cs" />
     <Compile Include="Classic\QuickPay10.cs" />
     <Compile Include="Classic\Paynova.cs" />
+    <Compile Include="Inline\BaseStripeProvider.cs" />
     <Compile Include="Inline\Klarna.cs" />
     <Compile Include="Inline\CyberSource.cs" />
     <Compile Include="Classic\PaymentSense.cs" />
@@ -93,6 +94,7 @@
     <Compile Include="Classic\Payer.cs" />
     <Compile Include="Classic\PayEx.cs" />
     <Compile Include="Classic\PayPal.cs" />
+    <Compile Include="Inline\StripeSubscription.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Classic\QuickPay.cs" />
     <Compile Include="Classic\SagePay.cs" />
