@@ -26,7 +26,7 @@ namespace TeaCommerce.PaymentProviders.Inline
         {
             get
             {
-                return BaseDefaultSettings
+                return base.DefaultSettings
                     .Union(new Dictionary<string, string> {
                         { "capture", "false" }
                     })

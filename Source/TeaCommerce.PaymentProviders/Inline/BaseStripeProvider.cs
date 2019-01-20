@@ -18,7 +18,7 @@ namespace TeaCommerce.PaymentProviders.Inline
 
         public override bool FinalizeAtContinueUrl { get { return true; } }
 
-        public IDictionary<string, string> BaseDefaultSettings
+        public override IDictionary<string, string> DefaultSettings
         {
             get
             {

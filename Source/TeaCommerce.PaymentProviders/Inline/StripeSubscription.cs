@@ -13,7 +13,7 @@ using Order = TeaCommerce.Api.Models.Order;
 
 namespace TeaCommerce.PaymentProviders.Inline
 {
-    [PaymentProvider("Stripe Subscription - inline")]
+    [PaymentProvider("StripeSubscription - inline")]
     public class StripeSubscription : BaseStripeProvider
     {
         public override bool SupportsRetrievalOfPaymentStatus { get { return false; } }
@@ -25,7 +25,7 @@ namespace TeaCommerce.PaymentProviders.Inline
         {
             get
             {
-                return BaseDefaultSettings
+                return base.DefaultSettings
                     .Union(new Dictionary<string, string> {
                         { "billing_mode", "charge" }
                     })
