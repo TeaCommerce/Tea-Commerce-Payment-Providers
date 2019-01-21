@@ -96,6 +96,10 @@ namespace TeaCommerce.PaymentProviders.Inline
                 var apiKey = settings[settings["mode"] + "_secret_key"];
                 var capture = settings["capture"].TryParse<bool>() ?? false;
 
+                // TODO: Create a flag to decide whether to create customers
+                // or maybe we should create them if order.customerId is set?
+                // var customerService = new CustomerService(apiKey);
+
                 var chargeService = new ChargeService(apiKey);
 
                 var chargeOptions = new ChargeCreateOptions {
