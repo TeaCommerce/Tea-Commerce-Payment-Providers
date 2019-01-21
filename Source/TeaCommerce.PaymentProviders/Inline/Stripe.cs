@@ -109,7 +109,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                 chargeOptions.Metadata.Add("orderId", order.Id.ToString());
                 chargeOptions.Metadata.Add("cartNumber", order.CartNumber);
 
-                if (settings.ContainsKey("send_receipt") && settings["send_receipt"] == "true")
+                if (settings.ContainsKey("send_stripe_receipt") && settings["send_stripe_receipt"] == "true")
                 {
                     chargeOptions.ReceiptEmail = order.PaymentInformation.Email;
                 }
