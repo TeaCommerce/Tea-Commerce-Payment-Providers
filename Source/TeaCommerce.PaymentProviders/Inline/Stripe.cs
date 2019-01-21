@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Web;
@@ -16,111 +15,23 @@ using Order = TeaCommerce.Api.Models.Order;
 namespace TeaCommerce.PaymentProviders.Inline
 {
     [PaymentProvider("Stripe - inline")]
-    public class Stripe : APaymentProvider
+    public class Stripe : BaseStripeProvider
     {
-        public override string DocumentationLink { get { return "https://stripe.com/docs"; } }
-
         public override bool SupportsRetrievalOfPaymentStatus { get { return true; } }
         public override bool SupportsCapturingOfPayment { get { return true; } }
         public override bool SupportsRefundOfPayment { get { return true; } }
         public override bool SupportsCancellationOfPayment { get { return true; } }
 
-        public override bool FinalizeAtContinueUrl { get { return true; } }
-
         public override IDictionary<string, string> DefaultSettings
         {
             get
             {
-                return new Dictionary<string, string> {
-                    { "form_url", "" },
-                    { "continue_url", "" },
-                    { "cancel_url", "" },
-                    { "capture", "false" },
-                    { "billing_address_line1_property_alias", "streetAddress" },
-                    { "billing_address_line2_property_alias", "" },
-                    { "billing_city_property_alias", "city" },
-                    { "billing_state_property_alias", "" },
-                    { "billing_zip_code_property_alias", "zipCode" },
-                    { "test_secret_key", "" },
-                    { "test_public_key", "" },
-                    { "live_secret_key", "" },
-                    { "live_public_key", "" },
-                    { "mode", "test" },
-                };
+                return base.DefaultSettings
+                    .Union(new Dictionary<string, string> {
+                        { "capture", "false" }
+                    })
+                    .ToDictionary(k => k.Key, v => v.Value);
             }
-        }
-
-        public override PaymentHtmlForm GenerateHtmlForm(Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings)
-        {
-            order.MustNotBeNull("order");
-            settings.MustNotBeNull("settings");
-            settings.MustContainKey("form_url", "settings");
-            settings.MustContainKey("mode", "settings");
-            settings.MustContainKey(settings["mode"] + "_public_key", "settings");
-
-            var htmlForm = new PaymentHtmlForm {
-                Action = settings["form_url"]
-            };
-
-            var settingsToExclude = new[] {
-                "form_url",
-                "capture",
-                "billing_address_line1_property_alias",
-                "billing_address_line2_property_alias",
-                "billing_city_property_alias",
-                "billing_state_property_alias",
-                "billing_zip_code_property_alias",
-                "test_secret_key",
-                "test_public_key",
-                "live_secret_key",
-                "live_public_key",
-                "mode"
-            };
-
-            htmlForm.InputFields = settings.Where(i => !settingsToExclude.Contains(i.Key)).ToDictionary(i => i.Key, i => i.Value);
-
-            htmlForm.InputFields["api_key"] = settings[settings["mode"] + "_public_key"];
-            htmlForm.InputFields["continue_url"] = teaCommerceContinueUrl;
-            htmlForm.InputFields["cancel_url"] = teaCommerceCancelUrl;
-
-            if (settings.ContainsKey("billing_address_line1_property_alias") && !string.IsNullOrWhiteSpace(settings["billing_address_line1_property_alias"]))
-                htmlForm.InputFields["billing_address_line1"] = order.Properties.First(x => x.Alias == settings["billing_address_line1_property_alias"]).Value;
-
-            if (settings.ContainsKey("billing_address_line2_property_alias") && !string.IsNullOrWhiteSpace(settings["billing_address_line2_property_alias"]))
-                htmlForm.InputFields["billing_address_line2"] = order.Properties.First(x => x.Alias == settings["billing_address_line2_property_alias"]).Value;
-
-            if (settings.ContainsKey("billing_city_property_alias") && !string.IsNullOrWhiteSpace(settings["billing_city_property_alias"]))
-                htmlForm.InputFields["billing_city"] = order.Properties.First(x => x.Alias == settings["billing_city_property_alias"]).Value;
-
-            if (settings.ContainsKey("billing_state_property_alias") && !string.IsNullOrWhiteSpace(settings["billing_state_property_alias"]))
-                htmlForm.InputFields["billing_state"] = order.Properties.First(x => x.Alias == settings["billing_state_property_alias"]).Value;
-
-            if (settings.ContainsKey("billing_zip_code_property_alias") && !string.IsNullOrWhiteSpace(settings["billing_zip_code_property_alias"]))
-                htmlForm.InputFields["billing_zip_code"] = order.Properties.First(x => x.Alias == settings["billing_zip_code_property_alias"]).Value;
-
-            if (order.PaymentInformation != null && order.PaymentInformation.CountryId > 0)
-            {
-                var country = CountryService.Instance.Get(order.StoreId, order.PaymentInformation.CountryId);
-                htmlForm.InputFields["billing_country"] = country.RegionCode.ToLowerInvariant();
-            }
-
-            return htmlForm;
-        }
-
-        public override string GetContinueUrl(Order order, IDictionary<string, string> settings)
-        {
-            settings.MustNotBeNull("settings");
-            settings.MustContainKey("continue_url", "settings");
-
-            return settings["continue_url"];
-        }
-
-        public override string GetCancelUrl(Order order, IDictionary<string, string> settings)
-        {
-            settings.MustNotBeNull("settings");
-            settings.MustContainKey("cancel_url", "settings");
-
-            return settings["cancel_url"];
         }
 
         public override string GetCartNumber(HttpRequest request, IDictionary<string, string> settings)
@@ -219,28 +130,7 @@ namespace TeaCommerce.PaymentProviders.Inline
             }
             catch (StripeException e)
             {
-                // Pass through request fields
-                var requestFields = string.Join("", request.Form.AllKeys.Select(k => "<input type=\"hidden\" name=\"" + k + "\" value=\"" + request.Form[k] + "\" />"));
-
-                //Add error details from the exception.
-                requestFields = requestFields + "<input type=\"hidden\" name=\"TransactionFailed\" value=\"true\" />";
-                requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.chargeId\" value=\"" + e.StripeError.ChargeId + "\" />";
-                requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.Code\" value=\"" + e.StripeError.Code + "\" />";
-                requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.Error\" value=\"" + e.StripeError.Error + "\" />";
-                requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.ErrorDescription\" value=\"" + e.StripeError.ErrorDescription + "\" />";
-                requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.ErrorType\" value=\"" + e.StripeError.ErrorType + "\" />";
-                requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.Message\" value=\"" + e.StripeError.Message + "\" />";
-                requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.Parameter\" value=\"" + e.StripeError.Parameter + "\" />";
-
-                var paymentForm = PaymentMethodService.Instance.Get(order.StoreId, order.PaymentInformation.PaymentMethodId.Value).GeneratePaymentForm(order, requestFields);
-
-                //Force the form to auto submit
-                paymentForm += "<script type=\"text/javascript\">document.forms[0].submit();</script>";
-
-                //Write out the form
-                HttpContext.Current.Response.Clear();
-                HttpContext.Current.Response.Write(paymentForm);
-                HttpContext.Current.Response.End();
+                ReturnToPaymentFormWithException(order, request, e);
             }
             catch (Exception exp)
             {
@@ -389,34 +279,8 @@ namespace TeaCommerce.PaymentProviders.Inline
         {
             switch (settingsKey)
             {
-                case "form_url":
-                    return settingsKey + "<br/><small>The url of the page with the Stripe payment form on - e.g. /payment/</small>";
-                case "continue_url":
-                    return settingsKey + "<br/><small>The url to navigate to after payment is processed - e.g. /confirmation/</small>";
-                case "cancel_url":
-                    return settingsKey + "<br/><small>The url to navigate to if the customer cancels the payment - e.g. /cancel/</small>";
                 case "capture":
                     return settingsKey + "<br/><small>Flag indicating if a payment should be captured instantly - true/false.</small>";
-                case "billing_address_line1_property_alias":
-                    return settingsKey + "<br/><small>The alias of the property containing line 1 of the billing address - e.g. addressLine1. Used by Stripe for Radar verification.</small>";
-                case "billing_address_line2_property_alias":
-                    return settingsKey + "<br/><small>The alias of the property containing line 2 of the billing address - e.g. addressLine2. Used by Stripe for Radar verification.</small>";
-                case "billing_city_property_alias":
-                    return settingsKey + "<br/><small>The alias of the property containing the billing address city - e.g. city. Used by Stripe for Radar verification.</small>";
-                case "billing_state_property_alias":
-                    return settingsKey + "<br/><small>The alias of the property containing the billing address state - e.g. state. Used by Stripe for Radar verification.</small>";
-                case "billing_zip_code_property_alias":
-                    return settingsKey + "<br/><small>The alias of the property containing the billing address zip code - e.g. zipCode. Used by Stripe for Radar verification.</small>";
-                case "test_secret_key":
-                    return settingsKey + "<br/><small>Your test stripe secret key.</small>";
-                case "test_public_key":
-                    return settingsKey + "<br/><small>Your test stripe public key.</small>";
-                case "live_secret_key":
-                    return settingsKey + "<br/><small>Your live stripe secret key.</small>";
-                case "live_public_key":
-                    return settingsKey + "<br/><small>Your live stripe public key.</small>";
-                case "mode":
-                    return settingsKey + "<br/><small>The mode of the provider - test/live.</small>";
                 default:
                     return base.GetLocalizedSettingsKey(settingsKey, culture);
             }
@@ -449,48 +313,6 @@ namespace TeaCommerce.PaymentProviders.Inline
             }
 
             return paymentState;
-        }
-
-        protected Event GetStripeEvent(HttpRequest request)
-        {
-            Event stripeEvent = null;
-
-            if (HttpContext.Current.Items["TC_StripeEvent"] != null)
-            {
-                stripeEvent = (Event)HttpContext.Current.Items["TC_StripeEvent"];
-            }
-            else
-            {
-                try
-                {
-                    if (request.InputStream.CanSeek)
-                    {
-                        request.InputStream.Seek(0, SeekOrigin.Begin);
-                    }
-
-                    using (StreamReader reader = new StreamReader(request.InputStream))
-                    {
-                        stripeEvent = EventUtility.ParseEvent(reader.ReadToEnd());
-
-                        HttpContext.Current.Items["TC_StripeEvent"] = stripeEvent;
-                    }
-                }
-                catch
-                {
-                }
-            }
-
-            return stripeEvent;
-        }
-
-        private static long DollarsToCents(decimal val)
-        {
-            return (long)Math.Round(val * 100M, MidpointRounding.AwayFromZero);
-        }
-
-        private static decimal CentsToDollars(long val)
-        {
-            return (decimal)val / 100;
         }
     }
 }
