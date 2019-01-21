@@ -129,7 +129,11 @@ namespace TeaCommerce.PaymentProviders.Inline
                     Email = order.PaymentInformation.Email,
                     SourceToken = billingMode == "charge"
                         ? request.Form["stripeToken"]
-                        : null
+                        : null,
+                    Metadata = new Dictionary<string, string>
+                    {
+                        { "customerId", order.CustomerId }
+                    }
                 });
 
                 // Subscribe customer to plan(s)
