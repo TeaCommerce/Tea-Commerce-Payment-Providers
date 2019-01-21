@@ -28,7 +28,8 @@ namespace TeaCommerce.PaymentProviders.Inline
             {
                 return base.DefaultSettings
                     .Union(new Dictionary<string, string> {
-                        { "capture", "false" }
+                        { "capture", "false" },
+                        { "send_stripe_receipt", "false" }
                     })
                     .ToDictionary(k => k.Key, v => v.Value);
             }
@@ -100,6 +101,11 @@ namespace TeaCommerce.PaymentProviders.Inline
                     Description = order.CartNumber,
                     Capture = capture
                 };
+
+                if (settings.ContainsKey("send_receipt") && settings["send_receipt"] == "true")
+                {
+                    chargeOptions.ReceiptEmail = order.PaymentInformation.Email;
+                }
 
                 var charge = chargeService.Create(chargeOptions);
 
@@ -281,6 +287,8 @@ namespace TeaCommerce.PaymentProviders.Inline
             {
                 case "capture":
                     return settingsKey + "<br/><small>Flag indicating if a payment should be captured instantly - true/false.</small>";
+                case "send_stripe_receipt":
+                    return settingsKey + "<br/><small>Flag indicating whether to send a Stripe receipt to the customer - true/false. Receipts are only sent when in live mode.</small>";
                 default:
                     return base.GetLocalizedSettingsKey(settingsKey, culture);
             }
