@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Web;
+using System.Web.Security;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
@@ -193,6 +194,32 @@ namespace TeaCommerce.PaymentProviders.Inline
 
             return stripeEvent;
         }
+
+        //protected Customer GetOrCreateCustomer(CustomerService customerService, Order order)
+        //{
+        //    Customer customer = null;
+
+        //    // TODO: Need a way to lookup a customer from the order CustomerId
+        //    // so that orders can be associated with the same customer object
+        //    //if (!string.IsNullOrWhiteSpace(order.CustomerId))
+        //    //{
+        //    //    customerService.Get(order.CustomerId);
+        //    //}
+
+        //    if (customer == null)
+        //    {
+        //        customer = customerService.Create(new CustomerCreateOptions
+        //        {
+        //            Email = order.PaymentInformation.Email,
+        //            Metadata = new Dictionary<string, string>
+        //            {
+        //                { "customerId", order.CustomerId }
+        //            }
+        //        });
+        //    }
+
+        //    return customer;
+        //}
 
         protected static long DollarsToCents(decimal val)
         {
