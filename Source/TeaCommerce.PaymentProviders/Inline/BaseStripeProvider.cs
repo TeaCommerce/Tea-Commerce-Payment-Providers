@@ -201,6 +201,7 @@ namespace TeaCommerce.PaymentProviders.Inline
 
         //    // TODO: Need a way to lookup a customer from the order CustomerId
         //    // so that orders can be associated with the same customer object
+        //    // maybe looking in DB stripeCustomerId from order by same customer?
         //    //if (!string.IsNullOrWhiteSpace(order.CustomerId))
         //    //{
         //    //    customerService.Get(order.CustomerId);
