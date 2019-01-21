@@ -134,13 +134,14 @@ namespace TeaCommerce.PaymentProviders.Inline
 
                 // Subscribe customer to plan(s)
                 var subscriptionService = new SubscriptionService(apiKey);
-                var subscription = subscriptionService.Create(new SubscriptionCreateOptions
+                var subscriptionOptions = new SubscriptionCreateOptions
                 {
                     CustomerId = customer.Id,
-                    Billing = billingMode == "charge" 
-                        ? Billing.ChargeAutomatically 
+                    Billing = billingMode == "charge"
+                        ? Billing.ChargeAutomatically
                         : Billing.SendInvoice,
-                    Items = order.OrderLines.Select(x => new SubscriptionItemOption {
+                    Items = order.OrderLines.Select(x => new SubscriptionItemOption
+                    {
                         PlanId = !string.IsNullOrWhiteSpace(x.Properties["planId"])
                             ? x.Properties["planId"]
                             : x.Sku,
@@ -152,7 +153,14 @@ namespace TeaCommerce.PaymentProviders.Inline
                         { "orderId", order.Id.ToString() },
                         { "cartNumber", order.CartNumber }
                     }
-                });
+                };
+
+                foreach(var prop in order.Properties)
+                {
+                    subscriptionOptions.Metadata.Add(prop.Alias, prop.Value);
+                }
+
+                var subscription = subscriptionService.Create(subscriptionOptions);
 
                 // Stash the stripe info in the order
                 order.Properties.AddOrUpdate("stripeCustomerId", customer.Id);
