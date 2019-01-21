@@ -146,6 +146,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                             : x.Sku,
                         Quantity = (long)x.Quantity
                     }).ToList(),
+                    TaxPercent = order.VatRate.Value,
                     Metadata = new Dictionary<string, string>
                     {
                         { "orderId", order.Id.ToString() },
