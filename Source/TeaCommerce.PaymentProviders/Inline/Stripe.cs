@@ -56,7 +56,11 @@ namespace TeaCommerce.PaymentProviders.Inline
                 if (stripeEvent != null && stripeEvent.Type.StartsWith("charge."))
                 {
                     var stripeCharge = Mapper<Charge>.MapFromJson(stripeEvent.Data.Object.ToString());
-                    cartNumber = stripeCharge.Description;
+
+                    // Get cart number from meta data or description (legacy)
+                    cartNumber = stripeCharge.Metadata.ContainsKey("cartNumber")
+                        ? stripeCharge.Metadata["cartNumber"] 
+                        : stripeCharge.Description;
                 }
                 else
                 {
@@ -98,9 +102,12 @@ namespace TeaCommerce.PaymentProviders.Inline
                     Amount = DollarsToCents(order.TotalPrice.Value.WithVat),
                     Currency = CurrencyService.Instance.Get(order.StoreId, order.CurrencyId).IsoCode,
                     SourceId = request.Form["stripeToken"],
-                    Description = order.CartNumber,
+                    Description = $"Payment for {order.CartNumber} by {order.PaymentInformation.Email}",
                     Capture = capture
                 };
+
+                chargeOptions.Metadata.Add("orderId", order.Id.ToString());
+                chargeOptions.Metadata.Add("cartNumber", order.CartNumber);
 
                 if (settings.ContainsKey("send_receipt") && settings["send_receipt"] == "true")
                 {
