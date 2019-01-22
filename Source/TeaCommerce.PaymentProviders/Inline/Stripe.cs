@@ -106,7 +106,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                     Amount = DollarsToCents(order.TotalPrice.Value.WithVat),
                     Currency = CurrencyService.Instance.Get(order.StoreId, order.CurrencyId).IsoCode,
                     SourceId = request.Form["stripeToken"],
-                    Description = $"Payment for {order.CartNumber} by {order.PaymentInformation.Email}",
+                    Description = $"{order.CartNumber} - {order.PaymentInformation.Email}",
                     Capture = capture
                 };
 
