@@ -1,10 +1,6 @@
 @ECHO off
 SETLOCAL
 
-REM Parse timestamp
-FOR /f "tokens=2 delims==" %%I IN ('wmic os get localdatetime /format:list') DO SET TIMESTAMP=%%I
-SET TIMESTAMP=%TIMESTAMP:~0,8%.%TIMESTAMP:~8,6%
-
 REM Parse command line arg if present
 SET ARG1=%~1
 
@@ -18,15 +14,6 @@ if "%BUILD_CONFIG%" == "r" (
   SET BUILD_CONFIG=Release
 ) else (
   SET BUILD_CONFIG=Debug
-)
-
-REM Load the build version from the version.txt file
-SET /P BUILD_VERSION=<version.txt
-
-REM If configured for debug mode, append an '-alpha+timestamp' 
-REM suffix to the version number
-IF "%BUILD_CONFIG%" == "Debug" (
-  SET BUILD_VERSION=%BUILD_VERSION%-alpha+%TIMESTAMP%
 )
 
 REM Trigger the build
