@@ -16,6 +16,13 @@ namespace TeaCommerce.PaymentProviders.Inline
     [PaymentProvider("StripeSubscription - inline")]
     public class StripeSubscription : BaseStripeProvider
     {
+        public static event EventHandler<StripeSubscriptionEventArgs> StripeSubscriptionEvent;
+
+        public void OnStripeSubscriptionEvent(StripeSubscriptionEventArgs args)
+        {
+            StripeSubscriptionEvent?.Invoke(this, args);
+        }
+
         public override bool SupportsRetrievalOfPaymentStatus { get { return false; } }
         public override bool SupportsCapturingOfPayment { get { return false; } }
         public override bool SupportsRefundOfPayment { get { return false; } }
@@ -211,15 +218,77 @@ namespace TeaCommerce.PaymentProviders.Inline
                 if (stripeEvent.Type.StartsWith("invoice."))
                 {
                     var invoice = Mapper<Invoice>.MapFromJson(stripeEvent.Data.Object.ToString());
-
-                    if (stripeEvent.Type == "invoice.payment_succeeded"
-                        && order.Properties["stripeCustomerId"] == invoice.CustomerId
-                        && order.Properties["stripeSubscriptionId"] == invoice.SubscriptionId
-                        && order.TransactionInformation.PaymentState != PaymentState.Captured)
+                    if (order.Properties["stripeCustomerId"] == invoice.CustomerId
+                        && order.Properties["stripeSubscriptionId"] == invoice.SubscriptionId)
                     {
-                        order.TransactionInformation.TransactionId = invoice.ChargeId;
-                        order.TransactionInformation.PaymentState = PaymentState.Captured;
-                        order.Save();
+                        var eventArgs = new StripeSubscriptionEventArgs
+                        {
+                            Order = order,
+                            Subscription = invoice.Subscription,
+                            Invoice = invoice
+                        };
+
+                        switch(stripeEvent.Type)
+                        {
+                            case "invoice.payment_succeeded":
+                                if (order.TransactionInformation.PaymentState == PaymentState.Initialized
+                                    || order.TransactionInformation.PaymentState == PaymentState.Authorized)
+                                {
+                                    order.TransactionInformation.TransactionId = invoice.ChargeId;
+                                    order.TransactionInformation.PaymentState = PaymentState.Captured;
+                                    order.Save();
+
+                                    eventArgs.Type = StripeSubscriptionEventType.SubscriptionStarted;
+                                }
+                                else
+                                {
+                                    eventArgs.Type = StripeSubscriptionEventType.SubscriptionRenewed;
+                                }
+                                break;
+                            case "invoice.payment_failed":
+                                if (!string.IsNullOrWhiteSpace(order.TransactionInformation.TransactionId)
+                                    && invoice.Status == "past_due")
+                                {
+                                    eventArgs.Type = StripeSubscriptionEventType.SubscriptionPastDue;
+                                }
+                                break;
+                            case "invoice.upcoming":
+                                eventArgs.Type = StripeSubscriptionEventType.SubscriptionRenewing;
+                                break;
+                        }
+
+                        OnStripeSubscriptionEvent(eventArgs);
+                    }
+                }
+                else if (stripeEvent.Type.StartsWith("customer.subscription."))
+                {
+                    var subscription = Mapper<Subscription>.MapFromJson(stripeEvent.Data.Object.ToString());
+                    if (order.Properties["stripeCustomerId"] == subscription.CustomerId
+                        && order.Properties["stripeSubscriptionId"] == subscription.Id)
+                    {
+                        var eventArgs = new StripeSubscriptionEventArgs
+                        {
+                            Order = order,
+                            Subscription = subscription
+                        };
+
+                        switch (stripeEvent.Type)
+                        {
+                            case "customer.subscription.trial_will_end":
+                                eventArgs.Type = StripeSubscriptionEventType.SubscriptionTrialEnding;
+                                break;
+                            case "customer.subscription.created":
+                                eventArgs.Type = StripeSubscriptionEventType.SubscriptionCreated;
+                                break;
+                            case "customer.subscription.updated":
+                                eventArgs.Type = StripeSubscriptionEventType.SubscriptionUpdated;
+                                break;
+                            case "customer.subscription.deleted":
+                                eventArgs.Type = StripeSubscriptionEventType.SubscriptionDeleted;
+                                break;
+                        }
+
+                        OnStripeSubscriptionEvent(eventArgs);
                     }
                 }
             }
@@ -249,5 +318,25 @@ namespace TeaCommerce.PaymentProviders.Inline
                 throw new ArgumentException("Argument billing_mode is invalid. Must be either 'invoice' or 'charge'.");
             }
         }
+    }
+
+    public class StripeSubscriptionEventArgs : EventArgs
+    {
+        public Order Order { get; set; }
+        public Subscription Subscription { get; set; }
+        public Invoice Invoice { get; set; }
+        public StripeSubscriptionEventType Type { get; set; }
+    }
+
+    public enum StripeSubscriptionEventType
+    {
+        SubscriptionCreated,
+        SubscriptionStarted,
+        SubscriptionRenewing,
+        SubscriptionRenewed,
+        SubscriptionPastDue,
+        SubscriptionTrialEnding,
+        SubscriptionUpdated,
+        SubscriptionDeleted
     }
 }
