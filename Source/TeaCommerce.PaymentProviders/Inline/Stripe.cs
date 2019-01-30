@@ -110,8 +110,11 @@ namespace TeaCommerce.PaymentProviders.Inline
                     Capture = capture
                 };
 
-                chargeOptions.Metadata.Add("orderId", order.Id.ToString());
-                chargeOptions.Metadata.Add("cartNumber", order.CartNumber);
+                chargeOptions.Metadata = new Dictionary<string, string>
+                {
+                    { "orderId", order.Id.ToString() },
+                    { "cartNumber", order.CartNumber }
+                };
 
                 if (settings.ContainsKey("send_stripe_receipt") && settings["send_stripe_receipt"] == "true")
                 {
