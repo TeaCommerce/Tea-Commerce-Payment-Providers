@@ -107,13 +107,12 @@ namespace TeaCommerce.PaymentProviders.Inline
                     Currency = CurrencyService.Instance.Get(order.StoreId, order.CurrencyId).IsoCode,
                     SourceId = request.Form["stripeToken"],
                     Description = $"{order.CartNumber} - {order.PaymentInformation.Email}",
-                    Capture = capture
-                };
-
-                chargeOptions.Metadata = new Dictionary<string, string>
-                {
-                    { "orderId", order.Id.ToString() },
-                    { "cartNumber", order.CartNumber }
+                    Capture = capture,
+                    Metadata = new Dictionary<string, string>
+                    {
+                        { "orderId", order.Id.ToString() },
+                        { "cartNumber", order.CartNumber }
+                    }
                 };
 
                 if (settings.ContainsKey("send_stripe_receipt") && settings["send_stripe_receipt"] == "true")
