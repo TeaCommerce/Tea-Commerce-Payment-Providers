@@ -35,6 +35,9 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AuthorizeNet, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\AuthorizeNet.1.9.6\lib\AuthorizeNet.dll</HintPath>
+    </Reference>
     <Reference Include="Klarna.Checkout">
       <HintPath>..\Lib\Klarna\Klarna.Checkout.dll</HintPath>
     </Reference>
@@ -109,11 +112,6 @@
     <Compile Include="Inline\Stripe.cs" />
     <Compile Include="Classic\TwoCheckOut.cs" />
     <Compile Include="Classic\Wannafind.cs" />
-    <Compile Include="Web References\AuthorizeNetService\Reference.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Reference.map</DependentUpon>
-    </Compile>
     <Compile Include="Web References\PayExService\Reference.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -138,95 +136,6 @@
     </None>
     <None Include="Service References\ePayService\TeaCommerce.PaymentProviders.ePayService.TransactionInformationType.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\ANetApiResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\ARBCancelSubscriptionResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\ARBCreateSubscriptionResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\ARBGetSubscriptionListResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\ARBGetSubscriptionStatusResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\ARBUpdateSubscriptionResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\CreateCustomerPaymentProfileResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\CreateCustomerProfileResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\CreateCustomerProfileTransactionResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\CreateCustomerShippingAddressResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\DeleteCustomerPaymentProfileResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\DeleteCustomerProfileResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\DeleteCustomerShippingAddressResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\GetBatchStatisticsResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\GetCustomerPaymentProfileResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\GetCustomerProfileIdsResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\GetCustomerProfileResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\GetCustomerShippingAddressResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\GetHostedProfilePageResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\GetSettledBatchListResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\GetTransactionDetailsResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\GetTransactionListResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\GetUnsettledTransactionListResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\Reference.map">
-      <Generator>MSDiscoCodeGenerator</Generator>
-      <LastGenOutput>Reference.cs</LastGenOutput>
-    </None>
-    <None Include="Web References\AuthorizeNetService\Service.wsdl" />
-    <None Include="Web References\AuthorizeNetService\UpdateCustomerPaymentProfileResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\UpdateCustomerProfileResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\UpdateCustomerShippingAddressResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\UpdateSplitTenderGroupResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\AuthorizeNetService\ValidateCustomerPaymentProfileResponseType.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
     </None>
     <None Include="Web References\PayExService\pxorder.wsdl" />
     <None Include="Web References\PayExService\Reference.map">
@@ -267,17 +176,6 @@
     <WebReferences Include="Web References\" />
   </ItemGroup>
   <ItemGroup>
-    <WebReferenceUrl Include="https://apitest.authorize.net/soap/v1/Service.asmx">
-      <UrlBehavior>Static</UrlBehavior>
-      <RelPath>Web References\AuthorizeNetService\</RelPath>
-      <UpdateFromURL>https://apitest.authorize.net/soap/v1/Service.asmx</UpdateFromURL>
-      <ServiceLocationURL>
-      </ServiceLocationURL>
-      <CachedDynamicPropName>
-      </CachedDynamicPropName>
-      <CachedAppSettingsObjectName>Settings</CachedAppSettingsObjectName>
-      <CachedSettingsPropName>TeaCommerce_PaymentProviders_AuthorizeNetService_Service</CachedSettingsPropName>
-    </WebReferenceUrl>
     <WebReferenceUrl Include="https://betaling.wannafind.dk/api/customerAPI.php%3fwsdl">
       <UrlBehavior>Static</UrlBehavior>
       <RelPath>Web References\wannafindService\</RelPath>
@@ -300,9 +198,6 @@
       <CachedAppSettingsObjectName>Settings</CachedAppSettingsObjectName>
       <CachedSettingsPropName>TeaCommerce_PaymentProviders_PayExService_PxOrder</CachedSettingsPropName>
     </WebReferenceUrl>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Web References\AuthorizeNetService\Service.disco" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
