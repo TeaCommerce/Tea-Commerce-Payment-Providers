@@ -58,7 +58,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                     var stripeCharge = Mapper<Charge>.MapFromJson(stripeEvent.Data.Object.ToString());
 
                     // Get cart number from meta data or description (legacy)
-                    cartNumber = stripeCharge.Metadata.ContainsKey("cartNumber")
+                    cartNumber = stripeCharge.Metadata != null && stripeCharge.Metadata.ContainsKey("cartNumber")
                         ? stripeCharge.Metadata["cartNumber"] 
                         : stripeCharge.Description;
                 }
