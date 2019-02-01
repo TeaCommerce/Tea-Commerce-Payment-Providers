@@ -2,19 +2,18 @@
 using AuthorizeNet.Api.Controllers;
 using AuthorizeNet.Api.Controllers.Bases;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Web;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Models;
-using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 
 namespace TeaCommerce.PaymentProviders.Classic
@@ -28,7 +27,10 @@ namespace TeaCommerce.PaymentProviders.Classic
             }
         }
 
-        public override bool SupportsRetrievalOfPaymentStatus { get { return false; } }
+        public override bool SupportsRetrievalOfPaymentStatus { get { return true; } }
+        public override bool SupportsCapturingOfPayment { get { return true; } }
+        public override bool SupportsRefundOfPayment { get { return true; } }
+        public override bool SupportsCancellationOfPayment { get { return true; } }
 
         public override IDictionary<string, string> DefaultSettings
         {
@@ -38,11 +40,14 @@ namespace TeaCommerce.PaymentProviders.Classic
                 {
                     { "continue_url", "" },
                     { "cancel_url", "" },
+                    { "order_options_merchant_name", "" },
+                    { "capture", "true" },
                     { "sandbox_api_login_id", "" },
                     { "sandbox_transaction_key", "" },
+                    { "sandbox_signature_key", "" },
                     { "live_api_login_id", "" },
                     { "live_transaction_key", "" },
-                    { "capture", "true" },
+                    { "live_signature_key", "" },
                     { "mode", "sandbox" }
                 };
             }
@@ -54,22 +59,11 @@ namespace TeaCommerce.PaymentProviders.Classic
             settings.MustNotBeNull("settings");
             settings.MustContainKey("capture", "settings");
             settings.MustContainKey("mode", "settings");
+            settings.MustContainKey(settings["mode"] + "_api_login_id", "settings");
+            settings.MustContainKey(settings["mode"] + "_transaction_key", "settings");
 
-            // Ensure TLS 1.2
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-
-            // Configrue the environment
-            ApiOperationBase<ANetApiRequest, ANetApiResponse>.RunEnvironment = settings["mode"] == "sandbox"
-                ? global::AuthorizeNet.Environment.SANDBOX
-                : global::AuthorizeNet.Environment.PRODUCTION;
-
-            // Setup merchant auth settings
-            ApiOperationBase<ANetApiRequest, ANetApiResponse>.MerchantAuthentication = new merchantAuthenticationType
-            {
-                name = settings[settings["mode"] + "_api_login_id"],
-                ItemElementName = ItemChoiceType.transactionKey,
-                Item = settings[settings["mode"] + "_transaction_key"],
-            };
+            // Configure AuthorizeNet
+            ConfigureAuthorizeNet(settings);
 
             // Create the transition request
             var transactionRequest = new transactionRequestType
@@ -78,11 +72,6 @@ namespace TeaCommerce.PaymentProviders.Classic
                     ? transactionTypeEnum.authCaptureTransaction.ToString()
                     : transactionTypeEnum.authOnlyTransaction.ToString(),
                 amount = ToTwoDecimalPlaces(order.TotalPrice.Value.WithVat),
-                tax = new extendedAmountType
-                {
-                    name = VatGroupService.Instance.Get(order.StoreId, order.VatGroupId).Name,
-                    amount = ToTwoDecimalPlaces(order.TotalPrice.Value.Vat)
-                },
                 customer = new customerDataType
                 {
                     id = order.CustomerId,
@@ -122,6 +111,10 @@ namespace TeaCommerce.PaymentProviders.Classic
             AddOptionsToPaymentSettings(paymentSettings, settingNameEnum.hostedPaymentButtonOptions, buttonOptions);
 
             var orderOptions = GetOptionsFromSettings(settings, "order_options_");
+            if (orderOptions.ContainsKey("merchantName") && !orderOptions.ContainsKey("show"))
+            {
+                orderOptions.Add("show", true);
+            }
             AddOptionsToPaymentSettings(paymentSettings, settingNameEnum.hostedPaymentOrderOptions, orderOptions);
 
             var styleOptions = GetOptionsFromSettings(settings, "style_options_");
@@ -200,44 +193,47 @@ namespace TeaCommerce.PaymentProviders.Classic
             {
                 request.MustNotBeNull("request");
                 settings.MustNotBeNull("settings");
-                settings.MustContainKey("md5HashKey", "settings"); 
-                settings.MustContainKey("x_login", "settings");
+                settings.MustContainKey("mode", "settings");
+                settings.MustContainKey(settings["mode"] + "_api_login_id", "settings");
+                settings.MustContainKey(settings["mode"] + "_transaction_key", "settings");
+                settings.MustContainKey(settings["mode"] + "_signature_key", "settings");
 
-                //Write data when testing
+                // Write data when testing
                 if (settings.ContainsKey("mode") && settings["mode"] == "sandbox")
                 {
                     LogRequest<AuthorizeNet>(request, logPostData: true);
                 }
 
-                string responseCode = request.Form["x_response_code"];
-                if (responseCode == "1")
+                var authorizeNetEvent = GetValidatedWebhookEvent(settings[settings["mode"] + "_signature_key"]);
+                if (authorizeNetEvent != null && authorizeNetEvent.eventType.StartsWith("net.authorize.payment."))
                 {
-
-                    string amount = request.Form["x_amount"];
-                    string transaction = request.Form["x_trans_id"];
-
-                    string gatewayMd5Hash = request.Form["x_MD5_Hash"];
-
-                    MD5CryptoServiceProvider x = new MD5CryptoServiceProvider();
-                    string calculatedMd5Hash = Regex.Replace(BitConverter.ToString(x.ComputeHash(Encoding.ASCII.GetBytes(settings["md5HashKey"] + settings["x_login"] + transaction + amount))), "-", string.Empty);
-
-                    if (gatewayMd5Hash == calculatedMd5Hash)
+                    var paymentPayload = authorizeNetEvent.payload.ToObject<AuthorizeNetWebhookPaymentPayload>();
+                    if (paymentPayload != null && paymentPayload.entityName == "transaction")
                     {
-                        cartNumber = request.Form["x_invoice_num"];
+                        var transactionId = paymentPayload.id;
+
+                        // Configure AuthorizeNet
+                        ConfigureAuthorizeNet(settings);
+
+                        // Fetch the transaction
+                        var transactionRequest = new getTransactionDetailsRequest { transId = transactionId };
+                        var controller = new getTransactionDetailsController(transactionRequest);
+                        controller.Execute();
+                        
+                        var transactionResponse = controller.GetApiResponse();
+                        if (transactionResponse != null 
+                            && transactionResponse.messages.resultCode == messageTypeEnum.Ok
+                            && transactionResponse.transaction != null
+                            && transactionResponse.transaction.order != null)
+                        {
+                            cartNumber = transactionResponse.transaction.order.invoiceNumber;
+                        }
                     }
-                    else
-                    {
-                        LoggingService.Instance.Warn<AuthorizeNet>("Authorize.net - MD5Sum security check failed - " + gatewayMd5Hash + " - " + calculatedMd5Hash + " - " + settings["md5HashKey"]);
-                    }
-                }
-                else
-                {
-                    LoggingService.Instance.Warn<AuthorizeNet>("Authorize.net - Payment not approved: " + responseCode);
                 }
             }
             catch (Exception exp)
             {
-                LoggingService.Instance.Error<AuthorizeNet>("Authorize.net - Get cart number", exp);
+                LoggingService.Instance.Error<AuthorizeNet>("Authorize.net - GetCartNumber", exp);
             }
 
             return cartNumber;
@@ -252,85 +248,241 @@ namespace TeaCommerce.PaymentProviders.Classic
                 order.MustNotBeNull("order");
                 request.MustNotBeNull("request");
                 settings.MustNotBeNull("settings");
-                settings.MustContainKey("md5HashKey", "settings");
-                settings.MustContainKey("x_login", "settings");
 
-                //Write data when testing
+                // If we get to here, GetCartNumber must have been called and a valid cart number
+                // returned, this we can trust that the AuthorizeNet webhook event must be valid
+
+                // Write data when testing
                 if (settings.ContainsKey("mode") && settings["mode"] == "sandbox")
                 {
                     LogRequest<AuthorizeNet>(request, logPostData: true);
                 }
 
-                string responseCode = request.Form["x_response_code"];
-                if (responseCode == "1")
+                var authorizeNetEvent = GetValidatedWebhookEvent(settings[settings["mode"] + "_signature_key"]);
+                if (authorizeNetEvent != null && authorizeNetEvent.eventType.StartsWith("net.authorize.payment."))
                 {
-                    
-                }
-                else
-                {
-                    LoggingService.Instance.Warn<AuthorizeNet>("Authorize.net(" + order.CartNumber + ") - Payment not approved: " + responseCode);
+                    var paymentPayload = authorizeNetEvent.payload.ToObject<AuthorizeNetWebhookPaymentPayload>();
+                    if (paymentPayload != null 
+                        && paymentPayload.entityName == "transaction"
+                        && paymentPayload.responseCode == 1)
+                    {
+                        var paymentState = PaymentState.Initialized;
+
+                        if (authorizeNetEvent.eventType.Contains(".authorization."))
+                        {
+                            paymentState = PaymentState.Authorized;
+                        }
+                        else if (authorizeNetEvent.eventType.Contains(".authcapture.") 
+                            || authorizeNetEvent.eventType.Contains(".capture.")
+                            || authorizeNetEvent.eventType.Contains(".priorAuthCapture."))
+                        {
+                            paymentState = PaymentState.Captured;
+                        }
+                        else if (authorizeNetEvent.eventType.Contains(".refund."))
+                        {
+                            paymentState = PaymentState.Refunded;
+                        }
+                        else if (authorizeNetEvent.eventType.Contains(".void."))
+                        {
+                            paymentState = PaymentState.Cancelled;
+                        }
+
+                        callbackInfo = new CallbackInfo(paymentPayload.authAmount, paymentPayload.id, paymentState);
+                    }
                 }
             }
             catch (Exception exp)
             {
-                LoggingService.Instance.Error<AuthorizeNet>("Authorize.net(" + order.CartNumber + ") - Process callback", exp);
+                LoggingService.Instance.Error<AuthorizeNet>("Authorize.net(" + order.CartNumber + ") - ProcessCallback", exp);
             }
 
             return callbackInfo;
         }
 
-        //public override ApiInfo GetStatus(Order order, IDictionary<string, string> settings)
-        //{
-        //    ApiInfo apiInfo = null;
+        public override ApiInfo GetStatus(Order order, IDictionary<string, string> settings)
+        {
+            ApiInfo apiInfo = null;
 
-        //    try
-        //    {
-        //        order.MustNotBeNull("order");
-        //        settings.MustNotBeNull("settings");
-        //        settings.MustContainKey("x_login", "settings");
-        //        settings.MustContainKey("transactionKey", "settings");
+            try
+            {
+                order.MustNotBeNull("order");
+                settings.MustNotBeNull("settings");
+                settings.MustContainKey("mode", "settings");
+                settings.MustContainKey(settings["mode"] + "_api_login_id", "settings");
+                settings.MustContainKey(settings["mode"] + "_transaction_key", "settings");
 
-        //        GetTransactionDetailsResponseType result = GetAuthorizeNetServiceClient(settings).GetTransactionDetails(new MerchantAuthenticationType { name = settings["x_login"], transactionKey = settings["transactionKey"] }, order.TransactionInformation.TransactionId);
+                // Configure AuthorizeNet
+                ConfigureAuthorizeNet(settings);
 
-        //        if (result.resultCode == MessageTypeEnum.Ok)
-        //        {
-        //            PaymentState paymentState = PaymentState.Initialized;
-        //            switch (result.transaction.transactionStatus)
-        //            {
-        //                case "authorizedPendingCapture":
-        //                    paymentState = PaymentState.Authorized;
-        //                    break;
-        //                case "capturedPendingSettlement":
-        //                case "settledSuccessfully":
-        //                    paymentState = PaymentState.Captured;
-        //                    break;
-        //                case "voided":
-        //                    paymentState = PaymentState.Cancelled;
-        //                    break;
-        //                case "refundSettledSuccessfully":
-        //                case "refundPendingSettlement":
-        //                    paymentState = PaymentState.Refunded;
-        //                    break;
-        //            }
+                // Fetch the transaction
+                var transactionRequest = new getTransactionDetailsRequest { transId = order.TransactionInformation.TransactionId };
+                var controller = new getTransactionDetailsController(transactionRequest);
+                controller.Execute();
+                
+                var transactionResponse = controller.GetApiResponse();
+                if (transactionResponse != null
+                    && transactionResponse.messages.resultCode == messageTypeEnum.Ok
+                    && transactionResponse.transaction != null)
+                {
+                    var paymentState = GetPaymentStateFromTransaction(transactionResponse.transaction);
+                    
+                    apiInfo = new ApiInfo(transactionResponse.transaction.transId, paymentState);
+                }
 
-        //            apiInfo = new ApiInfo(result.transaction.transId, paymentState);
-        //        }
-        //        else
-        //        {
-        //            LoggingService.Instance.Warn<AuthorizeNet>("Authorize.net(" + order.OrderNumber + ") - Error making API request - error code: " + result.messages[0].code + " | description: " + result.messages[0].text);
-        //        }
+            }
+            catch (Exception exp)
+            {
+                LoggingService.Instance.Error<AuthorizeNet>("Authorize.net(" + order.OrderNumber + ") - GetStatus", exp);
+            }
 
-        //    }
-        //    catch (Exception exp)
-        //    {
-        //        LoggingService.Instance.Error<AuthorizeNet>("Authorize.net(" + order.OrderNumber + ") - Get status", exp);
-        //    }
+            return apiInfo;
+        }
 
-        //    return apiInfo;
-        //}
+        public override ApiInfo CapturePayment(Order order, IDictionary<string, string> settings)
+        {
+            ApiInfo apiInfo = null;
+
+            try
+            {
+                order.MustNotBeNull("order");
+                settings.MustNotBeNull("settings");
+                settings.MustContainKey("mode", "settings");
+                settings.MustContainKey(settings["mode"] + "_api_login_id", "settings");
+                settings.MustContainKey(settings["mode"] + "_transaction_key", "settings");
+
+                // Configure AuthorizeNet
+                ConfigureAuthorizeNet(settings);
+
+                // Charge the transaction
+                var transactionRequest = new createTransactionRequest
+                {
+                    transactionRequest = new transactionRequestType
+                    {
+                        transactionType = transactionTypeEnum.priorAuthCaptureTransaction.ToString(),
+                        amount = ToTwoDecimalPlaces(order.TotalPrice.Value.WithVat),
+                        refTransId = order.TransactionInformation.TransactionId
+                    }
+                };
+
+                var controller = new createTransactionController(transactionRequest);
+                controller.Execute();
+                
+                var transactionResponse = controller.GetApiResponse();
+                if (transactionResponse != null
+                    && transactionResponse.messages.resultCode == messageTypeEnum.Ok)
+                {
+                    apiInfo = new ApiInfo(order.TransactionInformation.TransactionId, PaymentState.Captured);
+                }
+            }
+            catch (Exception exp)
+            {
+                LoggingService.Instance.Error<AuthorizeNet>("Authorize.net(" + order.OrderNumber + ") - CapturePayment", exp);
+            }
+
+            return null;
+        }
+
+        public override ApiInfo RefundPayment(Order order, IDictionary<string, string> settings)
+        {
+            ApiInfo apiInfo = null;
+
+            try
+            {
+                order.MustNotBeNull("order");
+                settings.MustNotBeNull("settings");
+                settings.MustContainKey("mode", "settings");
+                settings.MustContainKey(settings["mode"] + "_api_login_id", "settings");
+                settings.MustContainKey(settings["mode"] + "_transaction_key", "settings");
+
+                // Configure AuthorizeNet
+                ConfigureAuthorizeNet(settings);
+
+                // Refund the transaction
+                var transactionRequest = new createTransactionRequest
+                {
+                    transactionRequest = new transactionRequestType
+                    {
+                        transactionType = transactionTypeEnum.refundTransaction.ToString(),
+                        amount = ToTwoDecimalPlaces(order.TotalPrice.Value.WithVat),
+                        refTransId = order.TransactionInformation.TransactionId
+                    }
+                };
+
+                var controller = new createTransactionController(transactionRequest);
+                controller.Execute();
+
+                var transactionResponse = controller.GetApiResponse();
+                if (transactionResponse != null
+                    && transactionResponse.messages.resultCode == messageTypeEnum.Ok)
+                {
+                    apiInfo = new ApiInfo(order.TransactionInformation.TransactionId, PaymentState.Refunded);
+                }
+            }
+            catch (Exception exp)
+            {
+                LoggingService.Instance.Error<AuthorizeNet>("Authorize.net(" + order.OrderNumber + ") - RefundPayment", exp);
+            }
+
+            return null;
+        }
+
+        public override ApiInfo CancelPayment(Order order, IDictionary<string, string> settings)
+        {
+            ApiInfo apiInfo = null;
+
+            try
+            {
+                order.MustNotBeNull("order");
+                settings.MustNotBeNull("settings");
+                settings.MustContainKey("mode", "settings");
+                settings.MustContainKey(settings["mode"] + "_api_login_id", "settings");
+                settings.MustContainKey(settings["mode"] + "_transaction_key", "settings");
+
+                // Configure AuthorizeNet
+                ConfigureAuthorizeNet(settings);
+
+                // Void the transaction
+                var transactionRequest = new createTransactionRequest
+                {
+                    transactionRequest = new transactionRequestType
+                    {
+                        transactionType = transactionTypeEnum.voidTransaction.ToString(),
+                        refTransId = order.TransactionInformation.TransactionId
+                    }
+                };
+
+                var controller = new createTransactionController(transactionRequest);
+                controller.Execute();
+
+                var transactionResponse = controller.GetApiResponse();
+                if (transactionResponse != null
+                    && transactionResponse.messages.resultCode == messageTypeEnum.Ok)
+                {
+                    apiInfo = new ApiInfo(order.TransactionInformation.TransactionId, PaymentState.Cancelled);
+                }
+            }
+            catch (Exception exp)
+            {
+                LoggingService.Instance.Error<AuthorizeNet>("Authorize.net(" + order.OrderNumber + ") - CancelPayment", exp);
+            }
+
+            return null;
+        }
 
         public override string GetLocalizedSettingsKey(string settingsKey, CultureInfo culture)
         {
+            //{ "continue_url", "" },
+            //{ "cancel_url", "" },
+            //{ "order_options_merchant_name", "" },
+            //{ "capture", "true" },
+            //{ "sandbox_api_login_id", "" },
+            //{ "sandbox_transaction_key", "" },
+            //{ "sandbox_signature_key", "" },
+            //{ "live_api_login_id", "" },
+            //{ "live_transaction_key", "" },
+            //{ "live_signature_key", "" },
+            //{ "mode", "sandbox" }
+
             switch (settingsKey)
             {
                 case "x_receipt_link_url":
@@ -348,16 +500,28 @@ namespace TeaCommerce.PaymentProviders.Classic
 
         #region Helper methods
 
-        protected void AddOptionsToPaymentSettings(IList<settingType> paymentSettings, settingNameEnum paymentSetting, IDictionary<string, object> options)
+        protected void ConfigureAuthorizeNet(IDictionary<string, string> settings)
         {
-            if (options.Count > 0)
+            settings.MustNotBeNull("settings");
+            settings.MustContainKey("mode", "settings");
+            settings.MustContainKey(settings["mode"] + "_api_login_id", "settings");
+            settings.MustContainKey(settings["mode"] + "_transaction_key", "settings");
+
+            // Ensure TLS 1.2
+            ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; //TLS 1.2
+
+            // Configrue the environment
+            ApiOperationBase<ANetApiRequest, ANetApiResponse>.RunEnvironment = settings["mode"] == "sandbox"
+                ? global::AuthorizeNet.Environment.SANDBOX
+                : global::AuthorizeNet.Environment.PRODUCTION;
+
+            // Setup merchant auth settings
+            ApiOperationBase<ANetApiRequest, ANetApiResponse>.MerchantAuthentication = new merchantAuthenticationType
             {
-                paymentSettings.Add(new settingType
-                {
-                    settingName = paymentSetting.ToString(),
-                    settingValue = JsonConvert.SerializeObject(options)
-                });
-            }
+                name = settings[settings["mode"] + "_api_login_id"],
+                ItemElementName = ItemChoiceType.transactionKey,
+                Item = settings[settings["mode"] + "_transaction_key"],
+            };
         }
 
         protected IDictionary<string, object> GetOptionsFromSettings(IDictionary<string, string> settings, string keyPrefix)
@@ -388,6 +552,43 @@ namespace TeaCommerce.PaymentProviders.Classic
             return options;
         }
 
+        protected void AddOptionsToPaymentSettings(IList<settingType> paymentSettings, settingNameEnum paymentSetting, IDictionary<string, object> options)
+        {
+            if (options.Count > 0)
+            {
+                paymentSettings.Add(new settingType
+                {
+                    settingName = paymentSetting.ToString(),
+                    settingValue = JsonConvert.SerializeObject(options)
+                });
+            }
+        }
+
+        protected PaymentState GetPaymentStateFromTransaction(transactionDetailsType transaction)
+        {
+            var paymentState = PaymentState.Initialized;
+
+            switch (transaction.transactionStatus)
+            {
+                case "authorizedPendingCapture":
+                    paymentState = PaymentState.Authorized;
+                    break;
+                case "capturedPendingSettlement":
+                case "settledSuccessfully":
+                    paymentState = PaymentState.Captured;
+                    break;
+                case "voided":
+                    paymentState = PaymentState.Cancelled;
+                    break;
+                case "refundSettledSuccessfully":
+                case "refundPendingSettlement":
+                    paymentState = PaymentState.Refunded;
+                    break;
+            }
+
+            return paymentState;
+        }
+
         protected string SnakeCaseToCamcelCase(string input)
         {
             if (string.IsNullOrWhiteSpace(input)) return "";
@@ -407,7 +608,97 @@ namespace TeaCommerce.PaymentProviders.Classic
             return Convert.ToDecimal(string.Format("{0:0.00}", input));
         }
 
+        protected string ComputeSHA512Hash(string text, string secretKey)
+        {
+            if (string.IsNullOrEmpty(secretKey))
+                throw new ArgumentNullException("HMACSHA512: secretKey", "Parameter cannot be empty.");
+
+            if (string.IsNullOrEmpty(text))
+                throw new ArgumentNullException("HMACSHA512: text", "Parameter cannot be empty.");
+
+            if (secretKey.Length % 2 != 0 || secretKey.Trim().Length < 2)
+            {
+                throw new ArgumentNullException("HMACSHA512: secretKey", "Parameter cannot be odd or less than 2 characters.");
+            }
+            try
+            {
+                byte[] k = Enumerable.Range(0, secretKey.Length)
+                    .Where(x => x % 2 == 0)
+                    .Select(x => Convert.ToByte(secretKey.Substring(x, 2), 16))
+                    .ToArray();
+                HMACSHA512 hmac = new HMACSHA512(k);
+                byte[] HashedValue = hmac.ComputeHash((new System.Text.ASCIIEncoding()).GetBytes(text));
+                return BitConverter.ToString(HashedValue).Replace("-", string.Empty);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("HMACSHA512: " + ex.Message);
+            }
+        }
+
+        public AuthorizeNetWebhookEvent GetValidatedWebhookEvent(string signatureKey)
+        {
+            AuthorizeNetWebhookEvent authorizeNetEvent = null;
+
+            if (HttpContext.Current.Items["TC_AuthorizeNetEvent"] != null)
+            {
+                authorizeNetEvent = (AuthorizeNetWebhookEvent) HttpContext.Current.Items["TC_AuthorizeNetEvent"];
+            }
+            else
+            {
+                try
+                {
+                    var rawBody = GetRequestBodyAsString(HttpContext.Current.Request);
+
+                    // Compare signatures
+                    var gatewaySignature = HttpContext.Current.Request.Headers["X-ANET-Signature"];
+                    var calculatedSignature = ComputeSHA512Hash(rawBody, signatureKey);
+                    
+                    if (gatewaySignature == calculatedSignature)
+                    {
+                        // Deserialize event body
+                        authorizeNetEvent = JsonConvert.DeserializeObject<AuthorizeNetWebhookEvent>(rawBody);
+                    }
+
+                    HttpContext.Current.Items["TC_AuthorizeNetEvent"] = authorizeNetEvent;
+                }
+                catch
+                { }
+            }
+
+            return authorizeNetEvent;
+        }
+
+        protected string GetRequestBodyAsString(HttpRequest request)
+        {
+            using (var bodyStream = new StreamReader(request.InputStream)) { 
+                bodyStream.BaseStream.Seek(0, SeekOrigin.Begin);
+                var bodyText = bodyStream.ReadToEnd();
+                return bodyText;
+            }
+        }
+
+        public class AuthorizeNetWebhookEvent
+{
+            public string notificationId { get; set; }
+            public string eventType { get; set; }
+            public string eventDate { get; set; }
+            public string webhookId { get; set; }
+            public JObject payload { get; set; }
+        }
+
+        public class AuthorizeNetWebhookPaymentPayload
+        {
+            public int responseCode { get; set; }
+            public string authCode { get; set; }
+            public string avsResponse { get; set; }
+            public decimal authAmount { get; set; }
+            public string entityName { get; set; }
+            public string id { get; set; }
+        }
+
         #endregion
 
     }
+
 }
