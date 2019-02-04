@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
+using System.Text;
 using System.Web;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
@@ -95,7 +96,7 @@ namespace TeaCommerce.PaymentProviders.Classic
             var returnOptions = GetOptionsFromSettings(settings, "return_options_");
             if (!returnOptions.ContainsKey("url"))
             {
-                returnOptions.Add("url", teaCommerceContinueUrl); // teaCommerceCallBackUrl
+                returnOptions.Add("url", teaCommerceContinueUrl);
             }
             if (!returnOptions.ContainsKey("cancelUrl"))
             {
@@ -226,6 +227,10 @@ namespace TeaCommerce.PaymentProviders.Classic
                             && transactionResponse.transaction != null
                             && transactionResponse.transaction.order != null)
                         {
+                            // Stash the transaction
+                            authorizeNetEvent.transaction = transactionResponse.transaction;
+
+                            // Get the cart number
                             cartNumber = transactionResponse.transaction.order.invoiceNumber;
                         }
                     }
@@ -250,7 +255,7 @@ namespace TeaCommerce.PaymentProviders.Classic
                 settings.MustNotBeNull("settings");
 
                 // If we get to here, GetCartNumber must have been called and a valid cart number
-                // returned, this we can trust that the AuthorizeNet webhook event must be valid
+                // returned, thus we can trust that the AuthorizeNet webhook event must be valid
 
                 // Write data when testing
                 if (settings.ContainsKey("mode") && settings["mode"] == "sandbox")
@@ -266,28 +271,44 @@ namespace TeaCommerce.PaymentProviders.Classic
                         && paymentPayload.entityName == "transaction"
                         && paymentPayload.responseCode == 1)
                     {
+                        var eventType = authorizeNetEvent.eventType.ToLower();
                         var paymentState = PaymentState.Initialized;
 
-                        if (authorizeNetEvent.eventType.Contains(".authorization."))
+                        if (eventType.Contains(".authorization."))
                         {
                             paymentState = PaymentState.Authorized;
                         }
-                        else if (authorizeNetEvent.eventType.Contains(".authcapture.") 
-                            || authorizeNetEvent.eventType.Contains(".capture.")
-                            || authorizeNetEvent.eventType.Contains(".priorAuthCapture."))
+                        else if (eventType.Contains(".authcapture.") 
+                            || eventType.Contains(".capture.")
+                            || eventType.Contains(".priorauthcapture."))
                         {
                             paymentState = PaymentState.Captured;
                         }
-                        else if (authorizeNetEvent.eventType.Contains(".refund."))
+                        else if (eventType.Contains(".refund."))
                         {
                             paymentState = PaymentState.Refunded;
                         }
-                        else if (authorizeNetEvent.eventType.Contains(".void."))
+                        else if (eventType.Contains(".void."))
                         {
                             paymentState = PaymentState.Cancelled;
                         }
 
-                        callbackInfo = new CallbackInfo(paymentPayload.authAmount, paymentPayload.id, paymentState);
+                        var cardType = order.TransactionInformation.PaymentType;
+                        var cardNoMask = order.TransactionInformation.PaymentIdentifier;
+
+                        if (authorizeNetEvent.transaction != null
+                            && authorizeNetEvent.transaction.payment != null
+                            && authorizeNetEvent.transaction.payment.Item != null)
+                        {
+                            var maskedCreditCard = authorizeNetEvent.transaction.payment.Item as creditCardMaskedType;
+                            if (maskedCreditCard != null)
+                            {
+                                cardType = maskedCreditCard.cardType;
+                                cardNoMask = maskedCreditCard.cardNumber;
+                            }
+                        }
+
+                        callbackInfo = new CallbackInfo(paymentPayload.authAmount, paymentPayload.id, paymentState, cardType, cardNoMask);
                     }
                 }
             }
@@ -379,7 +400,7 @@ namespace TeaCommerce.PaymentProviders.Classic
                 LoggingService.Instance.Error<AuthorizeNet>("Authorize.net(" + order.OrderNumber + ") - CapturePayment", exp);
             }
 
-            return null;
+            return apiInfo;
         }
 
         public override ApiInfo RefundPayment(Order order, IDictionary<string, string> settings)
@@ -403,8 +424,16 @@ namespace TeaCommerce.PaymentProviders.Classic
                     transactionRequest = new transactionRequestType
                     {
                         transactionType = transactionTypeEnum.refundTransaction.ToString(),
-                        amount = ToTwoDecimalPlaces(order.TotalPrice.Value.WithVat),
-                        refTransId = order.TransactionInformation.TransactionId
+                        amount = ToTwoDecimalPlaces(order.TransactionInformation.AmountAuthorized.Value),
+                        refTransId = order.TransactionInformation.TransactionId,
+                        payment = new paymentType
+                        {
+                            Item = new creditCardType
+                            {
+                                cardNumber = order.TransactionInformation.PaymentIdentifier.TrimStart('X'),
+                                expirationDate = "XXXX"
+                            }
+                        }
                     }
                 };
 
@@ -417,13 +446,18 @@ namespace TeaCommerce.PaymentProviders.Classic
                 {
                     apiInfo = new ApiInfo(order.TransactionInformation.TransactionId, PaymentState.Refunded);
                 }
+                else
+                {
+                    // Payment might not have settled yet so try canceling instead
+                    return CancelPayment(order, settings);
+                }
             }
             catch (Exception exp)
             {
                 LoggingService.Instance.Error<AuthorizeNet>("Authorize.net(" + order.OrderNumber + ") - RefundPayment", exp);
             }
 
-            return null;
+            return apiInfo;
         }
 
         public override ApiInfo CancelPayment(Order order, IDictionary<string, string> settings)
@@ -466,33 +500,35 @@ namespace TeaCommerce.PaymentProviders.Classic
                 LoggingService.Instance.Error<AuthorizeNet>("Authorize.net(" + order.OrderNumber + ") - CancelPayment", exp);
             }
 
-            return null;
+            return apiInfo;
         }
 
         public override string GetLocalizedSettingsKey(string settingsKey, CultureInfo culture)
         {
-            //{ "continue_url", "" },
-            //{ "cancel_url", "" },
-            //{ "order_options_merchant_name", "" },
-            //{ "capture", "true" },
-            //{ "sandbox_api_login_id", "" },
-            //{ "sandbox_transaction_key", "" },
-            //{ "sandbox_signature_key", "" },
-            //{ "live_api_login_id", "" },
-            //{ "live_transaction_key", "" },
-            //{ "live_signature_key", "" },
-            //{ "mode", "sandbox" }
-
             switch (settingsKey)
             {
-                case "x_receipt_link_url":
-                    return settingsKey + "<br/><small>e.g. /continue/</small>";
-                case "x_cancel_url":
-                    return settingsKey + "<br/><small>e.g. /cancel/</small>";
-                case "x_type":
-                    return settingsKey + "<br/><small>e.g. AUTH_ONLY or AUTH_CAPTURE</small>";
+                case "continue_url":
+                    return settingsKey + "<br/><small>The URL to return to once payment is complete. e.g. /continue/</small>";
+                case "cancel_url":
+                    return settingsKey + "<br/><small>The URL to return to if a payment is canceled. e.g. /cancel/</small>";
+                case "order_options_merchant_name":
+                    return settingsKey + "<br/><small>The merchant name to appear on the payment gateway.</small>";
+                case "capture":
+                    return settingsKey + "<br/><small>Whether to capture or just authorise the payment. true/false</small>";
+                case "sandbox_api_login_id":
+                    return settingsKey + "<br/><small>The API Login ID for the sandbox test account.</small>";
+                case "sandbox_transaction_key":
+                    return settingsKey + "<br/><small>The Transaction Key for the sandbox test account.</small>";
+                case "sandbox_signature_key":
+                    return settingsKey + "<br/><small>The Signature Key for the sandbox test account.</small>";
+                case "live_api_login_id":
+                    return settingsKey + "<br/><small>The API Login ID for the live account.</small>";
+                case "live_transaction_key":
+                    return settingsKey + "<br/><small>The Transaction Key for the live account.</small>";
+                case "live_signature_key":
+                    return settingsKey + "<br/><small>The Signature Key for the live account.</small>";
                 case "mode":
-                    return settingsKey + "<br/><small>sandbox/live</small>";
+                    return settingsKey + "<br/><small>The mode of the provider. sandbox/live</small>";
                 default:
                     return base.GetLocalizedSettingsKey(settingsKey, culture);
             }
@@ -610,29 +646,11 @@ namespace TeaCommerce.PaymentProviders.Classic
 
         protected string ComputeSHA512Hash(string text, string secretKey)
         {
-            if (string.IsNullOrEmpty(secretKey))
-                throw new ArgumentNullException("HMACSHA512: secretKey", "Parameter cannot be empty.");
-
-            if (string.IsNullOrEmpty(text))
-                throw new ArgumentNullException("HMACSHA512: text", "Parameter cannot be empty.");
-
-            if (secretKey.Length % 2 != 0 || secretKey.Trim().Length < 2)
+            byte[] _key = Encoding.ASCII.GetBytes(secretKey);
+            using (var myhmacsha1 = new HMACSHA1(_key))
             {
-                throw new ArgumentNullException("HMACSHA512: secretKey", "Parameter cannot be odd or less than 2 characters.");
-            }
-            try
-            {
-                byte[] k = Enumerable.Range(0, secretKey.Length)
-                    .Where(x => x % 2 == 0)
-                    .Select(x => Convert.ToByte(secretKey.Substring(x, 2), 16))
-                    .ToArray();
-                HMACSHA512 hmac = new HMACSHA512(k);
-                byte[] HashedValue = hmac.ComputeHash((new System.Text.ASCIIEncoding()).GetBytes(text));
-                return BitConverter.ToString(HashedValue).Replace("-", string.Empty);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("HMACSHA512: " + ex.Message);
+                var hashArray = new HMACSHA512(_key).ComputeHash(Encoding.ASCII.GetBytes(text));
+                return hashArray.Aggregate("", (s, e) => s + String.Format("{0:x2}", e), s => s);
             }
         }
 
@@ -654,7 +672,7 @@ namespace TeaCommerce.PaymentProviders.Classic
                     var gatewaySignature = HttpContext.Current.Request.Headers["X-ANET-Signature"];
                     var calculatedSignature = ComputeSHA512Hash(rawBody, signatureKey);
                     
-                    if (gatewaySignature == calculatedSignature)
+                    if (string.Equals(gatewaySignature.Split('=').Last(), calculatedSignature, StringComparison.CurrentCultureIgnoreCase))
                     {
                         // Deserialize event body
                         authorizeNetEvent = JsonConvert.DeserializeObject<AuthorizeNetWebhookEvent>(rawBody);
@@ -671,20 +689,22 @@ namespace TeaCommerce.PaymentProviders.Classic
 
         protected string GetRequestBodyAsString(HttpRequest request)
         {
-            using (var bodyStream = new StreamReader(request.InputStream)) { 
-                bodyStream.BaseStream.Seek(0, SeekOrigin.Begin);
-                var bodyText = bodyStream.ReadToEnd();
-                return bodyText;
-            }
+            var bodyStream = new StreamReader(request.InputStream);
+            bodyStream.BaseStream.Seek(0, SeekOrigin.Begin);
+            var bodyText = bodyStream.ReadToEnd();
+            return bodyText;
         }
 
         public class AuthorizeNetWebhookEvent
-{
+        {
             public string notificationId { get; set; }
             public string eventType { get; set; }
             public string eventDate { get; set; }
             public string webhookId { get; set; }
             public JObject payload { get; set; }
+            
+            [JsonIgnore] // Set during GetCartNumber
+            public transactionDetailsType transaction { get; set; }
         }
 
         public class AuthorizeNetWebhookPaymentPayload
