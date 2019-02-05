@@ -75,7 +75,7 @@
 			<Dlls Include="$(CoreProjectDir)\bin\$(BuildConfig)\$(ProjectName).dll" />
 			<Dlls Include="$(CoreProjectDir)\bin\$(BuildConfig)\*.dll" Exclude="$(CoreProjectDir)\bin\$(BuildConfig)\TeaCommerce.*.dll" />
 		</ItemGroup>
-		<Exec Command="$(ILMergeExe) /ndebug /internalize /out:$(ArtifactsDir)\$(ProjectName).dll @(Dlls, ' ') /targetplatform:v4,&quot;%programfiles(x86)%\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5&quot;" />
+		<Exec Command="$(ILMergeExe) /ndebug /internalize:ILMerge.exclude.txt /out:$(ArtifactsDir)\$(ProjectName).dll @(Dlls, ' ') /targetplatform:v4,&quot;%programfiles(x86)%\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5&quot;" />
 	</Target>
 
 	<!-- Package -->
