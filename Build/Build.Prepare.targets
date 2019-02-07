@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Package" ToolsVersion="14.0">
+
+	<!-- IMPORTS -->
+	<PropertyGroup>
+		<ILMergeExe>$(MSBuildProjectDirectory)\tools\ILMerge\ILMerge.exe</ILMergeExe>
+	</PropertyGroup>
+
+    <ItemGroup>
+        <ProjectFiles Include="$(SourceDir)\TeaCommerce.PaymentProviders*\*.csproj" />
+    </ItemGroup>
+
+	<!-- GET BUILD VERSION NUMBER FROM FILE -->
+	<Target Name="GetBuildVersionNumber">  
+        <ReadLinesFromFile File="$(RootDir)\version.txt" >  
+			<Output TaskParameter="Lines" ItemName="Version"/>  
+        </ReadLinesFromFile>  
+		<PropertyGroup>
+			<BuildVersion>@(Version)</BuildVersion>
+			<BuildVersionMajor>$(BuildVersion.Split('.')[0])</BuildVersionMajor>
+			<BuildVersionMinor>$(BuildVersion.Split('.')[1])</BuildVersionMinor>
+            <InformationalBuildVersion>$(BuildVersion)</InformationalBuildVersion>
+            <InformationalBuildVersion Condition="'$(BuildConfig)'=='Debug'">$(BuildVersion)-alpha+$(BuildTimestamp)</InformationalBuildVersion>
+		</PropertyGroup>
+    </Target>
+
+	<!-- UPDATE PROJECT ASSEMBLEY VERSION -->
+	<Target Name="UpdateAssemblyInfo" DependsOnTargets="GetBuildVersionNumber" Inputs="@(ProjectFiles)" Outputs="%(Identity).Dummy">
+		<ItemGroup>   
+			<AssemblyAttributes Include="AssemblyVersion">
+				<_Parameter1>$(BuildVersionMajor).$(BuildVersionMinor).*</_Parameter1>
+			</AssemblyAttributes>
+			<AssemblyAttributes Include="AssemblyInformationalVersion">
+				<_Parameter1>$(InformationalBuildVersion)</_Parameter1>
+			</AssemblyAttributes>
+		</ItemGroup>
+		<WriteCodeFragment Language="C#" 
+			OutputFile="@(ProjectFiles->'%(RootDir)%(Directory)\Properties\VersionInfo.cs')" 
+			AssemblyAttributes="@(AssemblyAttributes)" />
+	</Target>
+
+	<!-- CLEAN -->
+	<Target Name="Clean" DependsOnTargets="UpdateAssemblyInfo">
+		<RemoveDir Directories="$(ArtifactsDir)" Condition="Exists('$(ArtifactsDir)')" />
+		<MakeDir Directories="$(ArtifactsDir)" />
+	</Target>
+
+	<!-- COMPILE -->
+	<Target Name="Compile" DependsOnTargets="Clean">
+		<MSBuild Projects="@(ProjectFiles)" Properties="Configuration=$(BuildConfig)"/>
+	</Target>
+
+	<!-- MERGE DLLS + OUTPUT TO ARTIFACTS DIR -->
+	<Target Name="MergeDlls" DependsOnTargets="Compile" Inputs="@(ProjectFiles)" Outputs="%(Identity).Dummy">
+		<ItemGroup>
+			<Dlls Include="@(ProjectFiles->'%(RootDir)%(Directory)bin\$(BuildConfig)\%(FileName).dll')" />
+		</ItemGroup>
+		<CreateItem Include="@(ProjectFiles->'%(RootDir)%(Directory)bin\$(BuildConfig)\*.dll')" Exclude="@(ProjectFiles->'%(RootDir)%(Directory)bin\$(BuildConfig)\TeaCommerce.*.dll')">
+			<Output TaskParameter="Include" ItemName="Dlls"/>
+		</CreateItem>
+
+		<Exec Command="$(ILMergeExe) /ndebug /internalize:ILMerge.exclude.txt /out:$(ArtifactsDir)\@(ProjectFiles->'%(FileName)').dll @(Dlls, ' ') /targetplatform:v4,&quot;%programfiles(x86)%\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5&quot;" />
+	</Target>
+
+	<!-- Package -->
+	<Target Name="Prepare" DependsOnTargets="MergeDlls"></Target>
+
+</Project>
