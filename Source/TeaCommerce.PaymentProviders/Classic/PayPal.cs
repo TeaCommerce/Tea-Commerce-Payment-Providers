@@ -58,9 +58,9 @@ namespace TeaCommerce.PaymentProviders.Classic {
         inputFields.Add( "BUTTONSUBTYPE", "PRODUCTS" );
 
         bvCount++;
-        inputFields.Add( $"L_BUTTONVAR{bvCount}", "business=" + ( settings.ContainsKey( "business" ) ? settings[ "business" ] : string.Empty ) );
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "business=" + ( settings.ContainsKey( "business" ) ? settings[ "business" ] : string.Empty ).Trim() );
         bvCount++;
-        inputFields.Add( $"L_BUTTONVAR{bvCount}", "lc=" + ( settings.ContainsKey( "lc" ) ? settings[ "lc" ] : string.Empty ) );
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "lc=" + ( settings.ContainsKey( "lc" ) ? settings[ "lc" ] : string.Empty ).Trim() );
         bvCount++;
         inputFields.Add( $"L_BUTTONVAR{bvCount}", "button_subtype=PRODUCTS" );
 
@@ -76,9 +76,9 @@ namespace TeaCommerce.PaymentProviders.Classic {
         bvCount++;
         inputFields.Add( $"L_BUTTONVAR{bvCount}", "invoice=" + order.CartNumber );
         bvCount++;
-        inputFields.Add( $"L_BUTTONVAR{bvCount}", "item_name=" + ( settings.ContainsKey( "totalName" ) ? settings[ "totalName" ] : "Total" ) );
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "item_name=" + ( settings.ContainsKey( "totalName" ) ? settings[ "totalName" ] : "Total" ).Trim() );
         bvCount++;
-        inputFields.Add( $"L_BUTTONVAR{bvCount}", "item_number=" + ( settings.ContainsKey( "totalSku" ) ? settings[ "totalSku" ] : "0001" ) );
+        inputFields.Add( $"L_BUTTONVAR{bvCount}", "item_number=" + ( settings.ContainsKey( "totalSku" ) ? settings[ "totalSku" ] : "0001" ).Trim() );
         bvCount++;
         inputFields.Add( $"L_BUTTONVAR{bvCount}", "amount=" + order.TotalPrice.Value.WithVat.ToString( "0.00", CultureInfo.InvariantCulture ) );
         bvCount++;
