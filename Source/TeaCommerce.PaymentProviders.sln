@@ -1,8 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProviders.Web", "TeaCommerce.PaymentProviders\TeaCommerce.PaymentProviders.csproj", "{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}"
-EndProject
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2036
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "TeaCommerce.PaymentProviders.UI", "http://localhost:56791", "{7F142543-1476-4166-A88B-C4C9AB960616}"
 	ProjectSection(WebsiteProperties) = preProject
 		UseIISExpress = "true"
@@ -24,22 +24,39 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "TeaCommerce.PaymentProvider
 		SlnRelativePath = "TeaCommerce.PaymentProviders.UI\"
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProviders.2Checkout", "TeaCommerce.PaymentProviders.2Checkout\TeaCommerce.PaymentProviders.2Checkout.csproj", "{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProviders", "TeaCommerce.PaymentProviders\TeaCommerce.PaymentProviders.csproj", "{1C8CF2FE-4B3D-44DA-B713-140EF9BE9F62}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProviders.AuthorizeNet", "TeaCommerce.PaymentProviders.AuthorizeNet\TeaCommerce.PaymentProviders.AuthorizeNet.csproj", "{9B415746-AA02-48F4-B969-DA0BD37EFFCE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7F142543-1476-4166-A88B-C4C9AB960616}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7F142543-1476-4166-A88B-C4C9AB960616}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7F142543-1476-4166-A88B-C4C9AB960616}.Release|Any CPU.ActiveCfg = Debug|Any CPU
 		{7F142543-1476-4166-A88B-C4C9AB960616}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C8CF2FE-4B3D-44DA-B713-140EF9BE9F62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C8CF2FE-4B3D-44DA-B713-140EF9BE9F62}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C8CF2FE-4B3D-44DA-B713-140EF9BE9F62}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C8CF2FE-4B3D-44DA-B713-140EF9BE9F62}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9B415746-AA02-48F4-B969-DA0BD37EFFCE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B415746-AA02-48F4-B969-DA0BD37EFFCE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B415746-AA02-48F4-B969-DA0BD37EFFCE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B415746-AA02-48F4-B969-DA0BD37EFFCE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CBAC3357-26E0-4F62-8F07-C90B4FE78614}
 	EndGlobalSection
 EndGlobal

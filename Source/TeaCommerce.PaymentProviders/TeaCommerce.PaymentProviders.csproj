@@ -5,7 +5,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{4CED9A0A-7669-43E8-8AAF-35D12EC4F002}</ProjectGuid>
+    <ProjectGuid>{1C8CF2FE-4B3D-44DA-B713-140EF9BE9F62}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>TeaCommerce.PaymentProviders</RootNamespace>
