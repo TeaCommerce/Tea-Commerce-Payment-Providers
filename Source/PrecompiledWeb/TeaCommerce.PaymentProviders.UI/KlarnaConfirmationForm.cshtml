@@ -1,0 +1,9 @@
+﻿@using TeaCommerce.Api.Models
+@using TeaCommerce.Umbraco.Web
+
+@{
+  Order currentOrder = TC.GetCurrentFinalizedOrder( long.Parse( Model._store ) );
+  string html = new WebClient().DownloadString( currentOrder.Properties[ "teaCommerceCommunicationUrl" ] + "?communicationType=confirmation" );
+}
+
+@Html.Raw( html )

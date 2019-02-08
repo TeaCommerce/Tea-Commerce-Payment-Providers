@@ -234,8 +234,8 @@ namespace TeaCommerce.PaymentProviders.Classic {
             (int)( order.TransactionInformation.AmountAuthorized.Value * 100M ), 
             string.Empty,
             settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty,
+            string.Empty,
             order.CartNumber,
-            order.Id.ToString(),
             ref pbsResponse, 
             ref ePayResponse ) ) {
           apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Captured );
@@ -263,10 +263,10 @@ namespace TeaCommerce.PaymentProviders.Classic {
         if ( GetEPayServiceClient().credit( int.Parse( settings[ "merchantnumber" ] ), 
             long.Parse( order.TransactionInformation.TransactionId ), 
             (int)( order.TransactionInformation.AmountAuthorized.Value * 100M ), 
-            string.Empty, 
-            order.CartNumber,
+            string.Empty,
+            string.Empty,
             settings.ContainsKey( "webservicepassword" ) ? settings[ "webservicepassword" ] : string.Empty,
-            order.Id.ToString(),
+            order.CartNumber,
             ref pbsResponse, 
             ref ePayResponse ) ) {
           apiInfo = new ApiInfo( order.TransactionInformation.TransactionId, PaymentState.Refunded );
