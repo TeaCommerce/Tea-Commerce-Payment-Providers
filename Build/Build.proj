@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Prepare" ToolsVersion="14.0">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="PackageNuget" ToolsVersion="14.0">
 
 	<!-- IMPORTS -->
 	<PropertyGroup>
@@ -23,5 +23,7 @@
 	
 	<!-- Import Sub Tasks -->
     <Import Project="Build.Prepare.targets"/>
+    <Import Project="Build.Package.Umbraco.targets"/>
+    <Import Project="Build.Package.Nuget.targets"/>
 
 </Project>

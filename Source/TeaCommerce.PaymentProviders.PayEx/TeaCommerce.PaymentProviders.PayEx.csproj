@@ -87,5 +87,8 @@
       <CachedSettingsPropName>TeaCommerce_PaymentProviders_PayEx_PayExService_PxOrder</CachedSettingsPropName>
     </WebReferenceUrl>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="version.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

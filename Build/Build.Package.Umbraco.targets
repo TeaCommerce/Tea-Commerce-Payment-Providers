@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
+
+	<!-- MOVE PAYMENT PROVIDERS DLL -->
+	<Target Name="MovePaymentProvidersDll">
+
+		<!-- We don't actually package up from here, so instead we'll just drop the dll in main artifcats dir -->
+		<Copy SourceFiles="$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll" DestinationFolder="$(ArtifactsDir)\" />
+
+	</Target>
+
+	<!-- PACKAGE -->
+	<Target Name="PackageUmbraco" DependsOnTargets="MovePaymentProvidersDll"></Target>
+
+</Project>

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Package" ToolsVersion="14.0">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
 
 	<!-- IMPORTS -->
 	<PropertyGroup>
@@ -10,9 +10,21 @@
         <ProjectFiles Include="$(SourceDir)\TeaCommerce.PaymentProviders*\*.csproj" />
     </ItemGroup>
 
+	<!-- CLEAN -->
+	<Target Name="Clean">
+		<Delete  Files="$(ArtifactsDir)\**\*.*" />
+		<RemoveDir Directories="$(ArtifactsDir)" Condition="Exists('$(ArtifactsDir)')" />
+		<MakeDir Directories="$(ArtifactsDir)" />
+		<MakeDir Directories="$(ArtifactsDir)\Files\bin\" />
+	</Target>
+
 	<!-- GET BUILD VERSION NUMBER FROM FILE -->
 	<Target Name="GetBuildVersionNumber">  
-        <ReadLinesFromFile File="$(RootDir)\version.txt" >  
+		<ItemGroup>
+			<VersionFile Include="$(ProjectDir)\version.txt" Condition="'$(ProjectName)' != 'TeaCommerce.PaymentProviders'" />
+			<VersionFile Include="$(RootDir)\version.txt" Condition="'$(ProjectName)' == 'TeaCommerce.PaymentProviders'" />
+		</ItemGroup>
+        <ReadLinesFromFile File="@(VersionFile)" >  
 			<Output TaskParameter="Lines" ItemName="Version"/>  
         </ReadLinesFromFile>  
 		<PropertyGroup>
@@ -25,7 +37,7 @@
     </Target>
 
 	<!-- UPDATE PROJECT ASSEMBLEY VERSION -->
-	<Target Name="UpdateAssemblyInfo" DependsOnTargets="GetBuildVersionNumber" Inputs="@(ProjectFiles)" Outputs="%(Identity).Dummy">
+	<Target Name="UpdateAssemblyInfo" DependsOnTargets="GetBuildVersionNumber">
 		<ItemGroup>   
 			<AssemblyAttributes Include="AssemblyVersion">
 				<_Parameter1>$(BuildVersionMajor).$(BuildVersionMinor).*</_Parameter1>
@@ -35,34 +47,43 @@
 			</AssemblyAttributes>
 		</ItemGroup>
 		<WriteCodeFragment Language="C#" 
-			OutputFile="@(ProjectFiles->'%(RootDir)%(Directory)\Properties\VersionInfo.cs')" 
+			OutputFile="$(ProjectDir)\Properties\VersionInfo.cs" 
 			AssemblyAttributes="@(AssemblyAttributes)" />
 	</Target>
 
-	<!-- CLEAN -->
-	<Target Name="Clean" DependsOnTargets="UpdateAssemblyInfo">
-		<RemoveDir Directories="$(ArtifactsDir)" Condition="Exists('$(ArtifactsDir)')" />
-		<MakeDir Directories="$(ArtifactsDir)" />
-	</Target>
-
 	<!-- COMPILE -->
-	<Target Name="Compile" DependsOnTargets="Clean">
-		<MSBuild Projects="@(ProjectFiles)" Properties="Configuration=$(BuildConfig)"/>
+	<Target Name="Compile" DependsOnTargets="UpdateAssemblyInfo">
+		<MSBuild Projects="$(ProjectDir)$(ProjectName).csproj" Properties="Configuration=$(BuildConfig)"/>
 	</Target>
 
 	<!-- MERGE DLLS + OUTPUT TO ARTIFACTS DIR -->
-	<Target Name="MergeDlls" DependsOnTargets="Compile" Inputs="@(ProjectFiles)" Outputs="%(Identity).Dummy">
+	<Target Name="MergeDlls" DependsOnTargets="Compile">
 		<ItemGroup>
-			<Dlls Include="@(ProjectFiles->'%(RootDir)%(Directory)bin\$(BuildConfig)\%(FileName).dll')" />
+			<Dlls Include="$(ProjectDir)bin\$(BuildConfig)\$(ProjectName).dll" />
+			<Dlls Include="$(ProjectDir)bin\$(BuildConfig)\*.dll" Exclude="$(ProjectDir)bin\$(BuildConfig)\TeaCommerce.*.dll" />
 		</ItemGroup>
-		<CreateItem Include="@(ProjectFiles->'%(RootDir)%(Directory)bin\$(BuildConfig)\*.dll')" Exclude="@(ProjectFiles->'%(RootDir)%(Directory)bin\$(BuildConfig)\TeaCommerce.*.dll')">
-			<Output TaskParameter="Include" ItemName="Dlls"/>
-		</CreateItem>
-
-		<Exec Command="$(ILMergeExe) /ndebug /internalize:ILMerge.exclude.txt /out:$(ArtifactsDir)\@(ProjectFiles->'%(FileName)').dll @(Dlls, ' ') /targetplatform:v4,&quot;%programfiles(x86)%\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5&quot;" />
+		<Exec Command="$(ILMergeExe) /ndebug /internalize:ILMerge.exclude.txt /out:$(ArtifactsDir)\Files\bin\$(ProjectName).dll @(Dlls, ' ') /targetplatform:v4,&quot;%programfiles(x86)%\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5&quot;" />
 	</Target>
 
-	<!-- Package -->
-	<Target Name="Prepare" DependsOnTargets="MergeDlls"></Target>
+	<!-- PREPARE SINGLE PROJECT -->
+	<Target Name="PrepareProject" DependsOnTargets="MergeDlls"></Target>
+
+	<!-- PREPARE ALL PROJECTS -->
+	<Target Name="PrepareProjects" DependsOnTargets="Clean">
+		<MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareProject" 
+			Properties="ProjectDir=%(ProjectFiles.RootDir)%(ProjectFiles.Directory);ProjectName=%(ProjectFiles.FileName)" />
+	</Target>
+
+	<!-- MERGE ALL -->
+	<Target Name="MergeAll" DependsOnTargets="PrepareProjects">
+		<ItemGroup>
+			<Dlls Include="$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll" />
+			<Dlls Include="$(ArtifactsDir)\Files\bin\*.dll" Exclude="$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll" />
+		</ItemGroup>
+		<Exec Command="$(ILMergeExe) /ndebug /lib:$(SourceDir)\Lib\TeaCommerce /union /out:$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll @(Dlls, ' ') /targetplatform:v4,&quot;%programfiles(x86)%\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5&quot;" />
+	</Target>
+
+	<!-- PREPARE -->
+	<Target Name="Prepare" DependsOnTargets="MergeAll"></Target>
 
 </Project>

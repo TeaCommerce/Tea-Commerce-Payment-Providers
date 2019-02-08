@@ -52,5 +52,8 @@
     <Compile Include="Properties\VersionInfo.cs" />
     <Compile Include="SagePay.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="version.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
