@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle( "TeaCommerce.PaymentProviders.AuthorizeNet" )]
+[assembly: AssemblyTitle( "TeaCommerce.PaymentProviders.Invoicing" )]
 [assembly: AssemblyDescription( "" )]
 [assembly: AssemblyConfiguration( "" )]
 [assembly: AssemblyCompany( "Tea Commerce" )]
@@ -19,4 +19,4 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible( false )]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("8901CD93-4CEE-4511-8572-4AC3F8F87D00")]
+[assembly: Guid("08EEA608-20CE-47B2-B43D-3764EB501F60")]

@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration( "" )]
 [assembly: AssemblyCompany( "Tea Commerce" )]
 [assembly: AssemblyProduct( "Tea Commerce Payment Providers" )]
-[assembly: AssemblyCopyright( "Copyright © 2010 Tea Commerce" )]
+[assembly: AssemblyCopyright( "Copyright © 2019 Tea Commerce" )]
 [assembly: AssemblyTrademark( "" )]
 [assembly: AssemblyCulture( "" )]
 
@@ -19,4 +19,4 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible( false )]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid( "26ac3fd5-26fa-4dba-b5a5-53caa9d49fcf" )]
+[assembly: Guid("1C26B2DB-98D3-4C5D-BDA6-CB78C9EFEBB7")]
