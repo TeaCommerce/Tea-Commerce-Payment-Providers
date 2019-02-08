@@ -7,11 +7,12 @@
     </PropertyGroup>
 
 	<PropertyGroup>
-		<CurrentTeaCommerceVersion>1.0.0</CurrentTeaCommerceVersion>
+		<BaselineTeaCommerceVersion>1.0.0</BaselineTeaCommerceVersion>
 	</PropertyGroup>
   
     <Import Project="$(MSBuildNugetTasksPath)\MSBuild.Nuget.Tasks.Targets" />
 
+	<!-- HELPER TO EXTRACT VERSION NUMBER FROM DLL -->
 	<UsingTask 
   		TaskName="GetInformationalVersion"
   		TaskFactory="CodeTaskFactory"
@@ -79,7 +80,7 @@
 			Namespace="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd"
 			XmlFileName="$(ArtifactsNugetFilesDir)\package.nuspec"
 			XPath="/nu:package/nu:metadata/nu:dependencies/nu:dependency[@id='TeaCommerce.Core']/@version"
-			Value="$(CurrentTeaCommerceVersion)" />
+			Value="$(BaselineTeaCommerceVersion)" />
 
     </Target>
   
