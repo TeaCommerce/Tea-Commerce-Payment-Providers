@@ -31,8 +31,8 @@
 			<BuildVersion>@(Version)</BuildVersion>
 			<BuildVersionMajor>$(BuildVersion.Split('.')[0])</BuildVersionMajor>
 			<BuildVersionMinor>$(BuildVersion.Split('.')[1])</BuildVersionMinor>
-            <InformationalBuildVersion>$(BuildVersion)</InformationalBuildVersion>
-            <InformationalBuildVersion Condition="'$(BuildConfig)'=='Debug'">$(BuildVersion)-alpha+$(BuildTimestamp)</InformationalBuildVersion>
+            <BuildInformationalVersion>$(BuildVersion)</BuildInformationalVersion>
+            <BuildInformationalVersion Condition="'$(BuildConfig)'=='Debug'">$(BuildVersion)-alpha+$(BuildTimestamp)</BuildInformationalVersion>
 		</PropertyGroup>
     </Target>
 
@@ -43,7 +43,7 @@
 				<_Parameter1>$(BuildVersionMajor).$(BuildVersionMinor).*</_Parameter1>
 			</AssemblyAttributes>
 			<AssemblyAttributes Include="AssemblyInformationalVersion">
-				<_Parameter1>$(InformationalBuildVersion)</_Parameter1>
+				<_Parameter1>$(BuildInformationalVersion)</_Parameter1>
 			</AssemblyAttributes>
 		</ItemGroup>
 		<WriteCodeFragment Language="C#" 

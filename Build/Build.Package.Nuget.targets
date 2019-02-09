@@ -14,7 +14,7 @@
 
 	<!-- HELPER TO EXTRACT VERSION NUMBER FROM DLL -->
 	<UsingTask 
-  		TaskName="GetInformationalVersion"
+  		TaskName="GetBuildInformationalVersion"
   		TaskFactory="CodeTaskFactory"
   		AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
 
@@ -87,15 +87,15 @@
     <!-- PACKAGE FILES -->
     <Target Name="PackageNugetFiles" DependsOnTargets="UpdateNugetPackageManifest">
 
-		<GetInformationalVersion AssemblyPath="$(ArtifactsDir)\Files\bin\$(ProjectName).dll">
-			<Output TaskParameter="InformationalVersion" PropertyName="InformationalVersion" />
-		</GetInformationalVersion>
+		<GetBuildInformationalVersion AssemblyPath="$(ArtifactsDir)\Files\bin\$(ProjectName).dll">
+			<Output TaskParameter="InformationalVersion" PropertyName="BuildInformationalVersion" />
+		</GetBuildInformationalVersion>
 
 		<!-- NuGet -->
 		<MSBuild.NuGet.Tasks.Pack NuGetExePath="$(MSBuildProjectDirectory)\tools\Nuget\NuGet.exe"
 			ManifestFile="$(ArtifactsNugetFilesDir)\package.nuspec"
 			BasePath="$(ArtifactsNugetFilesDir)"
-			Version="$(InformationalVersion.Replace('+','.'))"
+			Version="$(BuildInformationalVersion.Replace('+','.'))"
 			OutputDirectory="$(ArtifactsDir)"
 			Symbols="false" />
 
