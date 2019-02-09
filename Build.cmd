@@ -36,8 +36,6 @@ if "%BUILD_TARGET%" == "a" (
   )
 )
 
-
-
 REM Trigger the build
 CALL Build\Tools\NuGet\NuGet.exe restore Source\TeaCommerce.PaymentProviders.sln
 CALL "%programfiles(x86)%\Microsoft Visual Studio\2017\Community\MSBuild\15.0\Bin\amd64\MsBuild.exe" Build\Build.proj -target:%BUILD_TARGET%
