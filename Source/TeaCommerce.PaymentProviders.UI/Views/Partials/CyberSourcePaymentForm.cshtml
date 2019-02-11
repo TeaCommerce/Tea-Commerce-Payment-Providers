@@ -1,0 +1,83 @@
+﻿@*
+ * IMPORTANT!
+ * Please ensure that this macro is placed on a page 
+ * that is protected by SSL.
+ *@
+<form action="@Request.Form[ "form_url" ]" method="POST" id="payment-form">
+  <h3>Payment Information</h3>
+  <div class="form-row">
+    <label>
+      <span>Card Type</span>
+      <select name="card_type">
+        <option value="001">Visa</option>
+        <option value="002">MasterCard</option>
+        <!--
+          ============================================
+          Enable credit cards as required
+          ============================================
+          <option value="003">American Express</option>
+          <option value="004">Discover</option>
+          <option value="005">Diners Club</option>
+          <option value="006">Carte Blanche</option>
+          <option value="007">JCB</option>
+          <option value="014">EnRoute</option>
+          <option value="021">JAL</option>
+          <option value="024">Maestro (UK Domestic)</option>
+          <option value="031">Delta</option>
+          <option value="033">Visa Electron</option>
+          <option value="034">Dankort</option>
+          <option value="035">Laser</option>
+          <option value="036">Carte Bleue</option>
+          <option value="037">Carta Si</option>
+          <option value="042">Maestro (International)</option>
+          <option value="043">GE Money UK Card</option>
+          -->
+      </select>
+    </label>
+  </div>
+
+  <div class="form-row">
+    <label>
+      <span>Card Number</span>
+      <input type="text" size="20" name="card_number" />
+    </label>
+  </div>
+
+  <div class="form-row">
+    <label>
+      <span>CVN</span>
+      <input type="text" size="4" name="card_cvn" />
+    </label>
+  </div>
+
+  <div class="form-row">
+    <span>Expiration (MM-YYYY)</span>
+    <input type="text" size="7" name="card_expiry_date" />
+  </div>
+
+  <a href="@Request.Form[ "cancel_url" ]">&lt; Cancel</a>
+  <input type="submit" value="Submit payment" />
+</form>
+
+<script type="text/javascript">
+  jQuery(function () {
+    jQuery('#payment-form').on('submit', function () {
+      var form = jQuery(this);
+
+      // Generate the signature for the form fields
+      jQuery.post('@Request.Form[ "communication_url" ]', form.serialize(), function (data) {
+        form.append(data);
+        form.get(0).submit();
+      });
+
+      // Prevent the form from submitting with the default action
+      return false;
+    });
+
+    var decision = @(Request.Form[ "decision" ]);
+
+    if ( decision != '' && decision != 'ACCEPT' ) {
+      alert('Errors - use the Request.Form["message"] to see what is wrong - all other error data is in the Request.\nMost used is required_fields and invalid_fields (is a comma seperated value)');
+    }
+  });
+</script>

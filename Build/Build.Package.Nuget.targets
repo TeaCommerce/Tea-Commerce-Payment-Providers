@@ -1,0 +1,121 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
+
+	 <!-- IMPORTS -->
+    <PropertyGroup>
+    	<MSBuildNugetTasksPath>$(MSBuildProjectDirectory)\tools\MSBuildNugetTasks</MSBuildNugetTasksPath>
+    </PropertyGroup>
+  
+    <Import Project="$(MSBuildNugetTasksPath)\MSBuild.Nuget.Tasks.Targets" />
+
+	<PropertyGroup>
+		<MinTeaCommerceCoreVersion>3.1.5</MinTeaCommerceCoreVersion>
+	</PropertyGroup>
+
+	<!-- HELPER TO EXTRACT VERSION NUMBER FROM DLL -->
+	<UsingTask 
+  		TaskName="GetBuildInformationalVersion"
+  		TaskFactory="CodeTaskFactory"
+  		AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+
+		<ParameterGroup>
+			<AssemblyPath ParameterType="System.String" Required="true" />
+			<InformationalVersion ParameterType="System.String" Output="true" />
+		</ParameterGroup>
+
+		<Task>
+			<Using Namespace="System.Reflection" />
+			<Using Namespace="System.Runtime.InteropServices" />
+			<Using Namespace="System.Linq" />
+			<Using Namespace="System.Diagnostics" />
+			<Code Type="Fragment" Language="cs">
+			<![CDATA[
+				Log.LogMessage("Getting version details of assembly at: " + this.AssemblyPath, MessageImportance.High);
+				
+				var asm = Assembly.ReflectionOnlyLoadFrom(this.AssemblyPath);
+				var attrs = CustomAttributeData.GetCustomAttributes(asm);
+				var attr = attrs.FirstOrDefault(x => x.AttributeType.Name == "AssemblyInformationalVersionAttribute");
+
+				this.InformationalVersion = attr.ConstructorArguments.First().Value.ToString();   
+			]]>
+			</Code>
+		</Task>
+
+	</UsingTask>
+
+    <!-- PROPERTIES -->
+    <PropertyGroup>
+        <ArtifactsNugetFilesDir>$(ArtifactsDir)\NugetFiles</ArtifactsNugetFilesDir>
+    </PropertyGroup>
+
+    <!-- COPY FILES -->
+    <Target Name="CopyFilesToNugetFiles">
+        <ItemGroup>
+            <BinFiles Include="$(ArtifactsDir)\Files\bin\$(ProjectName).dll" />
+        </ItemGroup>
+        <Copy SourceFiles="@(BinFiles)" DestinationFolder="$(ArtifactsNugetFilesDir)\lib\net45\%(RecursiveDir)" />
+    </Target>
+  
+    <!-- COPY MANIFESTS -->
+    <Target Name="CopyNugetPackageManifests" DependsOnTargets="CopyFilesToNugetFiles">
+        <Copy SourceFiles="$(MSBuildProjectDirectory)\package.nuspec" DestinationFolder="$(ArtifactsNugetFilesDir)" />
+    </Target>
+  
+    <!-- ADD FILES TO PACKAGE MANIFEST -->
+    <Target Name="UpdateNugetPackageManifest" DependsOnTargets="CopyNugetPackageManifests">
+
+        <ItemGroup>
+			<NuGetManifestFiles Include="$(ArtifactsNugetFilesDir)\**\*" Exclude="$(ArtifactsNugetFilesDir)\package.nuspec" />
+		</ItemGroup>
+
+		<MSBuild.NuGet.Tasks.ManifestUpdate
+			ManifestFile="$(ArtifactsNugetFilesDir)\package.nuspec"
+			WorkingDirectory="$(ArtifactsNugetFilesDir)"
+			Id="$(ProjectName)"
+			Files="@(NuGetManifestFiles)" />
+
+		<!-- Update the core dependency version. Have to use XMLUpdate as MSBuild.Nuget doesn't support this yet -->
+		<XmlUpdate
+			Prefix="nu"
+			Namespace="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd"
+			XmlFileName="$(ArtifactsNugetFilesDir)\package.nuspec"
+			XPath="/nu:package/nu:metadata/nu:dependencies/nu:dependency[@id='TeaCommerce.Core']/@version"
+			Value="$(MinTeaCommerceCoreVersion.Replace('+','.'))" />
+
+    </Target>
+  
+    <!-- PACKAGE FILES -->
+    <Target Name="PackageNugetFiles" DependsOnTargets="UpdateNugetPackageManifest">
+
+		<GetBuildInformationalVersion AssemblyPath="$(ArtifactsDir)\Files\bin\$(ProjectName).dll">
+			<Output TaskParameter="InformationalVersion" PropertyName="BuildInformationalVersion" />
+		</GetBuildInformationalVersion>
+
+		<!-- NuGet -->
+		<MSBuild.NuGet.Tasks.Pack NuGetExePath="$(MSBuildProjectDirectory)\tools\Nuget\NuGet.exe"
+			ManifestFile="$(ArtifactsNugetFilesDir)\package.nuspec"
+			BasePath="$(ArtifactsNugetFilesDir)"
+			Version="$(BuildInformationalVersion.Replace('+','.'))"
+			OutputDirectory="$(ArtifactsDir)"
+			Symbols="false" />
+
+    </Target>
+  
+    <!-- CLEANUP FILES -->
+    <Target Name="CleanupNugetFiles" DependsOnTargets="PackageNugetFiles">
+        <RemoveDir Directories="$(ArtifactsNugetFilesDir)" />
+    </Target>
+
+	<!-- PACKAGE SINGLE PROJECT -->
+	<Target Name="PackageProject" DependsOnTargets="CleanupNugetFiles"></Target>
+
+	<!-- PACKAGE ALL PROJECTS -->
+	<Target Name="PackageProjects">
+		<MSBuild Projects="$(MSBuildProjectFile)" Targets="PackageProject" Properties="ProjectDir=%(ProjectFiles.RootDir)%(ProjectFiles.Directory);ProjectName=%(ProjectFiles.FileName)"
+			Condition="'%(ProjectFiles.FileName)' != 'TeaCommerce.PaymentProviders'" />
+	</Target>
+
+	<!-- PACKAGE -->
+	<Target Name="PackageNuget" DependsOnTargets="PackageProjects"></Target>
+
+</Project>

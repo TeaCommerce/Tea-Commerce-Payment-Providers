@@ -1,0 +1,11 @@
+﻿@using TeaCommerce.Api.Models
+@using TeaCommerce.Umbraco.Web
+
+@{
+  Order currentOrder = TC.GetCurrentOrder( long.Parse( Model._store ) );
+  WebClient webclient = new WebClient();
+  webclient.Headers[ "referer" ] = HttpContext.Current.Request.Url.AbsoluteUri;
+  string html = webclient.DownloadString( currentOrder.Properties[ "teaCommerceCommunicationUrl" ]+"?communicationType=checkout" );
+}
+
+@Html.Raw( html ) 
