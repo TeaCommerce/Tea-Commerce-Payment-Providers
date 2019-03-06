@@ -16,8 +16,8 @@ using Klarna.Rest.Checkout;
 
 namespace TeaCommerce.PaymentProviders.Inline
 {
-    [PaymentProvider("Klarna")]
-    public class Klarna : APaymentProvider
+    [PaymentProvider("Klarna3")]
+    public class Klarna3 : APaymentProvider
     {
         public override IDictionary<string, string> DefaultSettings
         {
@@ -31,6 +31,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                     ["merchant.confirmation_uri"] = "",
                     ["merchant.terms_uri"] = "",
                     ["sharedSecret"] = "",
+                    ["zipCodePropAlias"] = "zipCode",
                     ["totalSku"] = "0001",
                     ["totalName"] = "Totala",
                     ["testMode"] = "1"
@@ -74,7 +75,7 @@ namespace TeaCommerce.PaymentProviders.Inline
             CallbackInfo callbackInfo = null;
 
             try
-            {
+            { 
                 order.MustNotBeNull("order");
                 request.MustNotBeNull("request");
                 settings.MustNotBeNull("settings");
@@ -102,7 +103,7 @@ namespace TeaCommerce.PaymentProviders.Inline
             }
             catch (Exception exp)
             {
-                LoggingService.Instance.Error<Klarna>("Klarna(" + order.CartNumber + ") - Process callback", exp);
+                LoggingService.Instance.Error<Klarna3>("Klarna(" + order.CartNumber + ") - Process callback", exp);
             }
 
             return callbackInfo;
@@ -192,6 +193,13 @@ namespace TeaCommerce.PaymentProviders.Inline
                         Locale = settings["locale"],
                         OrderAmount = (int)(order.TotalPrice.Value.WithVat * 100M),
                         OrderTaxAmount = (int)(order.TotalPrice.Value.Vat * 100M),
+                        BillingAddress = new Address
+                        {
+                            Email = order.PaymentInformation.Email,
+                            PostalCode = settings.ContainsKey("zipCodePropAlias") && !string.IsNullOrWhiteSpace(settings["zipCodePropAlias"])
+                                ? order.Properties[settings["zipCodePropAlias"]]
+                                : null
+                        },
                         MerchantUrls = new MerchantUrls
                         {
                             Terms = new Uri(merchantTermsUri),
@@ -207,7 +215,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                                 Name = settings.ContainsKey( "totalName" ) ? settings[ "totalName" ] : "Total",
                                 Quantity = 1,
                                 UnitPrice =  (int) ( order.TotalPrice.Value.WithVat * 100M ),
-                                TaxRate = (int) ( order.VatRate.Value * 100M ),
+                                TaxRate = (int) ( order.VatRate.Value * 10000M ),
                                 TotalAmount = (int) ( order.TotalPrice.Value.WithVat * 100M ),
                                 TotalTaxAmount = (int) ( order.TotalPrice.Value.Vat * 100M ),
                             }
@@ -235,12 +243,12 @@ namespace TeaCommerce.PaymentProviders.Inline
                     // If no Klarna order was found to update or the session expired - then create new Klarna order
                     if (klarnaOrder == null)
                     {
-                        klarnaOrder = client.NewCheckoutOrder(klarnaOrderId);
+                        klarnaOrder = client.NewCheckoutOrder();
                         klarnaOrder.Create(klarnaOrderData);
                         klarnaOrderData = klarnaOrder.Fetch();
 
                         order.TransactionInformation.TransactionId = klarnaOrderData.OrderId;
-                        order.TransactionInformation.PaymentState = PaymentState.Authorized;
+                        order.TransactionInformation.PaymentState = PaymentState.Initialized;
                         order.Save();
                     }
                 }
@@ -254,7 +262,13 @@ namespace TeaCommerce.PaymentProviders.Inline
                         klarnaOrder = client.NewCheckoutOrder(klarnaOrderId);
                         klarnaOrderData = klarnaOrder.Fetch();
 
-                        if (klarnaOrderData.Status == "checkout_incomplete")
+                        if (klarnaOrderData.Status == "checkout_complete")
+                        {
+                            order.TransactionInformation.PaymentState = PaymentState.Authorized;
+                            order.TransactionInformation.AmountAuthorized = new Amount(order.TotalPrice.Value.WithVat, CurrencyService.Instance.Get(order.StoreId, order.CurrencyId));
+                            order.Save();
+                        }
+                        else
                         {
                             throw new Exception("Confirmation page reached without a Klarna order that is finished");
                         }
@@ -269,7 +283,7 @@ namespace TeaCommerce.PaymentProviders.Inline
             }
             catch (Exception exp)
             {
-                LoggingService.Instance.Error<Klarna>("Klarna(" + order.CartNumber + ") - ProcessRequest", exp);
+                LoggingService.Instance.Error<Klarna3>("Klarna(" + order.CartNumber + ") - ProcessRequest", exp);
             }
 
             return response;
