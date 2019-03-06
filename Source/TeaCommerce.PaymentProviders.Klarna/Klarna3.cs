@@ -31,7 +31,6 @@ namespace TeaCommerce.PaymentProviders.Inline
                     ["merchant.confirmation_uri"] = "",
                     ["merchant.terms_uri"] = "",
                     ["sharedSecret"] = "",
-                    ["zipCodePropAlias"] = "zipCode",
                     ["totalSku"] = "0001",
                     ["totalName"] = "Totala",
                     ["testMode"] = "1"
@@ -195,10 +194,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                         OrderTaxAmount = (int)(order.TotalPrice.Value.Vat * 100M),
                         BillingAddress = new Address
                         {
-                            Email = order.PaymentInformation.Email,
-                            PostalCode = settings.ContainsKey("zipCodePropAlias") && !string.IsNullOrWhiteSpace(settings["zipCodePropAlias"])
-                                ? order.Properties[settings["zipCodePropAlias"]]
-                                : null
+                            Email = order.PaymentInformation.Email
                         },
                         MerchantUrls = new MerchantUrls
                         {
