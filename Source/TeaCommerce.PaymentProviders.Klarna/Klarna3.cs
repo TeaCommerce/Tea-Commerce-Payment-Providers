@@ -70,7 +70,7 @@ namespace TeaCommerce.PaymentProviders.Inline
         }
 
         public override CallbackInfo ProcessCallback(Order order, HttpRequest request, IDictionary<string, string> settings)
-        {
+        { 
             CallbackInfo callbackInfo = null;
 
             try
@@ -93,7 +93,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                     var amount = klarnaOrderData.OrderAmount.Value / 100M; // ((JObject)klarnaOrder.GetValue("cart"))["total_price_including_tax"].Value<decimal>() / 100M;
                     var klarnaId = klarnaOrderData.OrderId;
 
-                    callbackInfo = new CallbackInfo(amount, klarnaId, PaymentState.Captured);
+                    callbackInfo = new CallbackInfo(amount, klarnaId, PaymentState.Authorized);
                 }
                 else
                 {
@@ -199,9 +199,9 @@ namespace TeaCommerce.PaymentProviders.Inline
                         MerchantUrls = new MerchantUrls
                         {
                             Terms = new Uri(merchantTermsUri),
-                            Checkout = new Uri(request.UrlReferrer.ToString()),
-                            Confirmation = new Uri(order.Properties["teaCommerceContinueUrl"]),
-                            Push = new Uri(order.Properties["teaCommerceCallbackUrl"])
+                            Checkout = new Uri(request.UrlReferrer.ToString() + "?koid={checkout.order.id}"),
+                            Confirmation = new Uri(order.Properties["teaCommerceContinueUrl"] + "?koid={checkout.order.id}"),
+                            Push = new Uri(order.Properties["teaCommerceCallbackUrl"] + "?koid={checkout.order.id}")
                         },
                         OrderLines = new List<KlarnaOrderLine>()
                         {
@@ -258,14 +258,8 @@ namespace TeaCommerce.PaymentProviders.Inline
                         klarnaOrder = client.NewCheckoutOrder(klarnaOrderId);
                         klarnaOrderData = klarnaOrder.Fetch();
 
-                        if (klarnaOrderData.Status == "checkout_complete")
-                        {
-                            order.TransactionInformation.PaymentState = PaymentState.Authorized;
-                            order.TransactionInformation.AmountAuthorized = new Amount(order.TotalPrice.Value.WithVat, CurrencyService.Instance.Get(order.StoreId, order.CurrencyId));
-                            order.Save();
-                        }
-                        else
-                        {
+                        if (klarnaOrderData.Status != "checkout_complete")
+                        { 
                             throw new Exception("Confirmation page reached without a Klarna order that is finished");
                         }
                     }
