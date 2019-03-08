@@ -131,6 +131,8 @@ namespace TeaCommerce.PaymentProviders.Inline
                 order.Properties.AddOrUpdate("billing_postal_code", klarnaOrderData.BillingAddress.PostalCode);
             if (!string.IsNullOrWhiteSpace(klarnaOrderData.BillingAddress.City))
                 order.Properties.AddOrUpdate("billing_city", klarnaOrderData.BillingAddress.City);
+            if (!string.IsNullOrWhiteSpace(klarnaOrderData.BillingAddress.Country))
+                order.Properties.AddOrUpdate("billing_country", klarnaOrderData.BillingAddress.Phone);
             if (!string.IsNullOrWhiteSpace(klarnaOrderData.BillingAddress.Phone))
                 order.Properties.AddOrUpdate("billing_phone", klarnaOrderData.BillingAddress.Phone);
 
@@ -143,6 +145,8 @@ namespace TeaCommerce.PaymentProviders.Inline
                 order.Properties.AddOrUpdate("shipping_postal_code", klarnaOrderData.ShippingAddress.PostalCode);
             if (!string.IsNullOrWhiteSpace(klarnaOrderData.ShippingAddress.City))
                 order.Properties.AddOrUpdate("shipping_city", klarnaOrderData.ShippingAddress.City);
+            if (!string.IsNullOrWhiteSpace(klarnaOrderData.ShippingAddress.Country))
+                order.Properties.AddOrUpdate("shipping_country", klarnaOrderData.ShippingAddress.Country);
             if (!string.IsNullOrWhiteSpace(klarnaOrderData.ShippingAddress.Phone))
                 order.Properties.AddOrUpdate("shipping_phone", klarnaOrderData.ShippingAddress.Phone);
 
