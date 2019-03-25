@@ -64,10 +64,8 @@ namespace TeaCommerce.PaymentProviders.Classic {
       htmlForm.InputFields[ "payment_methods" ] = settings[ "payment_methods" ];
 
       //Order name must be between 4 or 20 chars  
-      string orderName = order.CartNumber;
-      while ( orderName.Length < 4 )
-        orderName = "0" + orderName;
-      if ( orderName.Length > 20 ) {
+      string orderName = order.CartNumber.PadLeft(4, '0');
+      if (orderName.Length > 20 ) {
         throw new Exception( "Cart number of the order can not exceed 20 characters." );
       }
       htmlForm.InputFields[ "order_id" ] = orderName;
