@@ -1,9 +1,9 @@
-﻿using Stripe;
+﻿using Newtonsoft.Json;
+using Stripe;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Net;
 using System.Web;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Infrastructure.Logging;
@@ -17,10 +17,13 @@ namespace TeaCommerce.PaymentProviders.Inline
     [PaymentProvider("Stripe - inline")]
     public class Stripe : BaseStripeProvider
     {
-        public override bool SupportsRetrievalOfPaymentStatus { get { return true; } }
-        public override bool SupportsCapturingOfPayment { get { return true; } }
-        public override bool SupportsRefundOfPayment { get { return true; } }
-        public override bool SupportsCancellationOfPayment { get { return true; } }
+        public override bool SupportsRetrievalOfPaymentStatus => true;
+        public override bool SupportsRefundOfPayment => true;
+
+        public override bool SupportsCapturingOfPayment => false;
+        public override bool SupportsCancellationOfPayment => false;
+
+        public override bool FinalizeAtContinueUrl => false;
 
         public override IDictionary<string, string> DefaultSettings
         {
@@ -28,11 +31,19 @@ namespace TeaCommerce.PaymentProviders.Inline
             {
                 return base.DefaultSettings
                     .Union(new Dictionary<string, string> {
-                        { "capture", "false" },
                         { "send_stripe_receipt", "false" }
                     })
                     .ToDictionary(k => k.Key, v => v.Value);
             }
+        }
+
+        public override PaymentHtmlForm GenerateHtmlForm(Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings)
+        {
+            var htmlForm =  base.GenerateHtmlForm(order, teaCommerceContinueUrl, teaCommerceCancelUrl, teaCommerceCallBackUrl, teaCommerceCommunicationUrl, settings);
+
+            htmlForm.InputFields["api_key"] = settings[settings["mode"] + "_public_key"];
+
+            return htmlForm;
         }
 
         public override string GetCartNumber(HttpRequest request, IDictionary<string, string> settings)
@@ -43,6 +54,9 @@ namespace TeaCommerce.PaymentProviders.Inline
             {
                 request.MustNotBeNull("request");
                 settings.MustNotBeNull("settings");
+                settings.MustContainKey("mode", "settings");
+                settings.MustContainKey(settings["mode"] + "_secret_key", "settings");
+                settings.MustContainKey("webhook_secret", "settings");
 
                 // If in test mode, write out the form data to a text file
                 if (settings.ContainsKey("mode") && settings["mode"] == "test")
@@ -50,21 +64,39 @@ namespace TeaCommerce.PaymentProviders.Inline
                     LogRequest<Stripe>(request, logPostData: true);
                 }
 
-                var stripeEvent = GetStripeEvent(request);
+                var apiKey = settings[settings["mode"] + "_secret_key"];
 
-                // We are only interested in charge events
-                if (stripeEvent != null && stripeEvent.Type.StartsWith("charge."))
+                var webhookSecret = settings["webhook_secret"];
+                var stripeEvent = GetWebhookStripeEvent(request, webhookSecret);
+                if (stripeEvent != null && stripeEvent.Type.StartsWith("payment_intent."))
                 {
-                    var stripeCharge = Mapper<Charge>.MapFromJson(stripeEvent.Data.Object.ToString());
+                    var stripeIntent = (PaymentIntent)stripeEvent.Data.Object;
 
-                    // Get cart number from meta data or description (legacy)
-                    cartNumber = stripeCharge.Metadata != null && stripeCharge.Metadata.ContainsKey("cartNumber")
-                        ? stripeCharge.Metadata["cartNumber"] 
-                        : stripeCharge.Description;
+                    // Get cart number from meta data
+                    if (stripeIntent?.Metadata != null && stripeIntent.Metadata.ContainsKey("cartNumber"))
+                    {
+                        cartNumber = stripeIntent.Metadata["cartNumber"];
+                    }
                 }
-                else
+                else if (stripeEvent != null && stripeEvent.Type.StartsWith("charge."))
                 {
-                    HttpContext.Current.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    var stripeCharge = (Charge)stripeEvent.Data.Object;
+                    var stripeIntent = stripeCharge.PaymentIntent;
+
+                    if (stripeIntent == null && !string.IsNullOrWhiteSpace(stripeCharge.PaymentIntentId))
+                    {
+                        stripeIntent = new PaymentIntentService(apiKey).Get(stripeCharge.PaymentIntentId);
+                    }
+
+                    // Get cart number from meta data
+                    if (stripeIntent?.Metadata != null && stripeIntent.Metadata.ContainsKey("cartNumber"))
+                    {
+                        cartNumber = stripeIntent.Metadata["cartNumber"];
+                    }
+                    else if (stripeCharge?.Metadata != null && stripeCharge.Metadata.ContainsKey("cartNumber"))
+                    {
+                        cartNumber = stripeCharge.Metadata["cartNumber"];
+                    }
                 }
             }
             catch (Exception exp)
@@ -77,86 +109,10 @@ namespace TeaCommerce.PaymentProviders.Inline
 
         public override CallbackInfo ProcessCallback(Order order, HttpRequest request, IDictionary<string, string> settings)
         {
-            CallbackInfo callbackInfo = null;
-
-            try
-            {
-                order.MustNotBeNull("order");
-                request.MustNotBeNull("request");
-                settings.MustNotBeNull("settings");
-                settings.MustContainKey("mode", "settings");
-                settings.MustContainKey(settings["mode"] + "_secret_key", "settings");
-
-                // If in test mode, write out the form data to a text file
-                if (settings.ContainsKey("mode") && settings["mode"] == "test")
-                {
-                    LogRequest<Stripe>(request, logPostData: true);
-                }
-
-                var apiKey = settings[settings["mode"] + "_secret_key"];
-                var capture = settings["capture"].TryParse<bool>() ?? false;
-
-                // TODO: Create a flag to decide whether to create customers
-                // or maybe we should create them if order.customerId is set?
-                // var customerService = new CustomerService(apiKey);
-
-                var chargeService = new ChargeService(apiKey);
-
-                var chargeOptions = new ChargeCreateOptions {
-                    Amount = DollarsToCents(order.TotalPrice.Value.WithVat),
-                    Currency = CurrencyService.Instance.Get(order.StoreId, order.CurrencyId).IsoCode,
-                    SourceId = request.Form["stripeToken"],
-                    Description = $"{order.CartNumber} - {order.PaymentInformation.Email}",
-                    Capture = capture,
-                    Metadata = new Dictionary<string, string>
-                    {
-                        { "orderId", order.Id.ToString() },
-                        { "cartNumber", order.CartNumber }
-                    }
-                };
-
-                if (settings.ContainsKey("send_stripe_receipt") && settings["send_stripe_receipt"] == "true")
-                {
-                    chargeOptions.ReceiptEmail = order.PaymentInformation.Email;
-                }
-
-                var charge = chargeService.Create(chargeOptions);
-
-                // Check payment ammount
-                if (charge.Amount != chargeOptions.Amount)
-                {
-                    throw new StripeException(HttpStatusCode.Unauthorized,
-                        new StripeError {
-                            ChargeId = charge.Id,
-                            Code = "TEA_ERROR",
-                            Message = "Payment ammount differs from authorized payment ammount"
-                        }, "Payment ammount differs from authorized payment ammount");
-                }
-
-                // Check paid status
-                if (!charge.Paid)
-                {
-                    throw new StripeException(HttpStatusCode.Unauthorized,
-                        new StripeError {
-                            ChargeId = charge.Id,
-                            Code = "TEA_ERROR",
-                            Message = "Payment failed"
-                        }, "Payment failed");
-                }
-
-                callbackInfo = new CallbackInfo(CentsToDollars(charge.Amount), charge.Id, capture ? PaymentState.Captured : PaymentState.Authorized);
-
-            }
-            catch (StripeException e)
-            {
-                ReturnToPaymentFormWithException(order, request, e);
-            }
-            catch (Exception exp)
-            {
-                LoggingService.Instance.Error<Stripe>("Stripe(" + order.CartNumber + ") - ProcessCallback", exp);
-            }
-
-            return callbackInfo;
+            // Because we need more fine grained control over the callback process
+            // we actually perform all the callback functionality from within the
+            // ProcessRequest method instead.
+            return null;
         }
 
         public override string ProcessRequest(Order order, HttpRequest request, IDictionary<string, string> settings)
@@ -175,22 +131,15 @@ namespace TeaCommerce.PaymentProviders.Inline
                     LogRequest<Stripe>(request, logPostData: true);
                 }
 
-                // Stripe supports webhooks
-                var stripeEvent = GetStripeEvent(request);
-
-                if (stripeEvent.Type.StartsWith("charge."))
+                if (request.QueryString["action"] == "capture")
                 {
-                    var charge = Mapper<Charge>.MapFromJson(stripeEvent.Data.Object.ToString());
-
-                    var paymentState = GetPaymentState(charge);
-                    if (order.TransactionInformation.PaymentState != paymentState)
-                    {
-                        order.TransactionInformation.TransactionId = charge.Id;
-                        order.TransactionInformation.PaymentState = paymentState;
-                        order.Save();
-                    }
+                    return ProcessCaptureRequest(order, request, settings);
                 }
-
+                else
+                {
+                    // No action defined so assume it's a webhook request
+                    return ProcessWebhookRequest(order, request, settings);
+                }
             }
             catch (Exception exp)
             {
@@ -198,6 +147,64 @@ namespace TeaCommerce.PaymentProviders.Inline
             }
 
             return response;
+        }
+
+        private string ProcessCaptureRequest(Order order, HttpRequest request, IDictionary<string, string> settings)
+        {
+            var apiKey = settings[settings["mode"] + "_secret_key"];
+
+            try
+            {
+                var intentService = new PaymentIntentService(apiKey);
+                var intentOptions = new PaymentIntentCreateOptions
+                {
+                    PaymentMethodId = request.Form["stripePaymentMethodId"],
+                    Amount = DollarsToCents(order.TotalPrice.Value.WithVat),
+                    Currency = CurrencyService.Instance.Get(order.StoreId, order.CurrencyId).IsoCode,
+                    Description = $"{order.CartNumber} - {order.PaymentInformation.Email}",
+                    Metadata = new Dictionary<string, string>
+                    {
+                        { "orderId", order.Id.ToString() },
+                        { "cartNumber", order.CartNumber }
+                    }
+                };
+
+                if (settings.ContainsKey("send_stripe_receipt") && settings["send_stripe_receipt"] == "true")
+                {
+                    intentOptions.ReceiptEmail = order.PaymentInformation.Email;
+                }
+
+                var intent = intentService.Create(intentOptions);
+
+                order.Properties.AddOrUpdate(new CustomProperty("stripePaymentIntentId", intent.Id) { ServerSideOnly = true });
+                order.Save();
+
+                return JsonConvert.SerializeObject(new
+                {
+                    payment_intent_client_secret = intent.ClientSecret
+                });
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new
+                {
+                    error = ex.Message
+                });
+            }
+        }
+
+        private string ProcessWebhookRequest(Order order, HttpRequest request, IDictionary<string, string> settings)
+        {
+            var webhookSecret = settings["webhook_secret"];
+            var stripeEvent = GetWebhookStripeEvent(request, webhookSecret); 
+
+            if (stripeEvent.Type.StartsWith("charge."))
+            {
+                var charge = (Charge)stripeEvent.Data.Object;
+                FinalizeOrUpdateOrder(order, charge);
+            }
+
+            return null;
         }
 
         public override ApiInfo GetStatus(Order order, IDictionary<string, string> settings)
@@ -208,6 +215,10 @@ namespace TeaCommerce.PaymentProviders.Inline
                 settings.MustNotBeNull("settings");
                 settings.MustContainKey("mode", "settings");
                 settings.MustContainKey(settings["mode"] + "_secret_key", "settings");
+
+                // If there is no transction id yet, just return null
+                if (order.TransactionInformation.TransactionId == null)
+                    return null;
 
                 var apiKey = settings[settings["mode"] + "_secret_key"];
 
@@ -232,6 +243,10 @@ namespace TeaCommerce.PaymentProviders.Inline
                 settings.MustNotBeNull("settings");
                 settings.MustContainKey("mode", "settings");
                 settings.MustContainKey(settings["mode"] + "_secret_key", "settings");
+
+                // If there is no transction id yet, just return null
+                if (order.TransactionInformation.TransactionId == null)
+                    return null;
 
                 var apiKey = settings[settings["mode"] + "_secret_key"];
 
@@ -261,6 +276,10 @@ namespace TeaCommerce.PaymentProviders.Inline
                 settings.MustNotBeNull("settings");
                 settings.MustContainKey("mode", "settings");
                 settings.MustContainKey(settings["mode"] + "_secret_key", "settings");
+
+                // If there is no transction id yet, just return null
+                if (order.TransactionInformation.TransactionId == null)
+                    return null;
 
                 var apiKey = settings[settings["mode"] + "_secret_key"];
 
@@ -298,8 +317,6 @@ namespace TeaCommerce.PaymentProviders.Inline
         {
             switch (settingsKey)
             {
-                case "capture":
-                    return settingsKey + "<br/><small>Flag indicating if a payment should be captured instantly - true/false.</small>";
                 case "send_stripe_receipt":
                     return settingsKey + "<br/><small>Flag indicating whether to send a Stripe receipt to the customer - true/false. Receipts are only sent when in live mode.</small>";
                 default:
@@ -310,6 +327,9 @@ namespace TeaCommerce.PaymentProviders.Inline
         protected PaymentState GetPaymentState(Charge charge)
         {
             PaymentState paymentState = PaymentState.Initialized;
+
+            if (charge == null)
+                return paymentState;
 
             if (charge.Paid)
             {
@@ -334,6 +354,25 @@ namespace TeaCommerce.PaymentProviders.Inline
             }
 
             return paymentState;
+        }
+
+        protected void FinalizeOrUpdateOrder(Order order, Charge charge)
+        {
+            var amount = CentsToDollars(charge.Amount);
+            var paymentState = GetPaymentState(charge);
+
+            if (!order.IsFinalized && (paymentState == PaymentState.Authorized || paymentState == PaymentState.Captured))
+            {
+                order.Finalize(amount, charge.Id, paymentState);
+            }
+            else if (order.TransactionInformation.PaymentState != paymentState)
+            {
+                var currency = CurrencyService.Instance.Get(order.StoreId, order.CurrencyId);
+                order.TransactionInformation.AmountAuthorized = new Amount(amount, currency);
+                order.TransactionInformation.TransactionId = charge.Id;
+                order.TransactionInformation.PaymentState = paymentState;
+                order.Save();
+            }
         }
     }
 }

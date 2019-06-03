@@ -5,7 +5,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Web;
-using System.Web.Security;
 using TeaCommerce.Api.Common;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
@@ -36,6 +35,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                     { "test_public_key", "" },
                     { "live_secret_key", "" },
                     { "live_public_key", "" },
+                    { "webhook_secret", "" },
                     { "mode", "test" },
                 };
             }
@@ -61,6 +61,12 @@ namespace TeaCommerce.PaymentProviders.Inline
             htmlForm.InputFields["api_key"] = settings[settings["mode"] + "_public_key"];
             htmlForm.InputFields["continue_url"] = teaCommerceContinueUrl;
             htmlForm.InputFields["cancel_url"] = teaCommerceCancelUrl;
+
+            htmlForm.InputFields["api_url"] = teaCommerceCommunicationUrl;
+
+            htmlForm.InputFields["billing_firstname"] = order.PaymentInformation.FirstName;
+            htmlForm.InputFields["billing_lastname"] = order.PaymentInformation.LastName;
+            htmlForm.InputFields["billing_email"] = order.PaymentInformation.Email;
 
             if (settings.ContainsKey("billing_address_line1_property_alias") && !string.IsNullOrWhiteSpace(settings["billing_address_line1_property_alias"]))
                 htmlForm.InputFields["billing_address_line1"] = order.Properties.First(x => x.Alias == settings["billing_address_line1_property_alias"]).Value;
@@ -137,33 +143,7 @@ namespace TeaCommerce.PaymentProviders.Inline
             }
         }
 
-        protected void ReturnToPaymentFormWithException(Order order, HttpRequest request, StripeException e)
-        {
-            // Pass through request fields
-            var requestFields = string.Join("", request.Form.AllKeys.Select(k => "<input type=\"hidden\" name=\"" + k + "\" value=\"" + request.Form[k] + "\" />"));
-
-            //Add error details from the exception.
-            requestFields = requestFields + "<input type=\"hidden\" name=\"TransactionFailed\" value=\"true\" />";
-            requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.chargeId\" value=\"" + e.StripeError.ChargeId + "\" />";
-            requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.Code\" value=\"" + e.StripeError.Code + "\" />";
-            requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.Error\" value=\"" + e.StripeError.Error + "\" />";
-            requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.ErrorDescription\" value=\"" + e.StripeError.ErrorDescription + "\" />";
-            requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.ErrorType\" value=\"" + e.StripeError.ErrorType + "\" />";
-            requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.Message\" value=\"" + e.StripeError.Message + "\" />";
-            requestFields = requestFields + "<input type=\"hidden\" name=\"FailureReason.Parameter\" value=\"" + e.StripeError.Parameter + "\" />";
-
-            var paymentForm = PaymentMethodService.Instance.Get(order.StoreId, order.PaymentInformation.PaymentMethodId.Value).GeneratePaymentForm(order, requestFields);
-
-            //Force the form to auto submit
-            paymentForm += "<script type=\"text/javascript\">document.forms[0].submit();</script>";
-
-            //Write out the form
-            HttpContext.Current.Response.Clear();
-            HttpContext.Current.Response.Write(paymentForm);
-            HttpContext.Current.Response.End();
-        }
-
-        protected Event GetStripeEvent(HttpRequest request)
+        protected Event GetWebhookStripeEvent(HttpRequest request, string webhookSecret)
         {
             Event stripeEvent = null;
 
@@ -182,45 +162,19 @@ namespace TeaCommerce.PaymentProviders.Inline
 
                     using (StreamReader reader = new StreamReader(request.InputStream))
                     {
-                        stripeEvent = EventUtility.ParseEvent(reader.ReadToEnd());
+                        var json = reader.ReadToEnd();
+
+                        stripeEvent = EventUtility.ConstructEvent(json, request.Headers["Stripe-Signature"], webhookSecret);
 
                         HttpContext.Current.Items["TC_StripeEvent"] = stripeEvent;
                     }
                 }
                 catch
-                {
-                }
+                { }
             }
 
             return stripeEvent;
         }
-
-        //protected Customer GetOrCreateCustomer(CustomerService customerService, Order order)
-        //{
-        //    Customer customer = null;
-
-        //    // TODO: Need a way to lookup a customer from the order CustomerId
-        //    // so that orders can be associated with the same customer object
-        //    // maybe looking in DB stripeCustomerId from order by same customer?
-        //    //if (!string.IsNullOrWhiteSpace(order.CustomerId))
-        //    //{
-        //    //    customerService.Get(order.CustomerId);
-        //    //}
-
-        //    if (customer == null)
-        //    {
-        //        customer = customerService.Create(new CustomerCreateOptions
-        //        {
-        //            Email = order.PaymentInformation.Email,
-        //            Metadata = new Dictionary<string, string>
-        //            {
-        //                { "customerId", order.CustomerId }
-        //            }
-        //        });
-        //    }
-
-        //    return customer;
-        //}
 
         protected static long DollarsToCents(decimal val)
         {
