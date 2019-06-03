@@ -81,7 +81,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                 // Get the current stripe api key based on mode
                 var apiKey = settings[settings["mode"] + "_secret_key"];
 
-                var webhookSecret = settings["webhook_secret"];
+                var webhookSecret = settings[settings["mode"] + "_webhook_secret"];
                 var stripeEvent = GetWebhookStripeEvent(request, webhookSecret);
 
                 // We are only interested in charge events
@@ -271,7 +271,7 @@ namespace TeaCommerce.PaymentProviders.Inline
         private string ProcessWebhookRequest(Order order, HttpRequest request, IDictionary<string, string> settings)
         {
             // Stripe supports webhooks
-            var webhookSecret = settings["webhook_secret"];
+            var webhookSecret = settings[settings["mode"] + "_webhook_secret"];
             var stripeEvent = GetWebhookStripeEvent(request, webhookSecret);
 
             // With subscriptions, Stripe creates an invoice for each payment

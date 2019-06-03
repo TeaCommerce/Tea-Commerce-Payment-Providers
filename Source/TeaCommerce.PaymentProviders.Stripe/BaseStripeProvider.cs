@@ -33,9 +33,10 @@ namespace TeaCommerce.PaymentProviders.Inline
                     { "billing_zip_code_property_alias", "zipCode" },
                     { "test_secret_key", "" },
                     { "test_public_key", "" },
+                    { "test_webhook_secret", "" },
                     { "live_secret_key", "" },
                     { "live_public_key", "" },
-                    { "webhook_secret", "" },
+                    { "live_webhook_secret", "" },
                     { "mode", "test" },
                 };
             }
@@ -132,10 +133,14 @@ namespace TeaCommerce.PaymentProviders.Inline
                     return settingsKey + "<br/><small>Your test stripe secret key.</small>";
                 case "test_public_key":
                     return settingsKey + "<br/><small>Your test stripe public key.</small>";
+                case "test_webhook_secret":
+                    return settingsKey + "<br/><small>Your test webhook signing secret for validating webhook requests.</small>";
                 case "live_secret_key":
                     return settingsKey + "<br/><small>Your live stripe secret key.</small>";
                 case "live_public_key":
                     return settingsKey + "<br/><small>Your live stripe public key.</small>";
+                case "live_webhook_secret":
+                    return settingsKey + "<br/><small>Your live webhook signing secret for validating webhook requests.</small>";
                 case "mode":
                     return settingsKey + "<br/><small>The mode of the provider - test/live.</small>";
                 default:

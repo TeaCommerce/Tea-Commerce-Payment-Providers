@@ -56,7 +56,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                 settings.MustNotBeNull("settings");
                 settings.MustContainKey("mode", "settings");
                 settings.MustContainKey(settings["mode"] + "_secret_key", "settings");
-                settings.MustContainKey("webhook_secret", "settings");
+                settings.MustContainKey(settings["mode"] + "_webhook_secret", "settings");
 
                 // If in test mode, write out the form data to a text file
                 if (settings.ContainsKey("mode") && settings["mode"] == "test")
@@ -66,7 +66,7 @@ namespace TeaCommerce.PaymentProviders.Inline
 
                 var apiKey = settings[settings["mode"] + "_secret_key"];
 
-                var webhookSecret = settings["webhook_secret"];
+                var webhookSecret = settings[settings["mode"] + "_webhook_secret"];
                 var stripeEvent = GetWebhookStripeEvent(request, webhookSecret);
                 if (stripeEvent != null && stripeEvent.Type.StartsWith("payment_intent."))
                 {
@@ -195,7 +195,7 @@ namespace TeaCommerce.PaymentProviders.Inline
 
         private string ProcessWebhookRequest(Order order, HttpRequest request, IDictionary<string, string> settings)
         {
-            var webhookSecret = settings["webhook_secret"];
+            var webhookSecret = settings[settings["mode"] + "_webhook_secret"];
             var stripeEvent = GetWebhookStripeEvent(request, webhookSecret); 
 
             if (stripeEvent.Type.StartsWith("charge."))
