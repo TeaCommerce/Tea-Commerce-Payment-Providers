@@ -16,8 +16,8 @@ using Klarna.Rest.Checkout;
 
 namespace TeaCommerce.PaymentProviders.Inline
 {
-    [PaymentProvider("Klarna3")]
-    public class Klarna3 : APaymentProvider
+    [PaymentProvider("Klarna")]
+    public class Klarna : APaymentProvider
     {
         public override IDictionary<string, string> DefaultSettings
         {
@@ -102,7 +102,7 @@ namespace TeaCommerce.PaymentProviders.Inline
             }
             catch (Exception exp)
             {
-                LoggingService.Instance.Error<Klarna3>("Klarna(" + order.CartNumber + ") - Process callback", exp);
+                LoggingService.Instance.Error<Klarna>("Klarna(" + order.CartNumber + ") - Process callback", exp);
             }
 
             return callbackInfo;
@@ -277,7 +277,7 @@ namespace TeaCommerce.PaymentProviders.Inline
             }
             catch (Exception exp)
             {
-                LoggingService.Instance.Error<Klarna3>("Klarna(" + order.CartNumber + ") - ProcessRequest", exp);
+                LoggingService.Instance.Error<Klarna>("Klarna(" + order.CartNumber + ") - ProcessRequest", exp);
             }
 
             return response;
