@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Web;
 using TeaCommerce.Api.Common;
+using TeaCommerce.Api.Infrastructure.Logging;
 using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 using Order = TeaCommerce.Api.Models.Order;
@@ -174,8 +175,10 @@ namespace TeaCommerce.PaymentProviders.Inline
                         HttpContext.Current.Items["TC_StripeEvent"] = stripeEvent;
                     }
                 }
-                catch
-                { }
+                catch (Exception exp)
+                {
+                    LoggingService.Instance.Error<BaseStripeProvider>("BaseStripeProvider - GetWebhookStripeEvent", exp);
+                }
             }
 
             return stripeEvent;
