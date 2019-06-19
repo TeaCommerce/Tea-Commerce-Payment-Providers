@@ -19,9 +19,8 @@ namespace TeaCommerce.PaymentProviders.Inline
     {
         public override bool SupportsRetrievalOfPaymentStatus => true;
         public override bool SupportsRefundOfPayment => true;
-
-        public override bool SupportsCapturingOfPayment => false;
-        public override bool SupportsCancellationOfPayment => false;
+        public override bool SupportsCapturingOfPayment => true;
+        public override bool SupportsCancellationOfPayment => true;
 
         public override bool FinalizeAtContinueUrl => false;
 
@@ -158,7 +157,6 @@ namespace TeaCommerce.PaymentProviders.Inline
                 var intentService = new PaymentIntentService(apiKey);
                 var intentOptions = new PaymentIntentCreateOptions
                 {
-                    PaymentMethodId = request.Form["stripePaymentMethodId"],
                     Amount = DollarsToCents(order.TotalPrice.Value.WithVat),
                     Currency = CurrencyService.Instance.Get(order.StoreId, order.CurrencyId).IsoCode,
                     Description = $"{order.CartNumber} - {order.PaymentInformation.Email}",
