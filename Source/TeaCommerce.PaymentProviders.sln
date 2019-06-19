@@ -64,6 +64,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProvider
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProviders", "TeaCommerce.PaymentProviders\TeaCommerce.PaymentProviders.csproj", "{1C8CF2FE-4B3D-44DA-B713-140EF9BE9F62}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProviders.OnPay", "TeaCommerce.PaymentProviders.OnPay\TeaCommerce.PaymentProviders.OnPay.csproj", "{A00F8C68-201F-4F6C-B55A-37795F18DC57}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -152,6 +154,10 @@ Global
 		{1C8CF2FE-4B3D-44DA-B713-140EF9BE9F62}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1C8CF2FE-4B3D-44DA-B713-140EF9BE9F62}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1C8CF2FE-4B3D-44DA-B713-140EF9BE9F62}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A00F8C68-201F-4F6C-B55A-37795F18DC57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A00F8C68-201F-4F6C-B55A-37795F18DC57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A00F8C68-201F-4F6C-B55A-37795F18DC57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A00F8C68-201F-4F6C-B55A-37795F18DC57}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
