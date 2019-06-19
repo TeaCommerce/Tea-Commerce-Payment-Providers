@@ -102,7 +102,7 @@
                             // Step 3: See if the payment went through or whether we need to authenticate it
                             if (result2.requires_action) {
                                 // Step 4.1: Show authentication dialog and send result to Stripe
-                                stripe.handleCardPayment(result.payment_intent_client_secret).then(function (result3) {
+                                stripe.handleCardPayment(result2.payment_intent_client_secret).then(function (result3) {
                                     resultHandler(result3, function () {
                                         // Step 5: Redirect to continue page
                                         successHandler();
