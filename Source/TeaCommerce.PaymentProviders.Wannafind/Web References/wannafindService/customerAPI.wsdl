@@ -15,6 +15,41 @@
           <xsd:element returnArray="orderid" name="orderid" type="xsd:string" />
         </xsd:all>
       </xsd:complexType>
+      <xsd:complexType name="fraudReturnArray">
+        <xsd:all>
+          <xsd:element returnArray="returncode" name="returncode" type="xsd:int" />
+          <xsd:element returnArray="transactnum" name="transactnum" type="xsd:string" />
+          <xsd:element returnArray="currency" name="currency" type="xsd:string" />
+          <xsd:element returnArray="amount" name="amount" type="xsd:int" />
+          <xsd:element returnArray="cardtype" name="cardtype" type="xsd:string" />
+          <xsd:element returnArray="orderidprefix" name="orderidprefix" type="xsd:string" />
+          <xsd:element returnArray="orderid" name="orderid" type="xsd:string" />
+          <xsd:element returnArray="cardcountry" name="cardcountry" type="xsd:string" />
+          <xsd:element returnArray="ipcountry" name="ipcountry" type="xsd:string" />
+          <xsd:element returnArray="precheckscore" name="precheckscore" type="xsd:int" />
+          <xsd:element returnArray="bgscore" name="bgscore" type="xsd:string" />
+          <xsd:element returnArray="ipaddress" name="ipaddress" type="xsd:string" />
+          <xsd:element returnArray="cardmask" name="cardmask" type="xsd:string" />
+        </xsd:all>
+      </xsd:complexType>
+      <xsd:complexType name="TransInfoReturnArray">
+        <xsd:all>
+          <xsd:element returnArray="returncode" name="returncode" type="xsd:int" />
+          <xsd:element returnArray="transactnum" name="transactnum" type="xsd:string" />
+          <xsd:element returnArray="currency" name="currency" type="xsd:string" />
+          <xsd:element returnArray="amount" name="amount" type="xsd:int" />
+          <xsd:element returnArray="cardtype" name="cardtype" type="xsd:string" />
+          <xsd:element returnArray="orderidprefix" name="orderidprefix" type="xsd:string" />
+          <xsd:element returnArray="orderid" name="orderid" type="xsd:string" />
+          <xsd:element returnArray="cardcountry" name="cardcountry" type="xsd:string" />
+          <xsd:element returnArray="ipcountry" name="ipcountry" type="xsd:string" />
+          <xsd:element returnArray="precheckscore" name="precheckscore" type="xsd:int" />
+          <xsd:element returnArray="bgscore" name="bgscore" type="xsd:string" />
+          <xsd:element returnArray="ipaddress" name="ipaddress" type="xsd:string" />
+          <xsd:element returnArray="cardmask" name="cardmask" type="xsd:string" />
+          <xsd:element returnArray="expiredate" name="expiredate" type="xsd:string" />
+        </xsd:all>
+      </xsd:complexType>
       <xsd:complexType name="subscriber_returnArray">
         <xsd:all>
           <xsd:element returnArray="returncode" name="returncode" type="xsd:int" />
@@ -23,6 +58,7 @@
           <xsd:element returnArray="orderidprefix" name="orderidprefix" type="xsd:string" />
           <xsd:element returnArray="orderid" name="orderid" type="xsd:string" />
           <xsd:element returnArray="acquirerstatus" name="acquirerstatus" type="xsd:int" />
+          <xsd:element returnArray="currency" name="currency" type="xsd:int" />
         </xsd:all>
       </xsd:complexType>
     </xsd:schema>
@@ -63,6 +99,24 @@
   <wsdl:message name="checkTransactionResponse">
     <wsdl:part name="return" type="tns:returnArray" />
   </wsdl:message>
+  <wsdl:message name="getFraudInfoRequest">
+    <wsdl:part name="transactnum" type="xsd:int" />
+  </wsdl:message>
+  <wsdl:message name="getFraudInfoResponse">
+    <wsdl:part name="return" type="tns:fraudReturnArray" />
+  </wsdl:message>
+  <wsdl:message name="getTransInfoRequest">
+    <wsdl:part name="transactnum" type="xsd:int" />
+  </wsdl:message>
+  <wsdl:message name="getTransInfoResponse">
+    <wsdl:part name="return" type="tns:TransInfoReturnArray" />
+  </wsdl:message>
+  <wsdl:message name="makeBackgroundCheckRequest">
+    <wsdl:part name="transactnum" type="xsd:int" />
+  </wsdl:message>
+  <wsdl:message name="makeBackgroundCheckResponse">
+    <wsdl:part name="return" type="tns:fraudReturnArray" />
+  </wsdl:message>
   <wsdl:message name="renewTransactionRequest">
     <wsdl:part name="transactnum" type="xsd:int" />
   </wsdl:message>
@@ -74,6 +128,7 @@
     <wsdl:part name="amount" type="xsd:int" />
     <wsdl:part name="orderid" type="xsd:string" />
     <wsdl:part name="orderidprefix" type="xsd:string" />
+    <wsdl:part name="currency" type="xsd:int" />
   </wsdl:message>
   <wsdl:message name="authSubscribeResponse">
     <wsdl:part name="return" type="tns:subscriber_returnArray" />
@@ -110,6 +165,21 @@
       <documentation>Check Transaction</documentation>
       <wsdl:input message="tns:checkTransactionRequest" />
       <wsdl:output message="tns:checkTransactionResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="getFraudInfo">
+      <documentation>Get all fraud information</documentation>
+      <wsdl:input message="tns:getFraudInfoRequest" />
+      <wsdl:output message="tns:getFraudInfoResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="getTransInfo">
+      <documentation>Lookup all stored info related to a specific transaction</documentation>
+      <wsdl:input message="tns:getTransInfoRequest" />
+      <wsdl:output message="tns:getTransInfoResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="makeBackgroundCheck">
+      <documentation>Make background check</documentation>
+      <wsdl:input message="tns:makeBackgroundCheckRequest" />
+      <wsdl:output message="tns:makeBackgroundCheckResponse" />
     </wsdl:operation>
     <wsdl:operation name="renewTransaction">
       <documentation>Renew Transaction</documentation>
@@ -167,6 +237,33 @@
     </wsdl:operation>
     <wsdl:operation name="checkTransaction">
       <soap:operation soapAction="urn:pgwapi#checkTransaction" style="rpc" />
+      <wsdl:input>
+        <soap:body use="encoded" namespace="urn:pgwapi" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="encoded" namespace="urn:pgwapi" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="getFraudInfo">
+      <soap:operation soapAction="urn:pgwapi#getFraudInfo" style="rpc" />
+      <wsdl:input>
+        <soap:body use="encoded" namespace="urn:pgwapi" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="encoded" namespace="urn:pgwapi" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="getTransInfo">
+      <soap:operation soapAction="urn:pgwapi#getTransInfo" style="rpc" />
+      <wsdl:input>
+        <soap:body use="encoded" namespace="urn:pgwapi" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="encoded" namespace="urn:pgwapi" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="makeBackgroundCheck">
+      <soap:operation soapAction="urn:pgwapi#makeBackgroundCheck" style="rpc" />
       <wsdl:input>
         <soap:body use="encoded" namespace="urn:pgwapi" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
       </wsdl:input>

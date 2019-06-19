@@ -16,7 +16,7 @@ namespace TeaCommerce.PaymentProviders.Classic
     [PaymentProvider("Wannafind")]
     public class Wannafind : APaymentProvider
     {
-        public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-wannafind-with-tea-commerce/"; } }
+        // public override string DocumentationLink { get { return "http://anders.burla.dk/umbraco/tea-commerce/using-wannafind-with-tea-commerce/"; } }
 
         public override bool SupportsRetrievalOfPaymentStatus { get { return true; } }
         public override bool SupportsCapturingOfPayment { get { return true; } }

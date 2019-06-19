@@ -39,6 +39,12 @@ namespace TeaCommerce.PaymentProviders.wannafindService {
         
         private System.Threading.SendOrPostCallback checkTransactionOperationCompleted;
         
+        private System.Threading.SendOrPostCallback getFraudInfoOperationCompleted;
+        
+        private System.Threading.SendOrPostCallback getTransInfoOperationCompleted;
+        
+        private System.Threading.SendOrPostCallback makeBackgroundCheckOperationCompleted;
+        
         private System.Threading.SendOrPostCallback renewTransactionOperationCompleted;
         
         private System.Threading.SendOrPostCallback authSubscribeOperationCompleted;
@@ -49,7 +55,7 @@ namespace TeaCommerce.PaymentProviders.wannafindService {
         
         /// <remarks/>
         public pgwapi() {
-            this.Url = "https://betaling.wannafind.dk/api/customerAPI.php";
+            this.Url = global::TeaCommerce.PaymentProviders.Properties.Settings.Default.TeaCommerce_PaymentProviders_Wannafind_wannafindService_pgwapi;
             if ((this.IsLocalFileSystemWebService(this.Url) == true)) {
                 this.UseDefaultCredentials = true;
                 this.useDefaultCredentialsSetExplicitly = false;
@@ -97,6 +103,15 @@ namespace TeaCommerce.PaymentProviders.wannafindService {
         
         /// <remarks/>
         public event checkTransactionCompletedEventHandler checkTransactionCompleted;
+        
+        /// <remarks/>
+        public event getFraudInfoCompletedEventHandler getFraudInfoCompleted;
+        
+        /// <remarks/>
+        public event getTransInfoCompletedEventHandler getTransInfoCompleted;
+        
+        /// <remarks/>
+        public event makeBackgroundCheckCompletedEventHandler makeBackgroundCheckCompleted;
         
         /// <remarks/>
         public event renewTransactionCompletedEventHandler renewTransactionCompleted;
@@ -270,6 +285,96 @@ namespace TeaCommerce.PaymentProviders.wannafindService {
         }
         
         /// <remarks/>
+        [System.Web.Services.Protocols.SoapRpcMethodAttribute("urn:pgwapi#getFraudInfo", RequestNamespace="urn:pgwapi", ResponseNamespace="urn:pgwapi")]
+        [return: System.Xml.Serialization.SoapElementAttribute("return")]
+        public fraudReturnArray getFraudInfo(int transactnum) {
+            object[] results = this.Invoke("getFraudInfo", new object[] {
+                        transactnum});
+            return ((fraudReturnArray)(results[0]));
+        }
+        
+        /// <remarks/>
+        public void getFraudInfoAsync(int transactnum) {
+            this.getFraudInfoAsync(transactnum, null);
+        }
+        
+        /// <remarks/>
+        public void getFraudInfoAsync(int transactnum, object userState) {
+            if ((this.getFraudInfoOperationCompleted == null)) {
+                this.getFraudInfoOperationCompleted = new System.Threading.SendOrPostCallback(this.OngetFraudInfoOperationCompleted);
+            }
+            this.InvokeAsync("getFraudInfo", new object[] {
+                        transactnum}, this.getFraudInfoOperationCompleted, userState);
+        }
+        
+        private void OngetFraudInfoOperationCompleted(object arg) {
+            if ((this.getFraudInfoCompleted != null)) {
+                System.Web.Services.Protocols.InvokeCompletedEventArgs invokeArgs = ((System.Web.Services.Protocols.InvokeCompletedEventArgs)(arg));
+                this.getFraudInfoCompleted(this, new getFraudInfoCompletedEventArgs(invokeArgs.Results, invokeArgs.Error, invokeArgs.Cancelled, invokeArgs.UserState));
+            }
+        }
+        
+        /// <remarks/>
+        [System.Web.Services.Protocols.SoapRpcMethodAttribute("urn:pgwapi#getTransInfo", RequestNamespace="urn:pgwapi", ResponseNamespace="urn:pgwapi")]
+        [return: System.Xml.Serialization.SoapElementAttribute("return")]
+        public TransInfoReturnArray getTransInfo(int transactnum) {
+            object[] results = this.Invoke("getTransInfo", new object[] {
+                        transactnum});
+            return ((TransInfoReturnArray)(results[0]));
+        }
+        
+        /// <remarks/>
+        public void getTransInfoAsync(int transactnum) {
+            this.getTransInfoAsync(transactnum, null);
+        }
+        
+        /// <remarks/>
+        public void getTransInfoAsync(int transactnum, object userState) {
+            if ((this.getTransInfoOperationCompleted == null)) {
+                this.getTransInfoOperationCompleted = new System.Threading.SendOrPostCallback(this.OngetTransInfoOperationCompleted);
+            }
+            this.InvokeAsync("getTransInfo", new object[] {
+                        transactnum}, this.getTransInfoOperationCompleted, userState);
+        }
+        
+        private void OngetTransInfoOperationCompleted(object arg) {
+            if ((this.getTransInfoCompleted != null)) {
+                System.Web.Services.Protocols.InvokeCompletedEventArgs invokeArgs = ((System.Web.Services.Protocols.InvokeCompletedEventArgs)(arg));
+                this.getTransInfoCompleted(this, new getTransInfoCompletedEventArgs(invokeArgs.Results, invokeArgs.Error, invokeArgs.Cancelled, invokeArgs.UserState));
+            }
+        }
+        
+        /// <remarks/>
+        [System.Web.Services.Protocols.SoapRpcMethodAttribute("urn:pgwapi#makeBackgroundCheck", RequestNamespace="urn:pgwapi", ResponseNamespace="urn:pgwapi")]
+        [return: System.Xml.Serialization.SoapElementAttribute("return")]
+        public fraudReturnArray makeBackgroundCheck(int transactnum) {
+            object[] results = this.Invoke("makeBackgroundCheck", new object[] {
+                        transactnum});
+            return ((fraudReturnArray)(results[0]));
+        }
+        
+        /// <remarks/>
+        public void makeBackgroundCheckAsync(int transactnum) {
+            this.makeBackgroundCheckAsync(transactnum, null);
+        }
+        
+        /// <remarks/>
+        public void makeBackgroundCheckAsync(int transactnum, object userState) {
+            if ((this.makeBackgroundCheckOperationCompleted == null)) {
+                this.makeBackgroundCheckOperationCompleted = new System.Threading.SendOrPostCallback(this.OnmakeBackgroundCheckOperationCompleted);
+            }
+            this.InvokeAsync("makeBackgroundCheck", new object[] {
+                        transactnum}, this.makeBackgroundCheckOperationCompleted, userState);
+        }
+        
+        private void OnmakeBackgroundCheckOperationCompleted(object arg) {
+            if ((this.makeBackgroundCheckCompleted != null)) {
+                System.Web.Services.Protocols.InvokeCompletedEventArgs invokeArgs = ((System.Web.Services.Protocols.InvokeCompletedEventArgs)(arg));
+                this.makeBackgroundCheckCompleted(this, new makeBackgroundCheckCompletedEventArgs(invokeArgs.Results, invokeArgs.Error, invokeArgs.Cancelled, invokeArgs.UserState));
+            }
+        }
+        
+        /// <remarks/>
         [System.Web.Services.Protocols.SoapRpcMethodAttribute("urn:pgwapi#renewTransaction", RequestNamespace="urn:pgwapi", ResponseNamespace="urn:pgwapi")]
         [return: System.Xml.Serialization.SoapElementAttribute("return")]
         public int renewTransaction(int transactnum) {
@@ -302,22 +407,23 @@ namespace TeaCommerce.PaymentProviders.wannafindService {
         /// <remarks/>
         [System.Web.Services.Protocols.SoapRpcMethodAttribute("urn:pgwapi#authSubscribe", RequestNamespace="urn:pgwapi", ResponseNamespace="urn:pgwapi")]
         [return: System.Xml.Serialization.SoapElementAttribute("return")]
-        public subscriber_returnArray authSubscribe(int transactnum, int amount, string orderid, string orderidprefix) {
+        public subscriber_returnArray authSubscribe(int transactnum, int amount, string orderid, string orderidprefix, int currency) {
             object[] results = this.Invoke("authSubscribe", new object[] {
                         transactnum,
                         amount,
                         orderid,
-                        orderidprefix});
+                        orderidprefix,
+                        currency});
             return ((subscriber_returnArray)(results[0]));
         }
         
         /// <remarks/>
-        public void authSubscribeAsync(int transactnum, int amount, string orderid, string orderidprefix) {
-            this.authSubscribeAsync(transactnum, amount, orderid, orderidprefix, null);
+        public void authSubscribeAsync(int transactnum, int amount, string orderid, string orderidprefix, int currency) {
+            this.authSubscribeAsync(transactnum, amount, orderid, orderidprefix, currency, null);
         }
         
         /// <remarks/>
-        public void authSubscribeAsync(int transactnum, int amount, string orderid, string orderidprefix, object userState) {
+        public void authSubscribeAsync(int transactnum, int amount, string orderid, string orderidprefix, int currency, object userState) {
             if ((this.authSubscribeOperationCompleted == null)) {
                 this.authSubscribeOperationCompleted = new System.Threading.SendOrPostCallback(this.OnauthSubscribeOperationCompleted);
             }
@@ -325,7 +431,8 @@ namespace TeaCommerce.PaymentProviders.wannafindService {
                         transactnum,
                         amount,
                         orderid,
-                        orderidprefix}, this.authSubscribeOperationCompleted, userState);
+                        orderidprefix,
+                        currency}, this.authSubscribeOperationCompleted, userState);
         }
         
         private void OnauthSubscribeOperationCompleted(object arg) {
@@ -499,6 +606,8 @@ namespace TeaCommerce.PaymentProviders.wannafindService {
         
         private int acquirerstatusField;
         
+        private int currencyField;
+        
         /// <remarks/>
         public int returncode {
             get {
@@ -556,6 +665,358 @@ namespace TeaCommerce.PaymentProviders.wannafindService {
             }
             set {
                 this.acquirerstatusField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public int currency {
+            get {
+                return this.currencyField;
+            }
+            set {
+                this.currencyField = value;
+            }
+        }
+    }
+    
+    /// <remarks/>
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Xml", "4.7.3056.0")]
+    [System.SerializableAttribute()]
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.ComponentModel.DesignerCategoryAttribute("code")]
+    [System.Xml.Serialization.SoapTypeAttribute(Namespace="urn:pgwapi")]
+    public partial class TransInfoReturnArray {
+        
+        private int returncodeField;
+        
+        private string transactnumField;
+        
+        private string currencyField;
+        
+        private int amountField;
+        
+        private string cardtypeField;
+        
+        private string orderidprefixField;
+        
+        private string orderidField;
+        
+        private string cardcountryField;
+        
+        private string ipcountryField;
+        
+        private int precheckscoreField;
+        
+        private string bgscoreField;
+        
+        private string ipaddressField;
+        
+        private string cardmaskField;
+        
+        private string expiredateField;
+        
+        /// <remarks/>
+        public int returncode {
+            get {
+                return this.returncodeField;
+            }
+            set {
+                this.returncodeField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string transactnum {
+            get {
+                return this.transactnumField;
+            }
+            set {
+                this.transactnumField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string currency {
+            get {
+                return this.currencyField;
+            }
+            set {
+                this.currencyField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public int amount {
+            get {
+                return this.amountField;
+            }
+            set {
+                this.amountField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string cardtype {
+            get {
+                return this.cardtypeField;
+            }
+            set {
+                this.cardtypeField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string orderidprefix {
+            get {
+                return this.orderidprefixField;
+            }
+            set {
+                this.orderidprefixField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string orderid {
+            get {
+                return this.orderidField;
+            }
+            set {
+                this.orderidField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string cardcountry {
+            get {
+                return this.cardcountryField;
+            }
+            set {
+                this.cardcountryField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string ipcountry {
+            get {
+                return this.ipcountryField;
+            }
+            set {
+                this.ipcountryField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public int precheckscore {
+            get {
+                return this.precheckscoreField;
+            }
+            set {
+                this.precheckscoreField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string bgscore {
+            get {
+                return this.bgscoreField;
+            }
+            set {
+                this.bgscoreField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string ipaddress {
+            get {
+                return this.ipaddressField;
+            }
+            set {
+                this.ipaddressField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string cardmask {
+            get {
+                return this.cardmaskField;
+            }
+            set {
+                this.cardmaskField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string expiredate {
+            get {
+                return this.expiredateField;
+            }
+            set {
+                this.expiredateField = value;
+            }
+        }
+    }
+    
+    /// <remarks/>
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Xml", "4.7.3056.0")]
+    [System.SerializableAttribute()]
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.ComponentModel.DesignerCategoryAttribute("code")]
+    [System.Xml.Serialization.SoapTypeAttribute(Namespace="urn:pgwapi")]
+    public partial class fraudReturnArray {
+        
+        private int returncodeField;
+        
+        private string transactnumField;
+        
+        private string currencyField;
+        
+        private int amountField;
+        
+        private string cardtypeField;
+        
+        private string orderidprefixField;
+        
+        private string orderidField;
+        
+        private string cardcountryField;
+        
+        private string ipcountryField;
+        
+        private int precheckscoreField;
+        
+        private string bgscoreField;
+        
+        private string ipaddressField;
+        
+        private string cardmaskField;
+        
+        /// <remarks/>
+        public int returncode {
+            get {
+                return this.returncodeField;
+            }
+            set {
+                this.returncodeField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string transactnum {
+            get {
+                return this.transactnumField;
+            }
+            set {
+                this.transactnumField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string currency {
+            get {
+                return this.currencyField;
+            }
+            set {
+                this.currencyField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public int amount {
+            get {
+                return this.amountField;
+            }
+            set {
+                this.amountField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string cardtype {
+            get {
+                return this.cardtypeField;
+            }
+            set {
+                this.cardtypeField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string orderidprefix {
+            get {
+                return this.orderidprefixField;
+            }
+            set {
+                this.orderidprefixField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string orderid {
+            get {
+                return this.orderidField;
+            }
+            set {
+                this.orderidField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string cardcountry {
+            get {
+                return this.cardcountryField;
+            }
+            set {
+                this.cardcountryField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string ipcountry {
+            get {
+                return this.ipcountryField;
+            }
+            set {
+                this.ipcountryField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public int precheckscore {
+            get {
+                return this.precheckscoreField;
+            }
+            set {
+                this.precheckscoreField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string bgscore {
+            get {
+                return this.bgscoreField;
+            }
+            set {
+                this.bgscoreField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string ipaddress {
+            get {
+                return this.ipaddressField;
+            }
+            set {
+                this.ipaddressField = value;
+            }
+        }
+        
+        /// <remarks/>
+        public string cardmask {
+            get {
+                return this.cardmaskField;
+            }
+            set {
+                this.cardmaskField = value;
             }
         }
     }
@@ -686,6 +1147,84 @@ namespace TeaCommerce.PaymentProviders.wannafindService {
             get {
                 this.RaiseExceptionIfNecessary();
                 return ((returnArray)(this.results[0]));
+            }
+        }
+    }
+    
+    /// <remarks/>
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Web.Services", "4.7.3056.0")]
+    public delegate void getFraudInfoCompletedEventHandler(object sender, getFraudInfoCompletedEventArgs e);
+    
+    /// <remarks/>
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Web.Services", "4.7.3056.0")]
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.ComponentModel.DesignerCategoryAttribute("code")]
+    public partial class getFraudInfoCompletedEventArgs : System.ComponentModel.AsyncCompletedEventArgs {
+        
+        private object[] results;
+        
+        internal getFraudInfoCompletedEventArgs(object[] results, System.Exception exception, bool cancelled, object userState) : 
+                base(exception, cancelled, userState) {
+            this.results = results;
+        }
+        
+        /// <remarks/>
+        public fraudReturnArray Result {
+            get {
+                this.RaiseExceptionIfNecessary();
+                return ((fraudReturnArray)(this.results[0]));
+            }
+        }
+    }
+    
+    /// <remarks/>
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Web.Services", "4.7.3056.0")]
+    public delegate void getTransInfoCompletedEventHandler(object sender, getTransInfoCompletedEventArgs e);
+    
+    /// <remarks/>
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Web.Services", "4.7.3056.0")]
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.ComponentModel.DesignerCategoryAttribute("code")]
+    public partial class getTransInfoCompletedEventArgs : System.ComponentModel.AsyncCompletedEventArgs {
+        
+        private object[] results;
+        
+        internal getTransInfoCompletedEventArgs(object[] results, System.Exception exception, bool cancelled, object userState) : 
+                base(exception, cancelled, userState) {
+            this.results = results;
+        }
+        
+        /// <remarks/>
+        public TransInfoReturnArray Result {
+            get {
+                this.RaiseExceptionIfNecessary();
+                return ((TransInfoReturnArray)(this.results[0]));
+            }
+        }
+    }
+    
+    /// <remarks/>
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Web.Services", "4.7.3056.0")]
+    public delegate void makeBackgroundCheckCompletedEventHandler(object sender, makeBackgroundCheckCompletedEventArgs e);
+    
+    /// <remarks/>
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Web.Services", "4.7.3056.0")]
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.ComponentModel.DesignerCategoryAttribute("code")]
+    public partial class makeBackgroundCheckCompletedEventArgs : System.ComponentModel.AsyncCompletedEventArgs {
+        
+        private object[] results;
+        
+        internal makeBackgroundCheckCompletedEventArgs(object[] results, System.Exception exception, bool cancelled, object userState) : 
+                base(exception, cancelled, userState) {
+            this.results = results;
+        }
+        
+        /// <remarks/>
+        public fraudReturnArray Result {
+            get {
+                this.RaiseExceptionIfNecessary();
+                return ((fraudReturnArray)(this.results[0]));
             }
         }
     }
