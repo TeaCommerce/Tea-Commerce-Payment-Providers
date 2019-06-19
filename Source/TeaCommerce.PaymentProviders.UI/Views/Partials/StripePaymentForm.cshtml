@@ -1,6 +1,6 @@
 ﻿@*
     * IMPORTANT!
-    * Please ensure that this macro is placed on a page
+    * Please ensure that this partial is placed on a page
     * that is protected by SSL.
     *
     * For more information on imlementing and styling Stripe elements see
@@ -8,24 +8,6 @@
 *@
 
 <form action="@Request.Form["continue_url"]" method="POST" id="payment-form">
-
-    <span class="payment-errors">
-        @*
-            We only find out a transaction has failed on confirmation of the transation serverside, so this form gets reloaded with additional data about the error.
-            FailureReason.chargeId:ch_2pzC3AkWQAVBDn
-            FailureReason.Code:card_declined
-            FailureReason.Error:
-            FailureReason.ErrorSubscription:
-            FailureReason.ErrorType:card_error
-            FailureReason.Message:Your card was declined.
-            FailureReason.Parameter:
-        *@
-
-        @if (Request.Form["TransactionFailed"] == "true")
-        {
-            @Request.Form["FailureReason.Message"]
-        }
-    </span>
 
     <div class="form-row">
         <label for="name-on-card">Name on Card</label>
@@ -45,6 +27,7 @@
     <button type="submit">Submit Payment</button>
 </form>
 
+<script type="text/javascript" src="https://unpkg.com/unfetch@4.1.0/polyfill/index.js"></script>
 <script type="text/javascript" src="https://js.stripe.com/v3/"></script>
 <script type="text/javascript">
 
@@ -86,42 +69,113 @@
     form.addEventListener('submit', function (event) {
         event.preventDefault();
 
-        var tokenData = {
-            name: document.getElementById("name-on-card").value,
-            address_line1: '@Request.Form["billing_address_line1"]',
-            address_line2: '@Request.Form["billing_address_line2"]',
-            address_city: '@Request.Form["billing_city"]',
-            address_state: '@Request.Form["billing_state"]',
-            address_zip: '@Request.Form["billing_zip_code"]',
-            address_country: '@Request.Form["billing_country"]'
+        disableForm();
+
+        // Capture the form data to send to Stripe that
+        // will be recorded against the transaction.
+        var data = {
+            billing_details: {
+                name: document.getElementById("name-on-card").value,
+                email: '@Request.Form["billing_email"]',
+                address: {
+                    line1: '@Request.Form["billing_address_line1"]',
+                    line2: '@Request.Form["billing_address_line2"]',
+                    city: '@Request.Form["billing_city"]',
+                    state: '@Request.Form["billing_state"]',
+                    postal_code: '@Request.Form["billing_zip_code"]',
+                    country: '@Request.Form["billing_country"]'
+                }
+            }
         };
 
-        stripe.createToken(card, tokenData).then(function (result) {
-            if (result.error) {
-                // Inform the user if there was an error.
-                var errorElement = document.getElementById('card-errors');
-                errorElement.textContent = result.error.message;
-            } else {
-                // Send the token to your server.
-                stripeTokenHandler(result.token);
-            }
-        });
-
+        // See if we need to capture a payment method before attempting to take payment
+        // (This is mostly because Stripe Subscriptions require a payment method before a subscription can be created)
+        var requiresInitialPaymentMethod = '@Request.Form["requires_initial_payment_method"]' === 'true';
+        if (requiresInitialPaymentMethod)
+        {
+            // Step 1: Capture a payment method from the form
+            stripe.createPaymentMethod('card', card, data).then(function (result) {
+                resultHandler(result, function () {
+                    // Step 2: Send the payment method to the server to process / create a payment intent
+                    tcApiRequest("stripePaymentMethodId=" + result.paymentMethod.id).then(function (result2) {
+                        resultHandler(result2, function () {
+                            // Step 3: See if the payment went through or whether we need to authenticate it
+                            if (result2.requires_action) {
+                                // Step 4.1: Show authentication dialog and send result to Stripe
+                                stripe.handleCardPayment(result2.payment_intent_client_secret).then(function (result3) {
+                                    resultHandler(result3, function () {
+                                        // Step 5: Redirect to continue page
+                                        successHandler();
+                                    });
+                                });
+                            } else {
+                                // Step 4.2: Redirect to continue page
+                                successHandler();
+                            }
+                        });
+                    });
+                });
+            });
+        }
+        else
+        {
+            // Step 1: Create the payment intent on the server
+            tcApiRequest().then(function (result) {
+                resultHandler(result, function () {
+                    // Step 2: Handle payment using the payment intent secret from step 1
+                    stripe.handleCardPayment(result.payment_intent_client_secret, card, { payment_method_data: data }).then(function (result2) {
+                        resultHandler(result2, function () {
+                            // Step 3: Redirect to continue page
+                            successHandler();
+                        });
+                    });
+                });
+            });
+        }
     });
 
-    // Submit the form with the token ID.
-    function stripeTokenHandler(token) {
+    function disableForm () {
+        // Stripe processing can take a while so implement some code to disable the form
+        // and show some kind of spinner to show something is happening
+    }
 
-        // Insert the token ID into the form so it gets submitted to the server
-        var form = document.getElementById('payment-form');
-        var hiddenInput = document.createElement('input');
-        hiddenInput.setAttribute('type', 'hidden');
-        hiddenInput.setAttribute('name', 'stripeToken');
-        hiddenInput.setAttribute('value', token.id);
-        form.appendChild(hiddenInput);
+    function enableForm () {
+        // Implement code to re-enable the form should an error occur and futher processing
+        // is needed
+    }
 
-        // Submit the form
-        form.submit();
+    // Helper to display any API error messages
+    function errorHandler(err) {
+        // Inform the user if there was an error.
+        var errorElement = document.getElementById('card-errors');
+        errorElement.textContent = err.message || err;
+        enableForm();
+    }
+
+    // Helper to continue the payment onto the continue url
+    // once payment is successful
+    function successHandler() {
+        document.getElementById('payment-form').submit();
+    }
+
+    // Helper to handle API results to save handling errors constantly
+    function resultHandler(result, onSuccess) {
+        if (result.error) {
+            errorHandler(result.error);
+        } else {
+            onSuccess(result);
+        }
+    }
+
+    // Helper to communicate with the TC payment proider back end
+    function tcApiRequest(body) {
+        return fetch('@Request.Form["api_url"]?action=capture', {
+            method: 'POST',
+            body: new URLSearchParams(body || "")
+        })
+        .then(function (result) {
+            return result.json();
+        });
     }
 
 </script>
