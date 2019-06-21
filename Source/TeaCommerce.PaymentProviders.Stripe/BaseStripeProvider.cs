@@ -186,12 +186,14 @@ namespace TeaCommerce.PaymentProviders.Inline
 
         protected static long DollarsToCents(decimal val)
         {
-            return (long)Math.Round(val * 100M, MidpointRounding.AwayFromZero);
+            var cents = val * 100M;
+            var centsRounded = Math.Round(cents, MidpointRounding.AwayFromZero);
+            return Convert.ToInt64(centsRounded);
         }
 
         protected static decimal CentsToDollars(long val)
         {
-            return (decimal)val / 100;
+            return val / 100M;
         }
     }
 }
