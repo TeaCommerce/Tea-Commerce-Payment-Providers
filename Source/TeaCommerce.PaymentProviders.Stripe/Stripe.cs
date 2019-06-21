@@ -184,6 +184,8 @@ namespace TeaCommerce.PaymentProviders.Inline
             }
             catch (Exception ex)
             {
+                LoggingService.Instance.Error<Stripe>("Stripe(" + order.CartNumber + ") - ProcessCaptureRequest", ex);
+
                 return JsonConvert.SerializeObject(new
                 {
                     error = ex.Message
