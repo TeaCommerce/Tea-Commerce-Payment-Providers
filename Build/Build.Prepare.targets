@@ -80,7 +80,7 @@
 			<Dlls Include="$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll" />
 			<Dlls Include="$(ArtifactsDir)\Files\bin\*.dll" Exclude="$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll" />
 		</ItemGroup>
-		<Exec Command="$(ILMergeExe) /ndebug /lib:$(SourceDir)\Lib\TeaCommerce /union /out:$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll @(Dlls, ' ') /targetplatform:v4,&quot;%programfiles(x86)%\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5&quot;" />
+		<Exec Command="$(ILMergeExe) /ndebug /lib:$(SourceDir)\Lib\TeaCommerce /out:$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll @(Dlls, ' ') /targetplatform:v4,&quot;%programfiles(x86)%\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5&quot;" />
 	</Target>
 
 	<!-- PREPARE -->
