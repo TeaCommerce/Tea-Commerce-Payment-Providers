@@ -1,4 +1,4 @@
-# Payment Providers for Tea Commerce
+# Tea Commerce Payment Providers
 This project contains the payment gateways supported by [Tea Commerce](http://teacommerce.net) out of the box.
 
 ## Documentation

@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
+
+	<!-- IMPORTS -->
+	<PropertyGroup>
+		<ILMergeExe>$(MSBuildProjectDirectory)\tools\ILMerge\ILMerge.exe</ILMergeExe>
+	</PropertyGroup>
+
+    <ItemGroup>
+        <ProjectFiles Include="$(SourceDir)\TeaCommerce.PaymentProviders*\*.csproj" />
+    </ItemGroup>
+
+	<!-- CLEAN -->
+	<Target Name="Clean">
+		<Delete  Files="$(ArtifactsDir)\**\*.*" />
+		<RemoveDir Directories="$(ArtifactsDir)" Condition="Exists('$(ArtifactsDir)')" />
+		<MakeDir Directories="$(ArtifactsDir)" />
+		<MakeDir Directories="$(ArtifactsDir)\Files\bin\" />
+	</Target>
+
+	<!-- GET BUILD VERSION NUMBER FROM FILE -->
+	<Target Name="GetBuildVersionNumber">  
+		<ItemGroup>
+			<VersionFile Include="$(ProjectDir)\version.txt" Condition="'$(ProjectName)' != 'TeaCommerce.PaymentProviders'" />
+			<VersionFile Include="$(RootDir)\version.txt" Condition="'$(ProjectName)' == 'TeaCommerce.PaymentProviders'" />
+		</ItemGroup>
+        <ReadLinesFromFile File="@(VersionFile)" >  
+			<Output TaskParameter="Lines" ItemName="Version"/>  
+        </ReadLinesFromFile>  
+		<PropertyGroup>
+			<BuildVersion>@(Version)</BuildVersion>
+			<BuildVersionMajor>$(BuildVersion.Split('.')[0])</BuildVersionMajor>
+			<BuildVersionMinor>$(BuildVersion.Split('.')[1])</BuildVersionMinor>
+            <BuildInformationalVersion>$(BuildVersion)</BuildInformationalVersion>
+            <BuildInformationalVersion Condition="'$(BuildConfig)'=='Debug'">$(BuildVersion)-alpha+$(BuildTimestamp)</BuildInformationalVersion>
+		</PropertyGroup>
+    </Target>
+
+	<!-- UPDATE PROJECT ASSEMBLEY VERSION -->
+	<Target Name="UpdateAssemblyInfo" DependsOnTargets="GetBuildVersionNumber">
+		<ItemGroup>   
+			<AssemblyAttributes Include="AssemblyVersion">
+				<_Parameter1>$(BuildVersionMajor).$(BuildVersionMinor).*</_Parameter1>
+			</AssemblyAttributes>
+			<AssemblyAttributes Include="AssemblyInformationalVersion">
+				<_Parameter1>$(BuildInformationalVersion)</_Parameter1>
+			</AssemblyAttributes>
+		</ItemGroup>
+		<WriteCodeFragment Language="C#" 
+			OutputFile="$(ProjectDir)\Properties\VersionInfo.cs" 
+			AssemblyAttributes="@(AssemblyAttributes)" />
+	</Target>
+
+	<!-- COMPILE -->
+	<Target Name="Compile" DependsOnTargets="UpdateAssemblyInfo">
+		<MSBuild Projects="$(ProjectDir)$(ProjectName).csproj" Properties="Configuration=$(BuildConfig)"/>
+	</Target>
+
+	<!-- MERGE DLLS + OUTPUT TO ARTIFACTS DIR -->
+	<Target Name="MergeDlls" DependsOnTargets="Compile">
+		<ItemGroup>
+			<Dlls Include="$(ProjectDir)bin\$(BuildConfig)\$(ProjectName).dll" />
+			<Dlls Include="$(ProjectDir)bin\$(BuildConfig)\*.dll" Exclude="$(ProjectDir)bin\$(BuildConfig)\TeaCommerce.*.dll" />
+		</ItemGroup>
+		<Exec Command="$(ILMergeExe) /ndebug /internalize:ILMerge.exclude.txt /out:$(ArtifactsDir)\Files\bin\$(ProjectName).dll @(Dlls, ' ') /targetplatform:v4,&quot;%programfiles(x86)%\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5&quot;" />
+	</Target>
+
+	<!-- PREPARE SINGLE PROJECT -->
+	<Target Name="PrepareProject" DependsOnTargets="MergeDlls"></Target>
+
+	<!-- PREPARE ALL PROJECTS -->
+	<Target Name="PrepareProjects" DependsOnTargets="Clean">
+		<MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareProject" 
+			Properties="ProjectDir=%(ProjectFiles.RootDir)%(ProjectFiles.Directory);ProjectName=%(ProjectFiles.FileName)" />
+	</Target>
+
+	<!-- MERGE ALL -->
+	<Target Name="MergeAll" DependsOnTargets="PrepareProjects">
+		<ItemGroup>
+			<Dlls Include="$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll" />
+			<Dlls Include="$(ArtifactsDir)\Files\bin\*.dll" Exclude="$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll" />
+		</ItemGroup>
+		<Exec Command="$(ILMergeExe) /ndebug /lib:$(SourceDir)\Lib\TeaCommerce /out:$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll @(Dlls, ' ') /targetplatform:v4,&quot;%programfiles(x86)%\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5&quot;" />
+	</Target>
+
+	<!-- PREPARE -->
+	<Target Name="Prepare" DependsOnTargets="MergeAll"></Target>
+
+</Project>
