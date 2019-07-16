@@ -3,7 +3,6 @@
 
 	<!-- IMPORTS -->
 	<PropertyGroup>
-		<ILMergeExe>$(MSBuildProjectDirectory)\tools\ILMerge\ILMerge.exe</ILMergeExe>
 		<ILRepackExe>$(MSBuildProjectDirectory)\tools\ILRepack\ILRepack.exe</ILRepackExe>
 	</PropertyGroup>
 
