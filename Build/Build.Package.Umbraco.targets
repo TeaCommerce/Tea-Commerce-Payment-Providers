@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
+
+	<!-- 
+		For the Umbraco package we just need to
+		prepare the files. The actual packaging
+		all occurs in the TeaCommerceForUmbraco
+		projects build script.
+	-->
+
+	<!-- PACKAGE -->
+	<Target Name="PackageUmbraco"></Target>
+
+</Project>

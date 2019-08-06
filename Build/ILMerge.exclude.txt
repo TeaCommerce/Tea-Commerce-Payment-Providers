@@ -1,0 +1,2 @@
+AuthorizeNet.Api.Contracts.V1.*
+Stripe.*

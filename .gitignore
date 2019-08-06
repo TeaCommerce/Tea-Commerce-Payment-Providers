@@ -14,10 +14,9 @@
 [Rr]eleases/
 x64/
 x86/
-bld/
-build/
 [Bb]in/
 [Oo]bj/
+[Aa]rtifacts/
 
 # Roslyn cache directories
 *.ide/
@@ -160,6 +159,7 @@ ClientBin/
 *.publishsettings
 node_modules/
 bower_components/
+.vs/
 
 # RIA/Silverlight projects
 Generated_Code/
@@ -183,3 +183,6 @@ UpgradeLog*.htm
 
 # Microsoft Fakes
 FakesAssemblies/
+
+# Custome Files
+version.live.txt
