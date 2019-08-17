@@ -15,6 +15,8 @@ namespace TeaCommerce.PaymentProviders.Inline
 {
     public abstract class BaseStripeProvider : APaymentProvider
     {
+        private IStripeClient _stripeClient;
+
         public override string DocumentationLink { get { return "https://stripe.com/docs"; } }
 
         public override bool FinalizeAtContinueUrl { get { return true; } }
@@ -148,6 +150,12 @@ namespace TeaCommerce.PaymentProviders.Inline
                 default:
                     return base.GetLocalizedSettingsKey(settingsKey, culture);
             }
+        }
+
+        protected void ConfigureStripe(string apiKey)
+        {
+            StripeConfiguration.ApiKey = apiKey;
+            StripeConfiguration.MaxNetworkRetries = 2;
         }
 
         protected Event GetWebhookStripeEvent(HttpRequest request, string webhookSecret)
