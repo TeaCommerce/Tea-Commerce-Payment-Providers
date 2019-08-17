@@ -24,7 +24,7 @@
     </div>
 
     <a href="@Request.Form["cancel_url"]">&lt; Cancel</a>
-    <button type="submit">Submit Payment</button>
+    <button id="payment-form-submit-btn" type="submit">Submit Payment</button>
 </form>
 
 <script type="text/javascript" src="https://unpkg.com/unfetch@4.1.0/polyfill/index.js"></script>
@@ -33,6 +33,7 @@
 
     // Create a Stripe client.
     var stripe = Stripe('@Request.Form["api_key"]');
+    var storeId = @Request.Form["store_id"];
 
     // Create an instance of Elements.
     var elements = stripe.elements();
@@ -137,11 +138,13 @@
     function disableForm () {
         // Stripe processing can take a while so implement some code to disable the form
         // and show some kind of spinner to show something is happening
+        document.getElementById('payment-form-submit-btn').disabled = true;
     }
 
     function enableForm () {
         // Implement code to re-enable the form should an error occur and futher processing
         // is needed
+        document.getElementById('payment-form-submit-btn').disabled = false;
     }
 
     // Helper to display any API error messages
@@ -155,6 +158,35 @@
     // Helper to continue the payment onto the continue url
     // once payment is successful
     function successHandler() {
+        // Payment has been successfully sent to Stripe
+        // but we still have to wait for the webhook to
+        // finalize the order so we'll briefly hold here
+        // and see if we can detect a finalized order
+        waitForFinalizedOrder(10);
+    }
+
+    function waitForFinalizedOrder(maxTrys, tryCount) {
+        if (tryCount === undefined) {
+            tryCount = 0;
+        }
+        setTimeout(function () {
+            // Check for the existence of the current order, if we no longer
+            // have one, it means it has become finalized via the Stripe webhook
+            // and so should have an Order Number by now.
+            // NB: We don't getCurrentFinalizedOrder as it might be that
+            // the user has made a purchase in the past and the finalized order
+            // cookie could still be set, so instead we check for the non-existance
+            // of the current order.
+            var currentOrder = TC.getCurrentOrder({ storeId: storeId, autoCreate: false });
+            if (!currentOrder || tryCount >= maxTrys) {
+                doContinue()
+            } else {
+                waitForFinalizedOrder(maxTrys, tryCount++);
+            }
+        }, 1000);
+    }
+
+    function doContinue() {
         document.getElementById('payment-form').submit();
     }
 

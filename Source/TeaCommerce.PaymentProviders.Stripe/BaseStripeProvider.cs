@@ -60,6 +60,7 @@ namespace TeaCommerce.PaymentProviders.Inline
             // as all default settings are handled explicitly below
             htmlForm.InputFields = settings.Where(i => !DefaultSettings.ContainsKey(i.Key)).ToDictionary(i => i.Key, i => i.Value);
 
+            htmlForm.InputFields["store_id"] = order.StoreId.ToString();
             htmlForm.InputFields["api_key"] = settings[settings["mode"] + "_public_key"];
             htmlForm.InputFields["continue_url"] = teaCommerceContinueUrl;
             htmlForm.InputFields["cancel_url"] = teaCommerceCancelUrl;
