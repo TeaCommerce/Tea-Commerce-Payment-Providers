@@ -12,11 +12,15 @@ using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 using Order = TeaCommerce.Api.Models.Order;
 
+[assembly: PreApplicationStartMethod(typeof(TeaCommerce.PaymentProviders.Inline.StripeSubscription), "OnStartup")]
+
 namespace TeaCommerce.PaymentProviders.Inline
 {
-    [PaymentProvider("StripeSubscription - inline")]
+    [PaymentProvider(PROVIDER_ALIAS)]
     public class StripeSubscription : BaseStripeProvider
     {
+        public const string PROVIDER_ALIAS = "StripeSubscription - inline";
+
         public static event EventHandler<StripeSubscriptionEventArgs> StripeSubscriptionEvent;
 
         public void OnStripeSubscriptionEvent(StripeSubscriptionEventArgs args)
@@ -399,6 +403,33 @@ namespace TeaCommerce.PaymentProviders.Inline
                 order.TransactionInformation.PaymentState = paymentState;
                 order.Save();
             }
+        }
+
+        public static void OnStartup()
+        {
+            var webhookEvents = new[] {
+                "customer.subscription.created",
+                "customer.subscription.deleted",
+                "customer.subscription.trial_will_end",
+                "customer.subscription.updated",
+                "invoice.payment_failed",
+                "invoice.payment_succeeded",
+                "invoice.upcoming"
+            };
+
+            Api.Notifications.NotificationCenter.PaymentMethod.Created += (paymentMethod, args) =>
+            {
+                if (paymentMethod.PaymentProviderAlias == PROVIDER_ALIAS)
+                    EnsureWebhookEndpointFor(paymentMethod, webhookEvents);
+            };
+
+            Api.Notifications.NotificationCenter.PaymentMethod.Updated += (paymentMethod, args) =>
+            {
+                if (paymentMethod.PaymentProviderAlias == PROVIDER_ALIAS)
+                    EnsureWebhookEndpointFor(paymentMethod, webhookEvents);
+            };
+
+            // TODO: Remove webhook endpoint?
         }
     }
 

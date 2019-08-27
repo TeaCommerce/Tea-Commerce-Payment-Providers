@@ -12,11 +12,15 @@ using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 using Order = TeaCommerce.Api.Models.Order;
 
+[assembly: PreApplicationStartMethod(typeof(TeaCommerce.PaymentProviders.Inline.Stripe), "OnStartup")]
+
 namespace TeaCommerce.PaymentProviders.Inline
 {
-    [PaymentProvider("Stripe - inline")]
+    [PaymentProvider(PROVIDER_ALIAS)]
     public class Stripe : BaseStripeProvider
     {
+        public const string PROVIDER_ALIAS = "Stripe - inline";
+
         public override bool SupportsRetrievalOfPaymentStatus => true;
         public override bool SupportsRefundOfPayment => true;
         public override bool SupportsCapturingOfPayment => true;
@@ -39,7 +43,7 @@ namespace TeaCommerce.PaymentProviders.Inline
 
         public override PaymentHtmlForm GenerateHtmlForm(Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings)
         {
-            var htmlForm =  base.GenerateHtmlForm(order, teaCommerceContinueUrl, teaCommerceCancelUrl, teaCommerceCallBackUrl, teaCommerceCommunicationUrl, settings);
+            var htmlForm = base.GenerateHtmlForm(order, teaCommerceContinueUrl, teaCommerceCancelUrl, teaCommerceCallBackUrl, teaCommerceCommunicationUrl, settings);
 
             htmlForm.InputFields["api_key"] = settings[settings["mode"] + "_public_key"];
 
@@ -449,7 +453,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                     return PaymentState.Captured;
                 }
             }
-               
+
             return PaymentState.Initialized;
         }
 
@@ -503,6 +507,31 @@ namespace TeaCommerce.PaymentProviders.Inline
                 order.TransactionInformation.PaymentState = paymentState;
                 order.Save();
             }
+        }
+
+        public static void OnStartup()
+        {
+            var webhookEvents = new[] {
+                "charge.succeeded",
+                "charge.refunded",
+                "charge.failed",
+                "charge.captured",
+                "payment_intent.amount_capturable_updated"
+            };
+
+            Api.Notifications.NotificationCenter.PaymentMethod.Created += (paymentMethod, args) =>
+            {
+                if (paymentMethod.PaymentProviderAlias == PROVIDER_ALIAS)
+                    EnsureWebhookEndpointFor(paymentMethod, webhookEvents);
+            };
+
+            Api.Notifications.NotificationCenter.PaymentMethod.Updated += (paymentMethod, args) =>
+            {
+                if (paymentMethod.PaymentProviderAlias == PROVIDER_ALIAS)
+                    EnsureWebhookEndpointFor(paymentMethod, webhookEvents);
+            };
+
+            // TODO: Remove webhook endpoint?
         }
     }
 }

@@ -80,7 +80,7 @@
 			<Dlls Include="$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll" />
 			<Dlls Include="$(ArtifactsDir)\Files\bin\*.dll" Exclude="$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll" />
 		</ItemGroup>
-		<Exec Command="$(ILRepackExe) /ndebug /union /lib:$(SourceDir)\Lib\TeaCommerce /out:$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll @(Dlls, ' ') /targetplatform:v4" />
+		<Exec Command="$(ILRepackExe) /ndebug /union /copyattrs /allowMultiple /lib:$(SourceDir)\Lib\TeaCommerce /out:$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll @(Dlls, ' ') /targetplatform:v4" />
 	</Target>
 
 	<!-- PREPARE -->
