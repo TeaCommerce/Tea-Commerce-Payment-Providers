@@ -223,10 +223,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                 if (!string.IsNullOrWhiteSpace(charge.PaymentIntentId))
                 {
                     var paymentIntentService = new PaymentIntentService();
-                    var paymentIntentGetOptions = new PaymentIntentGetOptions
-                    {
-                        Expand = new List<string> { "Charges" }
-                    };
+                    var paymentIntentGetOptions = new PaymentIntentGetOptions { };
                     var paymentIntent = paymentIntentService.Get(charge.PaymentIntentId, paymentIntentGetOptions);
 
                     FinalizeOrUpdateOrder(order, paymentIntent);
