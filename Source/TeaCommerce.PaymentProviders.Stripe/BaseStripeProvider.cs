@@ -15,8 +15,6 @@ namespace TeaCommerce.PaymentProviders.Inline
 {
     public abstract class BaseStripeProvider : APaymentProvider
     {
-        private IStripeClient _stripeClient;
-
         public override string DocumentationLink { get { return "https://stripe.com/docs"; } }
 
         public override bool FinalizeAtContinueUrl { get { return true; } }
