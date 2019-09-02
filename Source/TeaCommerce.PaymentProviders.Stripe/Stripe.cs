@@ -323,7 +323,6 @@ namespace TeaCommerce.PaymentProviders.Inline
 
                 var refundService = new RefundService();
                 var refundCreateOptions = new RefundCreateOptions() {
-                    Expand = new List<string> { "Charge" },
                     ChargeId = order.TransactionInformation.TransactionId
                 };
 
@@ -355,12 +354,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                 settings.MustContainKey("mode", "settings");
                 settings.MustContainKey(settings["mode"] + "_secret_key", "settings");
 
-                // If there is a transaction ID (a charge) then it's too late to cancel
-                // so we just refund it
-                if (order.TransactionInformation.TransactionId != null)
-                    return RefundPayment(order, settings);
-
-                // If there is not transaction id, then try canceling a payment intent
+                // Try canceling the payment intent
                 var stripePaymentIntentId = order.Properties["stripePaymentIntentId"];
                 if (!string.IsNullOrWhiteSpace(stripePaymentIntentId))
                 {
@@ -375,6 +369,10 @@ namespace TeaCommerce.PaymentProviders.Inline
                     return new ApiInfo(GetTransactionId(intent), GetPaymentState(intent));
                 }
 
+                // If there is a transaction ID (a charge) then it's too late to cancel
+                // so we just attempt to refund it
+                if (order.TransactionInformation.TransactionId != null)
+                    return RefundPayment(order, settings);
             }
             catch (Exception exp)
             {
