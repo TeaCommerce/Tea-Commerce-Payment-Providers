@@ -41,15 +41,6 @@ namespace TeaCommerce.PaymentProviders.Inline
             }
         }
 
-        public override PaymentHtmlForm GenerateHtmlForm(Order order, string teaCommerceContinueUrl, string teaCommerceCancelUrl, string teaCommerceCallBackUrl, string teaCommerceCommunicationUrl, IDictionary<string, string> settings)
-        {
-            var htmlForm = base.GenerateHtmlForm(order, teaCommerceContinueUrl, teaCommerceCancelUrl, teaCommerceCallBackUrl, teaCommerceCommunicationUrl, settings);
-
-            htmlForm.InputFields["api_key"] = settings[settings["mode"] + "_public_key"];
-
-            return htmlForm;
-        }
-
         public override string GetCartNumber(HttpRequest request, IDictionary<string, string> settings)
         {
             var cartNumber = "";
@@ -255,10 +246,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                 if (!string.IsNullOrWhiteSpace(paymentIntentId))
                 {
                     var paymentIntentService = new PaymentIntentService();
-                    var paymentIntentGetOptions = new PaymentIntentGetOptions
-                    {
-                        Expand = new List<string> { "Charges" }
-                    };
+                    var paymentIntentGetOptions = new PaymentIntentGetOptions();
                     var paymentIntent = paymentIntentService.Get(paymentIntentId, paymentIntentGetOptions);
                     return new ApiInfo(GetTransactionId(paymentIntent), GetPaymentState(paymentIntent));
                 }
@@ -301,7 +289,6 @@ namespace TeaCommerce.PaymentProviders.Inline
                 var paymentIntentService = new PaymentIntentService();
                 var paymentIntentOptions = new PaymentIntentCaptureOptions
                 {
-                    Expand = new List<string> { "Charges" },
                     AmountToCapture = DollarsToCents(order.TransactionInformation.AmountAuthorized.Value),
                 };
                 var paymentIntent = paymentIntentService.Capture(paymentIntentId, paymentIntentOptions);
@@ -382,10 +369,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                     ConfigureStripe(apiKey);
 
                     var service = new PaymentIntentService();
-                    var options = new PaymentIntentCancelOptions
-                    {
-                        Expand = new List<string> { "Charges" },
-                    };
+                    var options = new PaymentIntentCancelOptions();
                     var intent = service.Cancel(stripePaymentIntentId, options);
 
                     return new ApiInfo(GetTransactionId(intent), GetPaymentState(intent));
