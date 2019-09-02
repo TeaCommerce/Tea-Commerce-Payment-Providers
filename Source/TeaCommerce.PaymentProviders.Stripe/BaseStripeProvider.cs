@@ -300,9 +300,9 @@ namespace TeaCommerce.PaymentProviders.Inline
 
                 paymentMethod.Save();
             }
-            catch (Exception ex)
+            catch (Exception exp)
             {
-                // TODO: Log it
+                LoggingService.Instance.Error<BaseStripeProvider>("BaseStripeProvider - EnsureWebhookEndpoint", exp);
             }
         }
     }
