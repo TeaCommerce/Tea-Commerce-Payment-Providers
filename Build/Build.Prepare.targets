@@ -3,7 +3,7 @@
 
 	<!-- IMPORTS -->
 	<PropertyGroup>
-		<ILMergeExe>$(MSBuildProjectDirectory)\tools\ILMerge\ILMerge.exe</ILMergeExe>
+		<ILRepackExe>$(MSBuildProjectDirectory)\tools\ILRepack\ILRepack.exe</ILRepackExe>
 	</PropertyGroup>
 
     <ItemGroup>
@@ -62,7 +62,7 @@
 			<Dlls Include="$(ProjectDir)bin\$(BuildConfig)\$(ProjectName).dll" />
 			<Dlls Include="$(ProjectDir)bin\$(BuildConfig)\*.dll" Exclude="$(ProjectDir)bin\$(BuildConfig)\TeaCommerce.*.dll" />
 		</ItemGroup>
-		<Exec Command="$(ILMergeExe) /ndebug /internalize:ILMerge.exclude.txt /out:$(ArtifactsDir)\Files\bin\$(ProjectName).dll @(Dlls, ' ') /targetplatform:v4,&quot;%programfiles(x86)%\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5&quot;" />
+		<Exec Command="$(ILRepackExe) /ndebug /lib:$(SourceDir)\Lib\TeaCommerce /lib:$(ProjectDir)bin\$(BuildConfig)\ /out:$(ArtifactsDir)\Files\bin\$(ProjectName).dll @(Dlls, ' ') /targetplatform:v4" />
 	</Target>
 
 	<!-- PREPARE SINGLE PROJECT -->
@@ -80,7 +80,7 @@
 			<Dlls Include="$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll" />
 			<Dlls Include="$(ArtifactsDir)\Files\bin\*.dll" Exclude="$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll" />
 		</ItemGroup>
-		<Exec Command="$(ILMergeExe) /ndebug /lib:$(SourceDir)\Lib\TeaCommerce /out:$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll @(Dlls, ' ') /targetplatform:v4,&quot;%programfiles(x86)%\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5&quot;" />
+		<Exec Command="$(ILRepackExe) /ndebug /union /copyattrs /allowMultiple /lib:$(SourceDir)\Lib\TeaCommerce /out:$(ArtifactsDir)\Files\bin\TeaCommerce.PaymentProviders.dll @(Dlls, ' ') /targetplatform:v4" />
 	</Target>
 
 	<!-- PREPARE -->

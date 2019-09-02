@@ -12,11 +12,15 @@ using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 using Order = TeaCommerce.Api.Models.Order;
 
+[assembly: PreApplicationStartMethod(typeof(TeaCommerce.PaymentProviders.Inline.StripeSubscription), "OnStartup")]
+
 namespace TeaCommerce.PaymentProviders.Inline
 {
-    [PaymentProvider("StripeSubscription - inline")]
+    [PaymentProvider(PROVIDER_ALIAS)]
     public class StripeSubscription : BaseStripeProvider
     {
+        public const string PROVIDER_ALIAS = "StripeSubscription - inline";
+
         public static event EventHandler<StripeSubscriptionEventArgs> StripeSubscriptionEvent;
 
         public void OnStripeSubscriptionEvent(StripeSubscriptionEventArgs args)
@@ -81,6 +85,8 @@ namespace TeaCommerce.PaymentProviders.Inline
                 // Get the current stripe api key based on mode
                 var apiKey = settings[settings["mode"] + "_secret_key"];
 
+                ConfigureStripe(apiKey);
+
                 var webhookSecret = settings[settings["mode"] + "_webhook_secret"];
                 var stripeEvent = GetWebhookStripeEvent(request, webhookSecret);
 
@@ -90,7 +96,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                     var invoice = (Invoice)stripeEvent.Data.Object;
                     if (!string.IsNullOrWhiteSpace(invoice.SubscriptionId))
                     {
-                        var subscriptionService = new SubscriptionService(apiKey);
+                        var subscriptionService = new SubscriptionService();
                         var subscription = subscriptionService.Get(invoice.SubscriptionId);
                         if (subscription?.Metadata != null && subscription.Metadata.ContainsKey("cartNumber"))
                         {
@@ -132,9 +138,12 @@ namespace TeaCommerce.PaymentProviders.Inline
                     ProcessCaptureRequest(order, request, settings);
 
                     var apiKey = settings[settings["mode"] + "_secret_key"];
-                    var subscriptionService = new SubscriptionService(apiKey);
+
+                    ConfigureStripe(apiKey);
+
+                    var subscriptionService = new SubscriptionService();
                     var subscription = subscriptionService.Get(order.Properties["stripeSubscriptionId"]);
-                    var invoice = subscription.LatestInvoice ?? new InvoiceService(apiKey).Get(subscription.LatestInvoiceId);
+                    var invoice = subscription.LatestInvoice ?? new InvoiceService().Get(subscription.LatestInvoiceId);
 
                     return new CallbackInfo(CentsToDollars(invoice.AmountDue), invoice.Id, PaymentState.Authorized);
                 }
@@ -187,11 +196,13 @@ namespace TeaCommerce.PaymentProviders.Inline
             var apiKey = settings[settings["mode"] + "_secret_key"];
             var billingMode = settings["billing_mode"];
 
+            ConfigureStripe(apiKey);
+
             ValidateBillingModeSetting(billingMode);
 
-            var customerService = new CustomerService(apiKey);
-            var subscriptionService = new SubscriptionService(apiKey);
-            var invoiceService = new InvoiceService(apiKey);
+            var customerService = new CustomerService();
+            var subscriptionService = new SubscriptionService();
+            var invoiceService = new InvoiceService();
 
             // Create the stripe customer
             var customer = customerService.Create(new CustomerCreateOptions
@@ -228,12 +239,12 @@ namespace TeaCommerce.PaymentProviders.Inline
 
             if (billingMode == "charge")
             {
-                subscriptionOptions.Billing = Billing.ChargeAutomatically;
+                subscriptionOptions.CollectionMethod = "charge_automatically";
                 subscriptionOptions.DefaultPaymentMethodId = request.Form["stripePaymentMethodId"];
             }
             else
             {
-                subscriptionOptions.Billing = Billing.SendInvoice;
+                subscriptionOptions.CollectionMethod = "send_invoice";
                 subscriptionOptions.DaysUntilDue = settings.ContainsKey("invoice_days_until_due") 
                     ? int.Parse("0" + settings["invoice_days_until_due"]) 
                     : 30;
@@ -321,7 +332,7 @@ namespace TeaCommerce.PaymentProviders.Inline
             }
             else if (stripeEvent.Type.StartsWith("customer.subscription."))
             {
-                var subscription = Mapper<Subscription>.MapFromJson(stripeEvent.Data.Object.ToString());
+                var subscription = (Subscription)stripeEvent.Data.Object;
                 if (order.Properties["stripeCustomerId"] == subscription.CustomerId
                     && order.Properties["stripeSubscriptionId"] == subscription.Id)
                 {
@@ -392,6 +403,33 @@ namespace TeaCommerce.PaymentProviders.Inline
                 order.TransactionInformation.PaymentState = paymentState;
                 order.Save();
             }
+        }
+
+        public static void OnStartup()
+        {
+            var webhookEvents = new[] {
+                "customer.subscription.created",
+                "customer.subscription.deleted",
+                "customer.subscription.trial_will_end",
+                "customer.subscription.updated",
+                "invoice.payment_failed",
+                "invoice.payment_succeeded",
+                "invoice.upcoming"
+            };
+
+            Api.Notifications.NotificationCenter.PaymentMethod.Created += (paymentMethod, args) =>
+            {
+                if (paymentMethod.PaymentProviderAlias == PROVIDER_ALIAS)
+                    EnsureWebhookEndpointFor(paymentMethod, webhookEvents);
+            };
+
+            Api.Notifications.NotificationCenter.PaymentMethod.Updated += (paymentMethod, args) =>
+            {
+                if (paymentMethod.PaymentProviderAlias == PROVIDER_ALIAS)
+                    EnsureWebhookEndpointFor(paymentMethod, webhookEvents);
+            };
+
+            // TODO: Remove webhook endpoint?
         }
     }
 
