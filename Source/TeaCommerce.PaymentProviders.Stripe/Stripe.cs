@@ -177,7 +177,7 @@ namespace TeaCommerce.PaymentProviders.Inline
 
                 var intent = intentService.Create(intentOptions);
 
-                order.Properties.Add(new CustomProperty("stripePaymentIntentId", intent.Id) { ServerSideOnly = true });
+                order.Properties.AddOrUpdate(new CustomProperty("stripePaymentIntentId", intent.Id) { ServerSideOnly = true });
                 order.TransactionInformation.PaymentState = PaymentState.Initialized;
                 order.Save();
 
