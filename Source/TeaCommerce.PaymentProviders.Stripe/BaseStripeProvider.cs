@@ -142,7 +142,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                 case "test_webhook_id":
                     return settingsKey + "<br/><small>ID of the auto created test Stripe webhook. Automatically generated.</small>";
                 case "test_webhook_secret":
-                    return settingsKey + "<br/><small>Test webhook signing secret for validating webhook requests. Automatically generated.</small>";
+                    return settingsKey + "<br/><small>Tive webhook signing secret for validating webhook requests. Automatically generated.</small>";
                 case "live_secret_key":
                     return settingsKey + "<br/><small>Your live stripe secret key.</small>";
                 case "live_public_key":
