@@ -162,6 +162,8 @@ namespace TeaCommerce.PaymentProviders.Inline
 
                 var paymentIntentId = request.Form["stripePaymentIntentId"];
 
+                // If we don't have a stripe payment intent passed in then we create a payment
+                // and try to create / capture it
                 if (string.IsNullOrWhiteSpace(paymentIntentId))
                 {
                     var intentOptions = new PaymentIntentCreateOptions
@@ -190,7 +192,9 @@ namespace TeaCommerce.PaymentProviders.Inline
                     order.Properties.AddOrUpdate(new CustomProperty("stripePaymentIntentId", intent.Id) { ServerSideOnly = true });
                     order.TransactionInformation.PaymentState = PaymentState.Initialized;
                     order.Save();
-                }
+                } 
+                // If we have a stripe pauyment intent then it means it wasn't confirmed first time around
+                // so just try and confirm it again
                 else
                 {
                     intent = intentService.Confirm(request.Form["stripePaymentIntentId"], new PaymentIntentConfirmOptions
@@ -201,6 +205,8 @@ namespace TeaCommerce.PaymentProviders.Inline
 
                 if (intent.Status == "succeeded")
                 {
+                    FinalizeOrUpdateOrder(order, intent);
+
                     return JsonConvert.SerializeObject(new { success = true });
                 }
                 else if (intent.Status == "requires_action" && intent.NextAction.Type == "use_stripe_sdk")
