@@ -12,7 +12,7 @@ using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 using Order = TeaCommerce.Api.Models.Order;
 
-[assembly: PreApplicationStartMethod(typeof(TeaCommerce.PaymentProviders.Inline.Stripe), "OnStartup")]
+// [assembly: PreApplicationStartMethod(typeof(TeaCommerce.PaymentProviders.Inline.Stripe), "OnStartup")]
 
 namespace TeaCommerce.PaymentProviders.Inline
 {
