@@ -156,35 +156,63 @@ namespace TeaCommerce.PaymentProviders.Inline
             {
                 var capture = settings.ContainsKey("capture") && settings["capture"].Trim().ToLower() == "true";
 
-                var intentService = new PaymentIntentService();
-                var intentOptions = new PaymentIntentCreateOptions
-                {
-                    Amount = DollarsToCents(order.TotalPrice.Value.WithVat),
-                    Currency = CurrencyService.Instance.Get(order.StoreId, order.CurrencyId).IsoCode,
-                    Description = $"{order.CartNumber} - {order.PaymentInformation.Email}",
-                    Metadata = new Dictionary<string, string>
-                    {
-                        { "orderId", order.Id.ToString() },
-                        { "cartNumber", order.CartNumber }
-                    },
-                    CaptureMethod = capture ? "automatic" : "manual"
-                };
+                PaymentIntent intent;
 
-                if (settings.ContainsKey("send_stripe_receipt") && settings["send_stripe_receipt"] == "true")
+                var intentService = new PaymentIntentService();
+
+                var paymentIntentId = request.Form["stripePaymentIntentId"];
+
+                if (string.IsNullOrWhiteSpace(paymentIntentId))
                 {
-                    intentOptions.ReceiptEmail = order.PaymentInformation.Email;
+                    var intentOptions = new PaymentIntentCreateOptions
+                    {
+                        PaymentMethodId = request.Form["stripePaymentMethodId"],
+                        Amount = DollarsToCents(order.TotalPrice.Value.WithVat),
+                        Currency = CurrencyService.Instance.Get(order.StoreId, order.CurrencyId).IsoCode,
+                        Description = $"{order.CartNumber} - {order.PaymentInformation.Email}",
+                        Metadata = new Dictionary<string, string>
+                        {
+                            { "orderId", order.Id.ToString() },
+                            { "cartNumber", order.CartNumber }
+                        },
+                        ConfirmationMethod = "manual",
+                        Confirm = true,
+                        CaptureMethod = capture ? "automatic" : "manual"
+                    };
+
+                    if (settings.ContainsKey("send_stripe_receipt") && settings["send_stripe_receipt"] == "true")
+                    {
+                        intentOptions.ReceiptEmail = order.PaymentInformation.Email;
+                    }
+
+                    intent = intentService.Create(intentOptions);
+
+                    order.Properties.AddOrUpdate(new CustomProperty("stripePaymentIntentId", intent.Id) { ServerSideOnly = true });
+                    order.TransactionInformation.PaymentState = PaymentState.Initialized;
+                    order.Save();
+                }
+                else
+                {
+                    intent = intentService.Confirm(request.Form["stripePaymentIntentId"], new PaymentIntentConfirmOptions
+                    {
+                        PaymentMethodId = request.Form["stripePaymentMethodId"]
+                    });
                 }
 
-                var intent = intentService.Create(intentOptions);
-
-                order.Properties.AddOrUpdate(new CustomProperty("stripePaymentIntentId", intent.Id) { ServerSideOnly = true });
-                order.TransactionInformation.PaymentState = PaymentState.Initialized;
-                order.Save();
-
-                return JsonConvert.SerializeObject(new
+                if (intent.Status == "succeeded")
                 {
-                    payment_intent_client_secret = intent.ClientSecret
-                });
+                    return JsonConvert.SerializeObject(new { success = true });
+                }
+                else if (intent.Status == "requires_action" && intent.NextAction.Type == "use_stripe_sdk")
+                {
+                    return JsonConvert.SerializeObject(new
+                    {
+                        requires_card_action = true,
+                        payment_intent_client_secret = intent.ClientSecret
+                    });
+                }
+
+                return JsonConvert.SerializeObject(new { error = "Invalid payment intent status" });
             }
             catch (Exception ex)
             {
