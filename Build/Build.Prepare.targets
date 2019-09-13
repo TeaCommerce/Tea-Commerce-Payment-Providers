@@ -62,7 +62,7 @@
 			<Dlls Include="$(ProjectDir)bin\$(BuildConfig)\$(ProjectName).dll" />
 			<Dlls Include="$(ProjectDir)bin\$(BuildConfig)\*.dll" Exclude="$(ProjectDir)bin\$(BuildConfig)\TeaCommerce.*.dll" />
 		</ItemGroup>
-		<Exec Command="$(ILRepackExe) /ndebug /lib:$(SourceDir)\Lib\TeaCommerce /lib:$(ProjectDir)bin\$(BuildConfig)\ /out:$(ArtifactsDir)\Files\bin\$(ProjectName).dll @(Dlls, ' ') /targetplatform:v4" />
+		<Exec Command="$(ILRepackExe) /ndebug /internalize:InternalizeExclusions.txt /lib:$(SourceDir)\Lib\TeaCommerce /lib:$(ProjectDir)bin\$(BuildConfig)\ /out:$(ArtifactsDir)\Files\bin\$(ProjectName).dll @(Dlls, ' ') /targetplatform:v4" />
 	</Target>
 
 	<!-- PREPARE SINGLE PROJECT -->
