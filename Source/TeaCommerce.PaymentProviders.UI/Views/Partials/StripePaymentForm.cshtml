@@ -181,7 +181,8 @@
             if (!currentOrder || tryCount >= maxTrys) {
                 doContinue()
             } else {
-                waitForFinalizedOrder(maxTrys, tryCount++);
+                
+                waitForFinalizedOrder(maxTrys, tryCount + 1);
             }
         }, 1000);
     }
