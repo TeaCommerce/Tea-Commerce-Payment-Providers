@@ -12,8 +12,6 @@ using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 using Order = TeaCommerce.Api.Models.Order;
 
-[assembly: PreApplicationStartMethod(typeof(TeaCommerce.PaymentProviders.Inline.StripeSubscription), "OnStartup")]
-
 namespace TeaCommerce.PaymentProviders.Inline
 {
     [PaymentProvider(PROVIDER_ALIAS)]
@@ -41,6 +39,8 @@ namespace TeaCommerce.PaymentProviders.Inline
             {
                 return base.DefaultSettings
                     .Union(new Dictionary<string, string> {
+                        { "test_webhook_secret", "" },
+                        { "live_webhook_secret", "" },
                         { "billing_mode", "charge" },
                         { "invoice_days_until_due", "30" }
                     })
@@ -93,7 +93,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                 // We are only interested in charge events
                 if (stripeEvent != null && stripeEvent.Type.StartsWith("invoice."))
                 {
-                    var invoice = (Invoice)stripeEvent.Data.Object;
+                    var invoice = (Invoice)stripeEvent.Data.Object.Instance;
                     if (!string.IsNullOrWhiteSpace(invoice.SubscriptionId))
                     {
                         var subscriptionService = new SubscriptionService();
@@ -207,7 +207,7 @@ namespace TeaCommerce.PaymentProviders.Inline
             // Create the stripe customer
             var customer = customerService.Create(new CustomerCreateOptions
             {
-                PaymentMethodId = billingMode == "charge"
+                PaymentMethod = billingMode == "charge"
                     ? request.Form["stripePaymentMethodId"]
                     : null,
                 Email = order.PaymentInformation.Email,
@@ -220,10 +220,10 @@ namespace TeaCommerce.PaymentProviders.Inline
             // Create subscription for customer (will auto attempt payment)
             var subscriptionOptions = new SubscriptionCreateOptions
             {
-                CustomerId = customer.Id,
-                Items = order.OrderLines.Select(x => new SubscriptionItemOption
+                Customer = customer.Id,
+                Items = order.OrderLines.Select(x => new SubscriptionItemOptions
                 {
-                    PlanId = !string.IsNullOrWhiteSpace(x.Properties["planId"])
+                    Plan = !string.IsNullOrWhiteSpace(x.Properties["planId"])
                         ? x.Properties["planId"]
                         : x.Sku,
                     Quantity = (long)x.Quantity
@@ -240,7 +240,7 @@ namespace TeaCommerce.PaymentProviders.Inline
             if (billingMode == "charge")
             {
                 subscriptionOptions.CollectionMethod = "charge_automatically";
-                subscriptionOptions.DefaultPaymentMethodId = request.Form["stripePaymentMethodId"];
+                subscriptionOptions.DefaultPaymentMethod = request.Form["stripePaymentMethodId"];
             }
             else
             {
@@ -289,7 +289,7 @@ namespace TeaCommerce.PaymentProviders.Inline
             // so to ensure subscription is live, we'll listen for successful invoice payment
             if (stripeEvent.Type.StartsWith("invoice."))
             {
-                var invoice = (Invoice)stripeEvent.Data.Object;
+                var invoice = (Invoice)stripeEvent.Data.Object.Instance;
                 if (order.Properties["stripeCustomerId"] == invoice.CustomerId
                     && order.Properties["stripeSubscriptionId"] == invoice.SubscriptionId)
                 {
@@ -332,7 +332,7 @@ namespace TeaCommerce.PaymentProviders.Inline
             }
             else if (stripeEvent.Type.StartsWith("customer.subscription."))
             {
-                var subscription = (Subscription)stripeEvent.Data.Object;
+                var subscription = (Subscription)stripeEvent.Data.Object.Instance;
                 if (order.Properties["stripeCustomerId"] == subscription.CustomerId
                     && order.Properties["stripeSubscriptionId"] == subscription.Id)
                 {
@@ -373,6 +373,10 @@ namespace TeaCommerce.PaymentProviders.Inline
                     return settingsKey + "<br/><small>Whether to charge payments instantly via credit card or to send out Stripe invoices - charge/invoice.</small>";
                 case "invoice_days_until_due":
                     return settingsKey + "<br/><small>If billing mode is set to 'invoice', the number of days untill the invoice is due.</small>";
+                case "test_webhook_secret":
+                    return settingsKey + "<br/><small>Test webhook signing secret for validating webhook requests. Automatically generated.</small>";
+                case "live_webhook_secret":
+                    return settingsKey + "<br/><small>Live webhook signing secret for validating webhook requests. Automatically generated.</small>";
                 default:
                     return base.GetLocalizedSettingsKey(settingsKey, culture);
             }
@@ -403,33 +407,6 @@ namespace TeaCommerce.PaymentProviders.Inline
                 order.TransactionInformation.PaymentState = paymentState;
                 order.Save();
             }
-        }
-
-        public static void OnStartup()
-        {
-            var webhookEvents = new[] {
-                "customer.subscription.created",
-                "customer.subscription.deleted",
-                "customer.subscription.trial_will_end",
-                "customer.subscription.updated",
-                "invoice.payment_failed",
-                "invoice.payment_succeeded",
-                "invoice.upcoming"
-            };
-
-            Api.Notifications.NotificationCenter.PaymentMethod.Created += (paymentMethod, args) =>
-            {
-                if (paymentMethod.PaymentProviderAlias == PROVIDER_ALIAS)
-                    EnsureWebhookEndpointFor(paymentMethod, webhookEvents);
-            };
-
-            Api.Notifications.NotificationCenter.PaymentMethod.Updated += (paymentMethod, args) =>
-            {
-                if (paymentMethod.PaymentProviderAlias == PROVIDER_ALIAS)
-                    EnsureWebhookEndpointFor(paymentMethod, webhookEvents);
-            };
-
-            // TODO: Remove webhook endpoint?
         }
     }
 

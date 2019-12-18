@@ -12,8 +12,6 @@ using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 using Order = TeaCommerce.Api.Models.Order;
 
-// [assembly: PreApplicationStartMethod(typeof(TeaCommerce.PaymentProviders.Inline.Stripe), "OnStartup")]
-
 namespace TeaCommerce.PaymentProviders.Inline
 {
     [PaymentProvider(PROVIDER_ALIAS)]
@@ -67,7 +65,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                 var stripeEvent = GetWebhookStripeEvent(request, webhookSecret);
                 if (stripeEvent != null && stripeEvent.Type.StartsWith("payment_intent."))
                 {
-                    var stripeIntent = (PaymentIntent)stripeEvent.Data.Object;
+                    var stripeIntent = (PaymentIntent)stripeEvent.Data.Object.Instance;
 
                     // Get cart number from meta data
                     if (stripeIntent?.Metadata != null && stripeIntent.Metadata.ContainsKey("cartNumber"))
@@ -77,7 +75,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                 }
                 else if (stripeEvent != null && stripeEvent.Type.StartsWith("charge."))
                 {
-                    var stripeCharge = (Charge)stripeEvent.Data.Object;
+                    var stripeCharge = (Charge)stripeEvent.Data.Object.Instance;
                     var stripeIntent = stripeCharge.PaymentIntent;
 
                     if (stripeIntent == null && !string.IsNullOrWhiteSpace(stripeCharge.PaymentIntentId))
@@ -168,7 +166,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                 {
                     var intentOptions = new PaymentIntentCreateOptions
                     {
-                        PaymentMethodId = request.Form["stripePaymentMethodId"],
+                        PaymentMethod = request.Form["stripePaymentMethodId"],
                         Amount = DollarsToCents(order.TotalPrice.Value.WithVat),
                         Currency = CurrencyService.Instance.Get(order.StoreId, order.CurrencyId).IsoCode,
                         Description = $"{order.CartNumber} - {order.PaymentInformation.Email}",
@@ -193,13 +191,13 @@ namespace TeaCommerce.PaymentProviders.Inline
                     order.TransactionInformation.PaymentState = PaymentState.Initialized;
                     order.Save();
                 } 
-                // If we have a stripe pauyment intent then it means it wasn't confirmed first time around
+                // If we have a stripe payment intent then it means it wasn't confirmed first time around
                 // so just try and confirm it again
                 else
                 {
                     intent = intentService.Confirm(request.Form["stripePaymentIntentId"], new PaymentIntentConfirmOptions
                     {
-                        PaymentMethodId = request.Form["stripePaymentMethodId"]
+                        PaymentMethod = request.Form["stripePaymentMethodId"]
                     });
                 }
 
@@ -241,13 +239,13 @@ namespace TeaCommerce.PaymentProviders.Inline
             var stripeEvent = GetWebhookStripeEvent(request, webhookSecret);
             if (stripeEvent.Type == "payment_intent.amount_capturable_updated")  // Occurs when payments are not auto captured and funds are authorized
             {
-                var paymentIntent = (PaymentIntent)stripeEvent.Data.Object;
+                var paymentIntent = (PaymentIntent)stripeEvent.Data.Object.Instance;
 
                 FinalizeOrUpdateOrder(order, paymentIntent);
             }
             else if (stripeEvent.Type.StartsWith("charge."))
             {
-                var charge = (Charge)stripeEvent.Data.Object;
+                var charge = (Charge)stripeEvent.Data.Object.Instance;
 
                 if (!string.IsNullOrWhiteSpace(charge.PaymentIntentId))
                 {
@@ -357,7 +355,7 @@ namespace TeaCommerce.PaymentProviders.Inline
 
                 var refundService = new RefundService();
                 var refundCreateOptions = new RefundCreateOptions() {
-                    ChargeId = order.TransactionInformation.TransactionId
+                    Charge = order.TransactionInformation.TransactionId
                 };
 
                 var refund = refundService.Create(refundCreateOptions);
@@ -523,31 +521,6 @@ namespace TeaCommerce.PaymentProviders.Inline
                 order.TransactionInformation.PaymentState = paymentState;
                 order.Save();
             }
-        }
-
-        public static void OnStartup()
-        {
-            var webhookEvents = new[] {
-                "charge.succeeded",
-                "charge.refunded",
-                "charge.failed",
-                "charge.captured",
-                "payment_intent.amount_capturable_updated"
-            };
-
-            Api.Notifications.NotificationCenter.PaymentMethod.Created += (paymentMethod, args) =>
-            {
-                if (paymentMethod.PaymentProviderAlias == PROVIDER_ALIAS)
-                    EnsureWebhookEndpointFor(paymentMethod, webhookEvents);
-            };
-
-            Api.Notifications.NotificationCenter.PaymentMethod.Updated += (paymentMethod, args) =>
-            {
-                if (paymentMethod.PaymentProviderAlias == PROVIDER_ALIAS)
-                    EnsureWebhookEndpointFor(paymentMethod, webhookEvents);
-            };
-
-            // TODO: Remove webhook endpoint?
         }
     }
 }
