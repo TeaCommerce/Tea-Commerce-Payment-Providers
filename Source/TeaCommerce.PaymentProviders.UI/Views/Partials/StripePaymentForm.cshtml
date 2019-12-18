@@ -89,50 +89,42 @@
             }
         };
 
-        // See if we need to capture a payment method before attempting to take payment
-        // (This is mostly because Stripe Subscriptions require a payment method before a subscription can be created)
-        var requiresInitialPaymentMethod = '@Request.Form["requires_initial_payment_method"]' === 'true';
-        if (requiresInitialPaymentMethod)
-        {
-            // Step 1: Capture a payment method from the form
-            stripe.createPaymentMethod('card', card, data).then(function (result) {
-                resultHandler(result, function () {
-                    // Step 2: Send the payment method to the server to process / create a payment intent
-                    tcApiRequest("stripePaymentMethodId=" + result.paymentMethod.id).then(function (result2) {
-                        resultHandler(result2, function () {
-                            // Step 3: See if the payment went through or whether we need to authenticate it
-                            if (result2.requires_action) {
-                                // Step 4.1: Show authentication dialog and send result to Stripe
-                                stripe.handleCardPayment(result2.payment_intent_client_secret).then(function (result3) {
-                                    resultHandler(result3, function () {
-                                        // Step 5: Redirect to continue page
-                                        successHandler();
+        // Step 1: Capture a payment method from the form
+        stripe.createPaymentMethod('card', card, data).then(function (result) {
+            resultHandler(result, function () {
+                // Step 2: Send the payment method to the server to process / create a payment intent
+                tcApiRequest("stripePaymentMethodId=" + result.paymentMethod.id).then(function (result2) {
+                    resultHandler(result2, function () {
+                        // Step 3: See if the payment went through or whether we need to authenticate it
+                        if (result2.requires_card_action) {
+                            // Step 4.1: Show authentication dialog and send result to Stripe
+                            stripe.handleCardAction(result2.payment_intent_client_secret).then(function (result3) {
+                                resultHandler(result3, function () {
+                                    // Step 4.1.1: Send the payment method + payment intent back to the server to confirm
+                                    tcApiRequest("stripePaymentMethodId=" + result.paymentMethod.id + "&stripePaymentIntentId=" + result3.paymentIntent.id).then(function (result4) {
+                                        resultHandler(result4, function () {
+                                            successHandler();
+                                        });
                                     });
                                 });
-                            } else {
-                                // Step 4.2: Redirect to continue page
-                                successHandler();
-                            }
-                        });
-                    });
-                });
-            });
-        }
-        else
-        {
-            // Step 1: Create the payment intent on the server
-            tcApiRequest().then(function (result) {
-                resultHandler(result, function () {
-                    // Step 2: Handle payment using the payment intent secret from step 1
-                    stripe.handleCardPayment(result.payment_intent_client_secret, card, { payment_method_data: data }).then(function (result2) {
-                        resultHandler(result2, function () {
-                            // Step 3: Redirect to continue page
+                            });
+                        } else if (result2.requires_card_payment) {
+                            // Step 4.2: Show authentication dialog and send result to Stripe
+                            stripe.handleCardPayment(result2.payment_intent_client_secret).then(function (result3) {
+                                resultHandler(result3, function () {
+                                    // Step 5: Redirect to continue page
+                                    successHandler();
+                                });
+                            });
+                        } else {
+                            // Step 4.3: Redirect to continue page
                             successHandler();
-                        });
+                        }
                     });
                 });
             });
-        }
+        });
+
     });
 
     function disableForm () {
