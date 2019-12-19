@@ -39,8 +39,6 @@ namespace TeaCommerce.PaymentProviders.Inline
             {
                 return base.DefaultSettings
                     .Union(new Dictionary<string, string> {
-                        { "test_webhook_secret", "" },
-                        { "live_webhook_secret", "" },
                         { "billing_mode", "charge" },
                         { "invoice_days_until_due", "30" }
                     })
@@ -373,10 +371,6 @@ namespace TeaCommerce.PaymentProviders.Inline
                     return settingsKey + "<br/><small>Whether to charge payments instantly via credit card or to send out Stripe invoices - charge/invoice.</small>";
                 case "invoice_days_until_due":
                     return settingsKey + "<br/><small>If billing mode is set to 'invoice', the number of days untill the invoice is due.</small>";
-                case "test_webhook_secret":
-                    return settingsKey + "<br/><small>Test webhook signing secret for validating webhook requests. Automatically generated.</small>";
-                case "live_webhook_secret":
-                    return settingsKey + "<br/><small>Live webhook signing secret for validating webhook requests. Automatically generated.</small>";
                 default:
                     return base.GetLocalizedSettingsKey(settingsKey, culture);
             }

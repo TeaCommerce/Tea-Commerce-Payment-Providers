@@ -189,7 +189,9 @@ namespace TeaCommerce.PaymentProviders.Inline
 
                     order.Properties.AddOrUpdate(new CustomProperty("stripePaymentIntentId", intent.Id) { ServerSideOnly = true });
                     order.TransactionInformation.PaymentState = PaymentState.Initialized;
-                    order.Save();
+
+                    if (intent.Status != "succeeded")
+                        order.Save();
                 } 
                 // If we have a stripe payment intent then it means it wasn't confirmed first time around
                 // so just try and confirm it again
@@ -513,7 +515,7 @@ namespace TeaCommerce.PaymentProviders.Inline
             {
                 order.Finalize(amount, transactionId, paymentState);
             }
-            else if (order.TransactionInformation.PaymentState != paymentState)
+            else
             {
                 var currency = CurrencyService.Instance.Get(order.StoreId, order.CurrencyId);
                 order.TransactionInformation.AmountAuthorized = new Amount(amount, currency);

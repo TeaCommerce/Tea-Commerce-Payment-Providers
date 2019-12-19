@@ -39,6 +39,8 @@ namespace TeaCommerce.PaymentProviders.Inline
                     { "live_secret_key", "" },
                     { "test_public_key", "" },
                     { "live_public_key", "" },
+                    { "test_webhook_secret", "" },
+                    { "live_webhook_secret", "" },
                 };
             }
         }
@@ -143,6 +145,10 @@ namespace TeaCommerce.PaymentProviders.Inline
                     return settingsKey + "<br/><small>Your live stripe public key.</small>";
                 case "tlive_base_url":
                     return settingsKey + "<br/><small>An explicit base URL to use when generating the live webhook notification URL.</small>";
+                case "test_webhook_secret":
+                    return settingsKey + "<br/><small>Test webhook signing secret for validating webhook requests.</small>";
+                case "live_webhook_secret":
+                    return settingsKey + "<br/><small>Live webhook signing secret for validating webhook requests.</small>";
                 case "mode":
                     return settingsKey + "<br/><small>The mode of the provider - test/live.</small>";
                 default:
