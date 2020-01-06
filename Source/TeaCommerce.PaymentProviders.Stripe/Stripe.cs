@@ -12,8 +12,6 @@ using TeaCommerce.Api.Services;
 using TeaCommerce.Api.Web.PaymentProviders;
 using Order = TeaCommerce.Api.Models.Order;
 
-[assembly: PreApplicationStartMethod(typeof(TeaCommerce.PaymentProviders.Inline.Stripe), "OnStartup")]
-
 namespace TeaCommerce.PaymentProviders.Inline
 {
     [PaymentProvider(PROVIDER_ALIAS)]
@@ -67,7 +65,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                 var stripeEvent = GetWebhookStripeEvent(request, webhookSecret);
                 if (stripeEvent != null && stripeEvent.Type.StartsWith("payment_intent."))
                 {
-                    var stripeIntent = (PaymentIntent)stripeEvent.Data.Object;
+                    var stripeIntent = (PaymentIntent)stripeEvent.Data.Object.Instance;
 
                     // Get cart number from meta data
                     if (stripeIntent?.Metadata != null && stripeIntent.Metadata.ContainsKey("cartNumber"))
@@ -77,7 +75,7 @@ namespace TeaCommerce.PaymentProviders.Inline
                 }
                 else if (stripeEvent != null && stripeEvent.Type.StartsWith("charge."))
                 {
-                    var stripeCharge = (Charge)stripeEvent.Data.Object;
+                    var stripeCharge = (Charge)stripeEvent.Data.Object.Instance;
                     var stripeIntent = stripeCharge.PaymentIntent;
 
                     if (stripeIntent == null && !string.IsNullOrWhiteSpace(stripeCharge.PaymentIntentId))
@@ -156,35 +154,71 @@ namespace TeaCommerce.PaymentProviders.Inline
             {
                 var capture = settings.ContainsKey("capture") && settings["capture"].Trim().ToLower() == "true";
 
-                var intentService = new PaymentIntentService();
-                var intentOptions = new PaymentIntentCreateOptions
-                {
-                    Amount = DollarsToCents(order.TotalPrice.Value.WithVat),
-                    Currency = CurrencyService.Instance.Get(order.StoreId, order.CurrencyId).IsoCode,
-                    Description = $"{order.CartNumber} - {order.PaymentInformation.Email}",
-                    Metadata = new Dictionary<string, string>
-                    {
-                        { "orderId", order.Id.ToString() },
-                        { "cartNumber", order.CartNumber }
-                    },
-                    CaptureMethod = capture ? "automatic" : "manual"
-                };
+                PaymentIntent intent;
 
-                if (settings.ContainsKey("send_stripe_receipt") && settings["send_stripe_receipt"] == "true")
+                var intentService = new PaymentIntentService();
+
+                var paymentIntentId = request.Form["stripePaymentIntentId"];
+
+                // If we don't have a stripe payment intent passed in then we create a payment
+                // and try to create / capture it
+                if (string.IsNullOrWhiteSpace(paymentIntentId))
                 {
-                    intentOptions.ReceiptEmail = order.PaymentInformation.Email;
+                    var intentOptions = new PaymentIntentCreateOptions
+                    {
+                        PaymentMethod = request.Form["stripePaymentMethodId"],
+                        Amount = DollarsToCents(order.TotalPrice.Value.WithVat),
+                        Currency = CurrencyService.Instance.Get(order.StoreId, order.CurrencyId).IsoCode,
+                        Description = $"{order.CartNumber} - {order.PaymentInformation.Email}",
+                        Metadata = new Dictionary<string, string>
+                        {
+                            { "orderId", order.Id.ToString() },
+                            { "cartNumber", order.CartNumber }
+                        },
+                        ConfirmationMethod = "manual",
+                        Confirm = true,
+                        CaptureMethod = capture ? "automatic" : "manual"
+                    };
+
+                    if (settings.ContainsKey("send_stripe_receipt") && settings["send_stripe_receipt"] == "true")
+                    {
+                        intentOptions.ReceiptEmail = order.PaymentInformation.Email;
+                    }
+
+                    intent = intentService.Create(intentOptions);
+
+                    order.Properties.AddOrUpdate(new CustomProperty("stripePaymentIntentId", intent.Id) { ServerSideOnly = true });
+                    order.TransactionInformation.PaymentState = PaymentState.Initialized;
+
+                    if (intent.Status != "succeeded")
+                        order.Save();
+                } 
+                // If we have a stripe payment intent then it means it wasn't confirmed first time around
+                // so just try and confirm it again
+                else
+                {
+                    intent = intentService.Confirm(request.Form["stripePaymentIntentId"], new PaymentIntentConfirmOptions
+                    {
+                        PaymentMethod = request.Form["stripePaymentMethodId"]
+                    });
                 }
 
-                var intent = intentService.Create(intentOptions);
-
-                order.Properties.AddOrUpdate(new CustomProperty("stripePaymentIntentId", intent.Id) { ServerSideOnly = true });
-                order.TransactionInformation.PaymentState = PaymentState.Initialized;
-                order.Save();
-
-                return JsonConvert.SerializeObject(new
+                if (intent.Status == "succeeded")
                 {
-                    payment_intent_client_secret = intent.ClientSecret
-                });
+                    FinalizeOrUpdateOrder(order, intent);
+
+                    return JsonConvert.SerializeObject(new { success = true });
+                }
+                else if (intent.Status == "requires_action" && intent.NextAction.Type == "use_stripe_sdk")
+                {
+                    return JsonConvert.SerializeObject(new
+                    {
+                        requires_card_action = true,
+                        payment_intent_client_secret = intent.ClientSecret
+                    });
+                }
+
+                return JsonConvert.SerializeObject(new { error = "Invalid payment intent status" });
             }
             catch (Exception ex)
             {
@@ -207,13 +241,13 @@ namespace TeaCommerce.PaymentProviders.Inline
             var stripeEvent = GetWebhookStripeEvent(request, webhookSecret);
             if (stripeEvent.Type == "payment_intent.amount_capturable_updated")  // Occurs when payments are not auto captured and funds are authorized
             {
-                var paymentIntent = (PaymentIntent)stripeEvent.Data.Object;
+                var paymentIntent = (PaymentIntent)stripeEvent.Data.Object.Instance;
 
                 FinalizeOrUpdateOrder(order, paymentIntent);
             }
             else if (stripeEvent.Type.StartsWith("charge."))
             {
-                var charge = (Charge)stripeEvent.Data.Object;
+                var charge = (Charge)stripeEvent.Data.Object.Instance;
 
                 if (!string.IsNullOrWhiteSpace(charge.PaymentIntentId))
                 {
@@ -323,7 +357,7 @@ namespace TeaCommerce.PaymentProviders.Inline
 
                 var refundService = new RefundService();
                 var refundCreateOptions = new RefundCreateOptions() {
-                    ChargeId = order.TransactionInformation.TransactionId
+                    Charge = order.TransactionInformation.TransactionId
                 };
 
                 var refund = refundService.Create(refundCreateOptions);
@@ -481,7 +515,7 @@ namespace TeaCommerce.PaymentProviders.Inline
             {
                 order.Finalize(amount, transactionId, paymentState);
             }
-            else if (order.TransactionInformation.PaymentState != paymentState)
+            else
             {
                 var currency = CurrencyService.Instance.Get(order.StoreId, order.CurrencyId);
                 order.TransactionInformation.AmountAuthorized = new Amount(amount, currency);
@@ -489,31 +523,6 @@ namespace TeaCommerce.PaymentProviders.Inline
                 order.TransactionInformation.PaymentState = paymentState;
                 order.Save();
             }
-        }
-
-        public static void OnStartup()
-        {
-            var webhookEvents = new[] {
-                "charge.succeeded",
-                "charge.refunded",
-                "charge.failed",
-                "charge.captured",
-                "payment_intent.amount_capturable_updated"
-            };
-
-            Api.Notifications.NotificationCenter.PaymentMethod.Created += (paymentMethod, args) =>
-            {
-                if (paymentMethod.PaymentProviderAlias == PROVIDER_ALIAS)
-                    EnsureWebhookEndpointFor(paymentMethod, webhookEvents);
-            };
-
-            Api.Notifications.NotificationCenter.PaymentMethod.Updated += (paymentMethod, args) =>
-            {
-                if (paymentMethod.PaymentProviderAlias == PROVIDER_ALIAS)
-                    EnsureWebhookEndpointFor(paymentMethod, webhookEvents);
-            };
-
-            // TODO: Remove webhook endpoint?
         }
     }
 }

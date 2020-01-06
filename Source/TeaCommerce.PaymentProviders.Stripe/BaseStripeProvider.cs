@@ -1,4 +1,6 @@
-﻿using Stripe;
+﻿using Newtonsoft.Json;
+using Stripe;
+using Stripe.Checkout;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -32,15 +34,13 @@ namespace TeaCommerce.PaymentProviders.Inline
                     { "billing_city_property_alias", "city" },
                     { "billing_state_property_alias", "" },
                     { "billing_zip_code_property_alias", "zipCode" },
-                    { "test_secret_key", "" },
-                    { "test_public_key", "" },
-                    { "test_webhook_id", "" },
-                    { "test_webhook_secret", "" },
-                    { "live_secret_key", "" },
-                    { "live_public_key", "" },
-                    { "live_webhook_id", "" },
-                    { "live_webhook_secret", "" },
                     { "mode", "test" },
+                    { "test_secret_key", "" },
+                    { "live_secret_key", "" },
+                    { "test_public_key", "" },
+                    { "live_public_key", "" },
+                    { "test_webhook_secret", "" },
+                    { "live_webhook_secret", "" },
                 };
             }
         }
@@ -139,20 +139,16 @@ namespace TeaCommerce.PaymentProviders.Inline
                     return settingsKey + "<br/><small>Your test stripe public key.</small>";
                 case "test_base_url":
                     return settingsKey + "<br/><small>An explicit base URL to use when generating the test webhook notification URL.</small>";
-                case "test_webhook_id":
-                    return settingsKey + "<br/><small>ID of the auto created test Stripe webhook. Automatically generated.</small>";
-                case "test_webhook_secret":
-                    return settingsKey + "<br/><small>Test webhook signing secret for validating webhook requests. Automatically generated.</small>";
                 case "live_secret_key":
                     return settingsKey + "<br/><small>Your live stripe secret key.</small>";
                 case "live_public_key":
                     return settingsKey + "<br/><small>Your live stripe public key.</small>";
                 case "tlive_base_url":
                     return settingsKey + "<br/><small>An explicit base URL to use when generating the live webhook notification URL.</small>";
-                case "live_webhook_id":
-                    return settingsKey + "<br/><small>ID of the auto created live Stripe webhook. Automatically generated.</small>";
+                case "test_webhook_secret":
+                    return settingsKey + "<br/><small>Test webhook signing secret for validating webhook requests.</small>";
                 case "live_webhook_secret":
-                    return settingsKey + "<br/><small>Live webhook signing secret for validating webhook requests. Automatically generated.</small>";
+                    return settingsKey + "<br/><small>Live webhook signing secret for validating webhook requests.</small>";
                 case "mode":
                     return settingsKey + "<br/><small>The mode of the provider - test/live.</small>";
                 default:
@@ -166,13 +162,13 @@ namespace TeaCommerce.PaymentProviders.Inline
             StripeConfiguration.MaxNetworkRetries = 2;
         }
 
-        protected Event GetWebhookStripeEvent(HttpRequest request, string webhookSecret)
+        protected StripeWebhookEvent GetWebhookStripeEvent(HttpRequest request, string webhookSecret)
         {
-            Event stripeEvent = null;
+            StripeWebhookEvent stripeEvent = null;
 
             if (HttpContext.Current.Items["TC_StripeEvent"] != null)
             {
-                stripeEvent = (Event)HttpContext.Current.Items["TC_StripeEvent"];
+                stripeEvent = (StripeWebhookEvent)HttpContext.Current.Items["TC_StripeEvent"];
             }
             else
             {
@@ -187,7 +183,42 @@ namespace TeaCommerce.PaymentProviders.Inline
                     {
                         var json = reader.ReadToEnd();
 
-                        stripeEvent = EventUtility.ConstructEvent(json, request.Headers["Stripe-Signature"], webhookSecret, throwOnApiVersionMismatch: false);
+                        // Just validate the webhook signature
+                        EventUtility.ValidateSignature(json, request.Headers["Stripe-Signature"], webhookSecret);
+
+                        // Parse the event ourselves to our custom webhook event model
+                        // as it only captures minimal object information.
+                        stripeEvent = JsonConvert.DeserializeObject<StripeWebhookEvent>(json);
+
+                        // We manually fetch the event object type ourself as it means it will be fetched
+                        // using the same API version as the payment providers is coded against.
+                        // NB: Only supports a number of object types we are likely to be interested in.
+                        if (stripeEvent?.Data?.Object != null)
+                        {
+                            switch (stripeEvent.Data.Object.Type)
+                            {
+                                case "session":
+                                    var sessionService = new SessionService();
+                                    stripeEvent.Data.Object.Instance = sessionService.Get(stripeEvent.Data.Object.Id);
+                                    break;
+                                case "charge":
+                                    var chargeService = new ChargeService();
+                                    stripeEvent.Data.Object.Instance = chargeService.Get(stripeEvent.Data.Object.Id);
+                                    break;
+                                case "payment_intent":
+                                    var paymentIntentService = new PaymentIntentService();
+                                    stripeEvent.Data.Object.Instance = paymentIntentService.Get(stripeEvent.Data.Object.Id);
+                                    break;
+                                case "subscription":
+                                    var subscriptionService = new SubscriptionService();
+                                    stripeEvent.Data.Object.Instance = subscriptionService.Get(stripeEvent.Data.Object.Id);
+                                    break;
+                                case "invoice":
+                                    var invoiceService = new InvoiceService();
+                                    stripeEvent.Data.Object.Instance = invoiceService.Get(stripeEvent.Data.Object.Id);
+                                    break;
+                            }
+                        }
 
                         HttpContext.Current.Items["TC_StripeEvent"] = stripeEvent;
                     }
@@ -213,97 +244,97 @@ namespace TeaCommerce.PaymentProviders.Inline
             return val / 100M;
         }
 
-        public static void EnsureWebhookEndpointFor(Api.Models.PaymentMethod paymentMethod, string[] events)
-        {
-            // Check to see if we have run already in this request for this provider
-            if (HttpContext.Current == null || HttpContext.Current.Items[$"{nameof(BaseStripeProvider)}_{nameof(EnsureWebhookEndpointFor)}_{paymentMethod.Id}"] != null)
-                return;
+        //public static void EnsureWebhookEndpointFor(Api.Models.PaymentMethod paymentMethod, string[] events)
+        //{
+        //    // Check to see if we have run already in this request for this provider
+        //    if (HttpContext.Current == null || HttpContext.Current.Items[$"{nameof(BaseStripeProvider)}_{nameof(EnsureWebhookEndpointFor)}_{paymentMethod.Id}"] != null)
+        //        return;
 
-            // We set a cache item so that this only runs once per request
-            // because when we call .Save() in a moment, it's going to trigger
-            // the Updated event handler again
-            HttpContext.Current.Items[$"{nameof(BaseStripeProvider)}_{nameof(EnsureWebhookEndpointFor)}_{paymentMethod.Id}"] = 1;
+        //    // We set a cache item so that this only runs once per request
+        //    // because when we call .Save() in a moment, it's going to trigger
+        //    // the Updated event handler again
+        //    HttpContext.Current.Items[$"{nameof(BaseStripeProvider)}_{nameof(EnsureWebhookEndpointFor)}_{paymentMethod.Id}"] = 1;
 
-            // Check to see if we have a configured mode
-            var mode = paymentMethod.Settings.SingleOrDefault(x => x.Key == "mode")?.Value;
-            if (string.IsNullOrWhiteSpace(mode))
-                return;
+        //    // Check to see if we have a configured mode
+        //    var mode = paymentMethod.Settings.SingleOrDefault(x => x.Key == "mode")?.Value;
+        //    if (string.IsNullOrWhiteSpace(mode))
+        //        return;
 
-            // Configure stripe
-            var secretKey = paymentMethod.Settings.SingleOrDefault(x => x.Key == $"{mode}_secret_key")?.Value;
-            if (string.IsNullOrWhiteSpace(secretKey))
-                return;
+        //    // Configure stripe
+        //    var secretKey = paymentMethod.Settings.SingleOrDefault(x => x.Key == $"{mode}_secret_key")?.Value;
+        //    if (string.IsNullOrWhiteSpace(secretKey))
+        //        return;
 
-            ConfigureStripe(secretKey);
+        //    ConfigureStripe(secretKey);
 
-            // Create the webhook service now as we'll need it a couple of times
-            var service = new WebhookEndpointService();
+        //    // Create the webhook service now as we'll need it a couple of times
+        //    var service = new WebhookEndpointService();
 
-            // Build the webhook URL
-            var req = HttpContext.Current.Request;
-            if (req == null)
-                return;
+        //    // Build the webhook URL
+        //    var req = HttpContext.Current.Request;
+        //    if (req == null)
+        //        return;
 
-            var baseUrlSetting = paymentMethod.Settings.SingleOrDefault(x => x.Key == $"{mode}_base_url")?.Value;
-            var baseUrl = !string.IsNullOrWhiteSpace(baseUrlSetting)
-                ? new Uri(baseUrlSetting)
-                : new UriBuilder(req.Url.Scheme, req.Url.Host, req.Url.Port).Uri;
-            var webhookUrl = new Uri(baseUrl, "/base/TC/PaymentCommunicationWithoutOrderId/" + paymentMethod.StoreId + "/" + paymentMethod.PaymentProviderAlias + "/" + paymentMethod.Id + ".aspx").AbsoluteUri;
+        //    var baseUrlSetting = paymentMethod.Settings.SingleOrDefault(x => x.Key == $"{mode}_base_url")?.Value;
+        //    var baseUrl = !string.IsNullOrWhiteSpace(baseUrlSetting)
+        //        ? new Uri(baseUrlSetting)
+        //        : new UriBuilder(req.Url.Scheme, req.Url.Host, req.Url.Port).Uri;
+        //    var webhookUrl = new Uri(baseUrl, "/base/TC/PaymentCommunicationWithoutOrderId/" + paymentMethod.StoreId + "/" + paymentMethod.PaymentProviderAlias + "/" + paymentMethod.Id + ".aspx").AbsoluteUri;
 
-            // Check to see if we already have a registered webhook
-            var webhookIdKey = $"{mode}_webhook_id";
-            var webhookSecretKey = $"{mode}_webhook_secret";
+        //    // Check to see if we already have a registered webhook
+        //    var webhookIdKey = $"{mode}_webhook_id";
+        //    var webhookSecretKey = $"{mode}_webhook_secret";
 
-            var webhookIdSetting = paymentMethod.Settings.SingleOrDefault(x => x.Key == webhookIdKey);
-            var webhookSecretSetting = paymentMethod.Settings.SingleOrDefault(x => x.Key == webhookSecretKey);
+        //    var webhookIdSetting = paymentMethod.Settings.SingleOrDefault(x => x.Key == webhookIdKey);
+        //    var webhookSecretSetting = paymentMethod.Settings.SingleOrDefault(x => x.Key == webhookSecretKey);
 
-            var webhookId = webhookIdSetting?.Value;
-            var webhookSecret = webhookSecretSetting?.Value;
+        //    var webhookId = webhookIdSetting?.Value;
+        //    var webhookSecret = webhookSecretSetting?.Value;
 
-            if (!string.IsNullOrWhiteSpace(webhookId) && !string.IsNullOrWhiteSpace(webhookSecret))
-            {
-                // We've found some credentials, so lets validate them
-                try
-                {
-                    var webhookEndpoint = service.Get(webhookId);
-                    if (webhookEndpoint != null
-                        && webhookEndpoint.ApiVersion == StripeConfiguration.ApiVersion
-                        && webhookEndpoint.Url == webhookUrl)
-                        return;
-                }
-                catch (StripeException ex)
-                {
-                    // Somethings wrong with the webhook so lets keep going and create a new one
-                }
-            }
+        //    if (!string.IsNullOrWhiteSpace(webhookId) && !string.IsNullOrWhiteSpace(webhookSecret))
+        //    {
+        //        // We've found some credentials, so lets validate them
+        //        try
+        //        {
+        //            var webhookEndpoint = service.Get(webhookId);
+        //            if (webhookEndpoint != null
+        //                && webhookEndpoint.ApiVersion == StripeConfiguration.ApiVersion
+        //                && webhookEndpoint.Url == webhookUrl)
+        //                return;
+        //        }
+        //        catch (StripeException ex)
+        //        {
+        //            // Somethings wrong with the webhook so lets keep going and create a new one
+        //        }
+        //    }
 
-            // Create the webhook
-            try
-            {
-                var options = new WebhookEndpointCreateOptions
-                {
-                    Url = webhookUrl,
-                    EnabledEvents = new List<string>(events),
-                    ApiVersion = StripeConfiguration.ApiVersion
-                };
-                var newWebhookEndpoint = service.Create(options);
+        //    // Create the webhook
+        //    try
+        //    {
+        //        var options = new WebhookEndpointCreateOptions
+        //        {
+        //            Url = webhookUrl,
+        //            EnabledEvents = new List<string>(events),
+        //            ApiVersion = StripeConfiguration.ApiVersion
+        //        };
+        //        var newWebhookEndpoint = service.Create(options);
 
-                // Remove settings if they exist (if we got here, it must mean they are invalid in some way)
-                if (webhookIdSetting != null)
-                    paymentMethod.Settings.Remove(webhookIdSetting);
-                if (webhookSecretSetting != null)
-                    paymentMethod.Settings.Remove(webhookSecretSetting);
+        //        // Remove settings if they exist (if we got here, it must mean they are invalid in some way)
+        //        if (webhookIdSetting != null)
+        //            paymentMethod.Settings.Remove(webhookIdSetting);
+        //        if (webhookSecretSetting != null)
+        //            paymentMethod.Settings.Remove(webhookSecretSetting);
 
-                // Save the settings
-                paymentMethod.Settings.Add(new Api.Models.PaymentMethodSetting(webhookIdKey, newWebhookEndpoint.Id));
-                paymentMethod.Settings.Add(new Api.Models.PaymentMethodSetting(webhookSecretKey, newWebhookEndpoint.Secret));
+        //        // Save the settings
+        //        paymentMethod.Settings.Add(new Api.Models.PaymentMethodSetting(webhookIdKey, newWebhookEndpoint.Id));
+        //        paymentMethod.Settings.Add(new Api.Models.PaymentMethodSetting(webhookSecretKey, newWebhookEndpoint.Secret));
 
-                paymentMethod.Save();
-            }
-            catch (Exception exp)
-            {
-                LoggingService.Instance.Error<BaseStripeProvider>("BaseStripeProvider - EnsureWebhookEndpoint", exp);
-            }
-        }
+        //        paymentMethod.Save();
+        //    }
+        //    catch (Exception exp)
+        //    {
+        //        LoggingService.Instance.Error<BaseStripeProvider>("BaseStripeProvider - EnsureWebhookEndpoint", exp);
+        //    }
+        //}
     }
 }
