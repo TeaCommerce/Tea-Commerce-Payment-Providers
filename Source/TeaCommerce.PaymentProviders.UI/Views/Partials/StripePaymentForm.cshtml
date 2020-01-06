@@ -130,12 +130,14 @@
     function disableForm () {
         // Stripe processing can take a while so implement some code to disable the form
         // and show some kind of spinner to show something is happening
+        document.getElementById('payment-form-submit-btn').style.opacity = "0.5";
         document.getElementById('payment-form-submit-btn').disabled = true;
     }
 
     function enableForm () {
         // Implement code to re-enable the form should an error occur and futher processing
         // is needed
+        document.getElementById('payment-form-submit-btn').style.opacity = "1";
         document.getElementById('payment-form-submit-btn').disabled = false;
     }
 
