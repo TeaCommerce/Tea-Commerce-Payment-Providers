@@ -135,7 +135,9 @@ namespace TeaCommerce.PaymentProviders.Classic
                         inputFields[key] = request.QueryString[key];
                 }
 
-                string strToHash = string.Join("", inputFields.OrderBy(i => i.Key).Select(i => i.Key.ToUpperInvariant() + "=" + i.Value + settings["SHAOUTPASSPHRASE"]));
+                string strToHash = string.Join("", inputFields.OrderBy(i => i.Key)
+                  .Where(i => !string.IsNullOrWhiteSpace(i.Value))
+                      .Select(i => i.Key.ToUpperInvariant() + "=" + i.Value + settings["SHAOUTPASSPHRASE"]));
                 string digest = new SHA512Managed().ComputeHash(Encoding.UTF8.GetBytes(strToHash)).ToHex().ToUpperInvariant();
 
                 if (order.CartNumber == request.QueryString["ORDERID"] && digest.Equals(shaSign))
