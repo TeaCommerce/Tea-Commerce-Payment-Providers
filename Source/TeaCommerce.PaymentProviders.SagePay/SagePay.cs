@@ -155,7 +155,7 @@ namespace TeaCommerce.PaymentProviders.Classic
 
             if (!settings.ContainsKey("Apply3DSecure"))
             {
-                inputFields["Apply3DSecure"] = "2";
+                inputFields["Apply3DSecure"] = "0";
             }
 
             IDictionary<string, string> responseFields = GetFields(MakePostRequest(GetMethodUrl("PURCHASE", settings), inputFields));
