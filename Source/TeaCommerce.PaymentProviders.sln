@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28010.2036
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29503.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "TeaCommerce.PaymentProviders.UI", "http://localhost:56791", "{7F142543-1476-4166-A88B-C4C9AB960616}"
 	ProjectSection(WebsiteProperties) = preProject
@@ -37,8 +37,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProviders.ePay", "TeaCommerce.PaymentProviders.ePay\TeaCommerce.PaymentProviders.ePay.csproj", "{969A2AF7-FEAC-474F-A576-BAB4598C0CD3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProviders.Invoicing", "TeaCommerce.PaymentProviders.Invoicing\TeaCommerce.PaymentProviders.Invoicing.csproj", "{690D5DC6-CE19-4C07-B9F7-63C3AAB250F9}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProviders.Klarna", "TeaCommerce.PaymentProviders.Klarna\TeaCommerce.PaymentProviders.Klarna.csproj", "{3172D04C-D4E7-457C-B6A1-7848AC9CF089}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaCommerce.PaymentProviders.Netaxept", "TeaCommerce.PaymentProviders.Netaxept\TeaCommerce.PaymentProviders.Netaxept.csproj", "{2755B89C-11E3-4189-9B1E-29AC0EC16430}"
 EndProject
@@ -102,10 +100,6 @@ Global
 		{690D5DC6-CE19-4C07-B9F7-63C3AAB250F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{690D5DC6-CE19-4C07-B9F7-63C3AAB250F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{690D5DC6-CE19-4C07-B9F7-63C3AAB250F9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3172D04C-D4E7-457C-B6A1-7848AC9CF089}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3172D04C-D4E7-457C-B6A1-7848AC9CF089}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3172D04C-D4E7-457C-B6A1-7848AC9CF089}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3172D04C-D4E7-457C-B6A1-7848AC9CF089}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2755B89C-11E3-4189-9B1E-29AC0EC16430}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2755B89C-11E3-4189-9B1E-29AC0EC16430}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2755B89C-11E3-4189-9B1E-29AC0EC16430}.Release|Any CPU.ActiveCfg = Release|Any CPU

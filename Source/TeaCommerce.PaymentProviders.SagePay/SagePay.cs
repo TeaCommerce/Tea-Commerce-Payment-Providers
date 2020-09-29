@@ -53,7 +53,7 @@ namespace TeaCommerce.PaymentProviders.Classic
             string[] settingsToExclude = new[] { "streetAddressPropertyAlias", "cityPropertyAlias", "zipCodePropertyAlias", "phonePropertyAlias", "shipping_firstNamePropertyAlias", "shipping_lastNamePropertyAlias", "shipping_streetAddressPropertyAlias", "shipping_cityPropertyAlias", "shipping_zipCodePropertyAlias", "shipping_phonePropertyAlias", "testMode" };
             Dictionary<string, string> inputFields = settings.Where(i => !settingsToExclude.Contains(i.Key)).ToDictionary(i => i.Key, i => i.Value);
 
-            inputFields["VPSProtocol"] = "2.23";
+            inputFields["VPSProtocol"] = "3.00";
 
             #region Address properties
 
@@ -155,7 +155,7 @@ namespace TeaCommerce.PaymentProviders.Classic
 
             if (!settings.ContainsKey("Apply3DSecure"))
             {
-                inputFields["Apply3DSecure"] = "2";
+                inputFields["Apply3DSecure"] = "0";
             }
 
             IDictionary<string, string> responseFields = GetFields(MakePostRequest(GetMethodUrl("PURCHASE", settings), inputFields));
@@ -236,6 +236,11 @@ namespace TeaCommerce.PaymentProviders.Classic
                 md5CheckValue += HttpUtility.UrlDecode(request.Form["PayerStatus"]);
                 md5CheckValue += cardType;
                 md5CheckValue += last4Digits;
+                md5CheckValue += HttpUtility.UrlDecode(request.Form["DeclineCode"]);
+                md5CheckValue += HttpUtility.UrlDecode(request.Form["ExpiryDate"]);
+                md5CheckValue += HttpUtility.UrlDecode(request.Form["FraudResponse"]);
+                md5CheckValue += HttpUtility.UrlDecode(request.Form["BankAuthCode"]);
+
 
                 string calcedMd5Hash = GenerateMD5Hash(md5CheckValue).ToUpperInvariant();
                 string vpsSignature = request.Form["VPSSignature"];
@@ -304,7 +309,7 @@ namespace TeaCommerce.PaymentProviders.Classic
 
                 Guid vendorTxCode = Guid.NewGuid();
 
-                inputFields["VPSProtocol"] = "2.23";
+                inputFields["VPSProtocol"] = "3.00";
                 inputFields["TxType"] = "AUTHORISE";
                 inputFields["Vendor"] = settings["Vendor"];
                 inputFields["VendorTxCode"] = vendorTxCode.ToString();
@@ -354,7 +359,7 @@ namespace TeaCommerce.PaymentProviders.Classic
 
                 Guid vendorTxCode = Guid.NewGuid();
 
-                inputFields["VPSProtocol"] = "2.23";
+                inputFields["VPSProtocol"] = "3.00";
                 inputFields["TxType"] = "REFUND";
                 inputFields["Vendor"] = settings["Vendor"];
                 inputFields["VendorTxCode"] = vendorTxCode.ToString();
@@ -408,7 +413,7 @@ namespace TeaCommerce.PaymentProviders.Classic
 
                 Dictionary<string, string> inputFields = new Dictionary<string, string>();
 
-                inputFields["VPSProtocol"] = "2.23";
+                inputFields["VPSProtocol"] = "3.00";
                 inputFields["TxType"] = "CANCEL";
                 inputFields["Vendor"] = settings["Vendor"];
                 inputFields["VendorTxCode"] = order.CartNumber;
