@@ -149,7 +149,7 @@ namespace TeaCommerce.PaymentProviders.Classic
                 request.InputStream.Read(bytes, 0, bytes.Length);
                 request.InputStream.Position = 0;
 
-                string streamContent = Encoding.ASCII.GetString(bytes);
+                string streamContent = Encoding.UTF8.GetString(bytes);
 
                 Result result = JsonConvert.DeserializeObject<Result>(streamContent);
 
